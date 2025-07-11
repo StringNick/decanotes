@@ -1,75 +1,227 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import type { MarkdownStyle } from '@expensify/react-native-live-markdown';
+import { MarkdownTextInput, parseExpensiMark } from '@expensify/react-native-live-markdown';
+import React from 'react';
+import { Platform, ScrollView, StyleSheet } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const FONT_FAMILY_MONOSPACE = Platform.select({
+  ios: 'Courier',
+  default: 'monospace',
+});
+
+const FONT_FAMILY_EMOJI = Platform.select({
+  ios: 'System',
+  android: 'Noto Color Emoji',
+  default: 'System, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji',
+});
+
+const markdownStyle: MarkdownStyle = {
+  syntax: {
+    color: 'gray',
+  },
+  link: {
+    color: 'blue',
+  },
+  h1: {
+    fontSize: 25,
+  },
+  emoji: {
+    fontSize: 20,
+    fontFamily: FONT_FAMILY_EMOJI,
+  },
+  blockquote: {
+    borderColor: 'gray',
+    borderWidth: 6,
+    marginLeft: 6,
+    paddingLeft: 6,
+  },
+  code: {
+    fontFamily: FONT_FAMILY_MONOSPACE,
+    fontSize: 10,
+    color: 'black',
+    backgroundColor: 'lightgray',
+  },
+  pre: {
+    fontFamily: FONT_FAMILY_MONOSPACE,
+    fontSize: 20,
+    color: 'black',
+    backgroundColor: 'lightgray',
+  },
+  mentionHere: {
+    color: 'green',
+    backgroundColor: 'lime',
+  },
+  mentionUser: {
+    color: 'blue',
+    backgroundColor: 'cyan',
+  },
+};
+
+var initialMarkdownContent = `# Markdown Examples
+
+## Headers
+# H1
+## H2
+### H3
+#### H4
+##### H5
+###### H6
+
+## Text Formatting
+*Italic text*  
+**Bold text**  
+~~Strikethrough~~  
+**Bold and _nested italic_**  
+***All bold and italic***
+
+## Lists
+### Ordered List
+1. First item
+2. Second item
+3. Third item
+
+### Unordered List
+- Item 1
+- Item 2
+  - Nested item 2.1
+  - Nested item 2.2
+
+### Task List
+- [x] Completed task
+- [ ] Pending task
+
+## Links and Images
+[Visit Google](https://www.google.com)  
+![Alt text](https://via.placeholder.com/150 "Optional title")
+
+## Blockquotes
+> This is a blockquote.
+> It can span multiple lines.
+
+## Code
+### Inline code
+Use \`fmt.Println(\"Hello, World!\")\` for printing in Go.
+
+### Code block with syntax highlighting
+\`\`\`go
+package main
+
+import (
+    \"fmt\"
+    \"log\"
+    \"context\"
+    \"os\"
+    \"golang.org/x/exp/slog\"
+)
+
+type User struct {
+    ID    int
+    Name  string
+    Email string
+}
+
+func main() {
+    // Initialize logger
+    logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+    
+    // Create a new context
+    ctx := context.Background()
+    
+    // Add context values
+    ctx = context.WithValue(ctx, \"request_id\", \"abc123\")
+    
+    // Example user data
+    user := User{
+        ID:    1,
+        Name:  \"John Doe\",
+        Email: \"john@example.com\",
+    }
+    
+    // Log with context
+    logger.InfoCtx(ctx, \"User logged in\", \"user\", user)
+    
+    // Log with additional fields
+    logger.Info(\"Processing request\", \"path\", \"/api/users\", \"method\", \"GET\")
+    
+    // Error logging
+    if err := someFunction(); err != nil {
+        logger.Error(\"Operation failed\", \"error\", err)
+    }
+}
+
+func someFunction() error {
+    return fmt.Errorf(\"something went wrong\")
+}
+\`\`\`
+
+## Tables
+| Name  |    Type     |  Value   |  json   |
+| :---: | :---------: | :------: | :-----: |
+|  Key  |   string    |   ключ   |  "key"  |
+| Value | interface{} | значение | "value" |
+
+## Horizontal Rule
+---
+
+## Footnotes
+Here's a sentence with a footnote. [^1]
+
+[^1]: This is the footnote.
+
+## Definition Lists
+Term 1
+: Definition 1
+
+Term 2
+: Definition 2
+
+## Strikethrough
+~~This text is struck through.~~
+
+## Emoji
+:smile: :heart: :rocket:
+
+## Checkboxes
+- [x] Task 1
+- [ ] Task 2
+- [ ] Task 3
+`;
 
 export default function HomeScreen() {
+  const [value, setValue] = React.useState(initialMarkdownContent);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ScrollView style={{ padding: 16 }}>
+      <MarkdownTextInput
+        value={value}
+        multiline={true}
+        onChangeText={setValue}
+        style={styles.input}
+        parser={parseExpensiMark}
+        markdownStyle={markdownStyle}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  content: {
+    marginTop: 60,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  input: {
+    fontSize: 13,
+    width: '100%',
+    padding: 5,
+    borderColor: 'gray',
+    borderWidth: 1,
+    textAlignVertical: 'top',
+    backgroundColor: 'white',
+  },
+  text: {
+    fontFamily: 'Courier New',
+    marginTop: 10,
+    height: 100,
   },
 });
