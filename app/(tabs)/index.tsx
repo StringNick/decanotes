@@ -1,293 +1,224 @@
-import {
-  EditorJSData,
-  Renderer as Renderer2,
-  RendererAppearance,
-  RendererConfig
-} from '@biblebytes/editorjs-renderer-react-native';
-import React, { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TextStyle, View } from 'react-native';
-import type { RendererInterface } from "react-native-marked";
-import { Renderer } from "react-native-marked";
-import { ViewStyle } from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
+// app/(tabs)/index.tsx
+import React, { useCallback, useRef, useState } from 'react';
+import { Alert, Button, StyleSheet, View } from 'react-native';
+import MarkdownEditor, { Block, MarkdownEditorRef } from '../../components/MarkdownEditor';
 
+export default function EditorScreen() {
+  const editorRef = useRef<MarkdownEditorRef>(null);
+  const [blocks, setBlocks] = useState<Block[]>([]);
 
-const data: EditorJSData = {
-  blocks: [{
-    id: "header-1",
-    type: "header",
-    data: {
-      text: "Header 1",
-      level: 1,
-    },
-  }]
-};
-
-const config: RendererConfig = {
-  enableFallback: false
-};
-
-
-class CustomRenderer extends Renderer implements RendererInterface {
-  constructor() {
-    super();
-  }
-
-  text(text: string | ReactNode[], styles?: TextStyle): ReactNode {
-    if (typeof text === 'string') {
-      console.log('text', styles);
-      return (
-        <TextInput
-          value={text}
-          editable={false}
-          multiline
-          style={{ ...styles, color: 'white' }}
-          selectionColor="rgba(0, 122, 255, 0.3)"
-        />
-      );
-    }
-
-    for (let i = 0; i < text.length; i++) {
-      console.log(text[i], typeof text[i]);
-    }
-
-    return (
-      <>
-        {text}
-      </>
-    );
-  }
-
-  heading(text: string | ReactNode[], styles?: TextStyle): ReactNode {
-    // Convert ReactNode array to string if needed
-    const textValue = Array.isArray(text)
-      ? text.map(node => typeof node === 'string' ? node : '').join('')
-      : String(text);
-
-    return (
-      <TextInput
-        value={textValue}
-        editable={false}
-        multiline
-        style={styles}
-        selectionColor="rgba(0, 122, 255, 0.3)"
-      />
-    );
-  }
-
-  code(text: string, _language?: string, containerStyle?: ViewStyle, textStyle?: TextStyle): ReactNode {
-    return (
-      <View style={containerStyle}>
-        <TextInput
-          value={text}
-          editable={false}
-          multiline
-
-          style={{
-            ...textStyle,
-          }}
-          // style={containerStyle}
-          selectionColor="rgba(0, 122, 255, 0.3)"
-        />
-      </View>
-    )
-  }
-
-  codespan(text: string, _styles?: TextStyle): ReactNode {
-    // Convert ReactNode array to string if needed
-    const textValue = Array.isArray(text)
-      ? text.map(node => typeof node === 'string' ? node : '').join('')
-      : String(text);
-
-    return (
-      <TextInput
-        value={textValue}
-        editable={false}
-        multiline
-      // style={styles}xx
-      // selectionColor="rgba(0, 122, 255, 0.3)"
-      />
-    );
-  }
-
-
-}
-
-const renderer = new CustomRenderer();
-
-var initialMarkdownContent = `# Markdown Examples
+  // Example initial markdown content
+  const initialMarkdown = `
+ # Markdown syntax guide
 
 ## Headers
-# H1
-## H2
-### H3
-#### H4
-##### H5
-###### H6
 
-## Text Formatting
-*Italic text*  
-**Bold text**  
-~~Strikethrough~~  
-**Bold and _nested italic_**  
-***All bold and italic***
+# This is a Heading h1
+## This is a Heading h2
+###### This is a Heading h6
+
+## Emphasis
+
+*This text will be italic*  
+_This will also be italic_
+
+**This text will be bold**  
+__This will also be bold__
+
+_You **can** combine them_
 
 ## Lists
-### Ordered List
-1. First item
-2. Second item
-3. Third item
 
-### Unordered List
-- Item 1
-- Item 2
-  - Nested item 2.1
-  - Nested item 2.2
+### Unordered
 
-### Task List
-- [x] Completed task
-- [ ] Pending task
+* Item 1
+* Item 2
+* Item 2a
+* Item 2b
+    * Item 3a
+    * Item 3b
 
-## Links and Images
-[Visit Google](https://www.google.com)  
-![Alt text](https://via.placeholder.com/150 "Optional title")
+### Ordered
+
+1. Item 1
+2. Item 2
+3. Item 3
+    1. Item 3a
+    2. Item 3b
+
+## Images
+
+![This is an alt text.](/image/sample.webp "This is a sample image.")
+
+## Links
+
+You may be using [Markdown Live Preview](https://markdownlivepreview.com/).
 
 ## Blockquotes
-> This is a blockquote.
-> It can span multiple lines.
 
-## Code
-### Inline code
-Use \`fmt.Println(\"Hello, World!\")\` for printing in Go.
-
-### Code block with syntax highlighting
-\`\`\`go
-package main
-
-import (
-    \"fmt\"
-    \"log\"
-    \"context\"
-    \"os\"
-    \"golang.org/x/exp/slog\"
-)
-
-type User struct {
-    ID    int
-    Name  string
-    Email string
-}
-
-func main() {
-    // Initialize logger
-    logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-    
-    // Create a new context
-    ctx := context.Background()
-    
-    // Add context values
-    ctx = context.WithValue(ctx, \"request_id\", \"abc123\")
-    
-    // Example user data
-    user := User{
-        ID:    1,
-        Name:  \"John Doe\",
-        Email: \"john@example.com\",
-    }
-    
-    // Log with context
-    logger.InfoCtx(ctx, \"User logged in\", \"user\", user)
-    
-    // Log with additional fields
-    logger.Info(\"Processing request\", \"path\", \"/api/users\", \"method\", \"GET\")
-    
-    // Error logging
-    if err := someFunction(); err != nil {
-        logger.Error(\"Operation failed\", \"error\", err)
-    }
-}
-
-func someFunction() error {
-    return fmt.Errorf(\"something went wrong\")
-}
-\`\`\`
+> Markdown is a lightweight markup language with plain-text-formatting syntax, created in 2004 by John Gruber with Aaron Swartz.
+>
+>> Markdown is often used to format readme files, for writing messages in online discussion forums, and to create rich text using a plain text editor.
 
 ## Tables
-| Name  |    Type     |  Value   |  json   |
-| :---: | :---------: | :------: | :-----: |
-|  Key  |   string    |   ключ   |  "key"  |
-| Value | interface{} | значение | "value" |
 
-## Horizontal Rule
----
+| Left columns  | Right columns |
+| ------------- |:-------------:|
+| left foo      | right foo     |
+| left bar      | right bar     |
+| left baz      | right baz     |
 
-## Footnotes
-Here's a sentence with a footnote. [^1]
+## Blocks of code
 
-[^1]: This is the footnote.
+\`\`\`javascript
+let message = 'Hello world';
+alert(message);
+\`\`\`
 
-## Definition Lists
-Term 1
-: Definition 1
+## Inline code
 
-Term 2
-: Definition 2
+This web site is using \`markedjs/marked\`.
+ `;
 
-## Strikethrough
-~~This text is struck through.~~
+  // Get the current markdown content
+  const handleGetMarkdown = useCallback(() => {
+    if (editorRef.current) {
+      const markdown = editorRef.current.getMarkdown();
+      console.log('Current markdown:', markdown);
+      Alert.alert('Markdown Content', markdown);
+    }
+  }, []);
 
-## Emoji
-:smile: :heart: :rocket:
+  // Focus the editor
+  const handleFocusEditor = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  }, []);
 
-## Checkboxes
-- [x] Task 1
-- [ ] Task 2
-- [ ] Task 3
-`;
+  // Add a new heading block
+  const handleAddHeading = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.insertBlock('heading');
+    }
+  }, []);
 
-export default function HomeScreen() {
-  const [value, setValue] = React.useState(initialMarkdownContent);
+  // Add a new code block
+  const handleAddCodeBlock = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.insertBlock('code');
+    }
+  }, []);
+
+  // Add a new quote block
+  const handleAddQuote = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.insertBlock('quote');
+    }
+  }, []);
+
+  // Add a new list block
+  const handleAddList = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.insertBlock('list');
+    }
+  }, []);
+
+  // Add a new checklist block
+  const handleAddChecklist = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.insertBlock('checklist');
+    }
+  }, []);
+
+  // Add a new divider block
+  const handleAddDivider = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.insertBlock('divider');
+    }
+  }, []);
+
+  // Add a new image block
+  const handleAddImage = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.insertBlock('image');
+    }
+  }, []);
+
+  // Handle real-time markdown changes
+  const handleMarkdownChange = useCallback((markdown: string) => {
+    console.log('Markdown changed:', markdown);
+  }, []);
+
+  // Handle block changes
+  const handleBlockChange = useCallback((newBlocks: Block[]) => {
+    setBlocks(newBlocks);
+    console.log('Blocks changed:', newBlocks);
+  }, []);
 
   return (
-    <>
-      {/* <Markdown
-        value={value}
-        flatListProps={{
-          initialNumToRender: 8,
-        }}
-        renderer={renderer}
-      /> */}
-      <ScrollView>
-        <Text style={{ color: 'white' }}>{value}</Text>
-        <Renderer2
-          data={data}
-          config={config}
-          appearance={RendererAppearance.light}
-        />
-      </ScrollView>
+    <View style={styles.container}>
+      <View style={styles.toolbar}>
+        <View style={styles.toolbarRow}>
+          <Button title="Get Markdown" onPress={handleGetMarkdown} />
+          <Button title="Focus" onPress={handleFocusEditor} />
+        </View>
+        <View style={styles.toolbarRow}>
+          <Button title="+ Heading" onPress={handleAddHeading} />
+          <Button title="+ Code" onPress={handleAddCodeBlock} />
+          <Button title="+ Quote" onPress={handleAddQuote} />
+        </View>
+        <View style={styles.toolbarRow}>
+          <Button title="+ List" onPress={handleAddList} />
+          <Button title="+ Checklist" onPress={handleAddChecklist} />
+          <Button title="+ Divider" onPress={handleAddDivider} />
+          <Button title="+ Image" onPress={handleAddImage} />
+        </View>
+      </View>
 
-    </>
+      <MarkdownEditor
+        ref={editorRef}
+        initialMarkdown={initialMarkdown}
+        onMarkdownChange={handleMarkdownChange}
+        onBlockChange={handleBlockChange}
+        placeholder="Start typing... Use # for headings, ``` for code, > for quotes"
+        theme={{
+          // Custom theme example
+          focusedBlock: {
+            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+            borderRadius: 8,
+            padding: 4,
+          },
+          focusedInput: {
+            backgroundColor: '#ffffff',
+            borderColor: '#3b82f6',
+            shadowColor: '#3b82f6',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 2,
+          },
+        }}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  content: {
-    marginTop: 60,
+  toolbar: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  input: {
-    fontSize: 13,
-    width: '100%',
-    padding: 5,
-    borderColor: 'gray',
-    borderWidth: 1,
-    textAlignVertical: 'top',
-    backgroundColor: 'white',
-  },
-  text: {
-    fontFamily: 'Courier New',
-    marginTop: 10,
-    height: 100,
+  toolbarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
 });
