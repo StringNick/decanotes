@@ -356,34 +356,95 @@ const parseLineToBlock = (line: string): Block => {
 };
 
 const blocksToMarkdown = (blocks: Block[]): string => {
-  return blocks.map(block => {
+  const result: string[] = [];
+  
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    const nextBlock = blocks[i + 1];
+    
+    let blockMarkdown = '';
+    
     switch (block.type) {
       case 'heading':
-        return `${'#'.repeat(block.meta?.level || 1)} ${block.content}`;
+        blockMarkdown = `${'#'.repeat(block.meta?.level || 1)} ${block.content}`;
+        break;
       case 'code':
-        return `\`\`\`${block.meta?.language || ''}\n${block.content}\n\`\`\``;
+        blockMarkdown = `\`\`\`${block.meta?.language || ''}\n${block.content}\n\`\`\``;
+        break;
       case 'quote':
         const quoteDepth = block.meta?.depth || 0;
         const quotePrefix = '>'.repeat(quoteDepth + 1);
-        return block.content
-          .split('\n')
-          .map(line => `${quotePrefix} ${line}`)
-          .join('\n');
+        if (block.content.trim()) {
+          blockMarkdown = block.content
+            .split('\n')
+            .map(line => `${quotePrefix} ${line}`)
+            .join('\n');
+        } else {
+          blockMarkdown = `${quotePrefix} `;
+        }
+        break;
       case 'list':
-        const prefix = block.meta?.ordered ? '1. ' : '- ';
-        return `${prefix}${block.content}`;
+        const items = block.content.split('\n');
+        const depth = block.meta?.depth || 0;
+        const indent = '  '.repeat(depth);
+        
+        if (block.meta?.ordered) {
+          blockMarkdown = items.map((item, index) => 
+            `${indent}${index + 1}. ${item}`
+          ).join('\n');
+        } else {
+          blockMarkdown = items.map(item => 
+            `${indent}- ${item}`
+          ).join('\n');
+        }
+        break;
       case 'checklist':
         const checked = block.meta?.checked ? 'x' : ' ';
-        return `- [${checked}] ${block.content}`;
+        const checkDepth = block.meta?.depth || 0;
+        const checkIndent = '  '.repeat(checkDepth);
+        const checkItems = block.content.split('\n');
+        blockMarkdown = checkItems.map(item => 
+          `${checkIndent}- [${checked}] ${item}`
+        ).join('\n');
+        break;
       case 'divider':
-        return '---';
+        blockMarkdown = '---';
+        break;
       case 'image':
         const title = block.meta?.title ? ` "${block.meta.title}"` : '';
-        return `![${block.content}](${block.meta?.url || ''}${title})`;
+        blockMarkdown = `![${block.content}](${block.meta?.url || ''}${title})`;
+        break;
       default:
-        return block.content;
+        blockMarkdown = block.content;
     }
-  }).join('\n\n');
+    
+    result.push(blockMarkdown);
+    
+    // Add appropriate spacing between blocks
+    if (nextBlock) {
+      // Add single newline between consecutive quotes of same depth
+      if (block.type === 'quote' && nextBlock.type === 'quote' && 
+          block.meta?.depth === nextBlock.meta?.depth) {
+        result.push('\n');
+      }
+      // Add single newline between consecutive list items
+      else if (block.type === 'list' && nextBlock.type === 'list' && 
+               block.meta?.ordered === nextBlock.meta?.ordered &&
+               block.meta?.depth === nextBlock.meta?.depth) {
+        result.push('\n');
+      }
+      // Add single newline between consecutive checklists
+      else if (block.type === 'checklist' && nextBlock.type === 'checklist') {
+        result.push('\n');
+      }
+      // Add double newline between different block types
+      else {
+        result.push('\n\n');
+      }
+    }
+  }
+  
+  return result.join('');
 };
 
 const generateId = (): string => {
