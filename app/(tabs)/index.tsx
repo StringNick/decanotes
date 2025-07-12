@@ -1,60 +1,118 @@
-import type { MarkdownStyle } from '@expensify/react-native-live-markdown';
-import { MarkdownTextInput, parseExpensiMark } from '@expensify/react-native-live-markdown';
-import React from 'react';
-import { Platform, ScrollView, StyleSheet } from 'react-native';
+import {
+  EditorJSData,
+  Renderer as Renderer2,
+  RendererAppearance,
+  RendererConfig
+} from '@biblebytes/editorjs-renderer-react-native';
+import React, { ReactNode } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TextStyle, View } from 'react-native';
+import type { RendererInterface } from "react-native-marked";
+import { Renderer } from "react-native-marked";
+import { ViewStyle } from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
 
-const FONT_FAMILY_MONOSPACE = Platform.select({
-  ios: 'Courier',
-  default: 'monospace',
-});
 
-const FONT_FAMILY_EMOJI = Platform.select({
-  ios: 'System',
-  android: 'Noto Color Emoji',
-  default: 'System, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji',
-});
-
-const markdownStyle: MarkdownStyle = {
-  syntax: {
-    color: 'gray',
-  },
-  link: {
-    color: 'blue',
-  },
-  h1: {
-    fontSize: 25,
-  },
-  emoji: {
-    fontSize: 20,
-    fontFamily: FONT_FAMILY_EMOJI,
-  },
-  blockquote: {
-    borderColor: 'gray',
-    borderWidth: 6,
-    marginLeft: 6,
-    paddingLeft: 6,
-  },
-  code: {
-    fontFamily: FONT_FAMILY_MONOSPACE,
-    fontSize: 10,
-    color: 'black',
-    backgroundColor: 'lightgray',
-  },
-  pre: {
-    fontFamily: FONT_FAMILY_MONOSPACE,
-    fontSize: 20,
-    color: 'black',
-    backgroundColor: 'lightgray',
-  },
-  mentionHere: {
-    color: 'green',
-    backgroundColor: 'lime',
-  },
-  mentionUser: {
-    color: 'blue',
-    backgroundColor: 'cyan',
-  },
+const data: EditorJSData = {
+  blocks: [{
+    id: "header-1",
+    type: "header",
+    data: {
+      text: "Header 1",
+      level: 1,
+    },
+  }]
 };
+
+const config: RendererConfig = {
+  enableFallback: false
+};
+
+
+class CustomRenderer extends Renderer implements RendererInterface {
+  constructor() {
+    super();
+  }
+
+  text(text: string | ReactNode[], styles?: TextStyle): ReactNode {
+    if (typeof text === 'string') {
+      console.log('text', styles);
+      return (
+        <TextInput
+          value={text}
+          editable={false}
+          multiline
+          style={{ ...styles, color: 'white' }}
+          selectionColor="rgba(0, 122, 255, 0.3)"
+        />
+      );
+    }
+
+    for (let i = 0; i < text.length; i++) {
+      console.log(text[i], typeof text[i]);
+    }
+
+    return (
+      <>
+        {text}
+      </>
+    );
+  }
+
+  heading(text: string | ReactNode[], styles?: TextStyle): ReactNode {
+    // Convert ReactNode array to string if needed
+    const textValue = Array.isArray(text)
+      ? text.map(node => typeof node === 'string' ? node : '').join('')
+      : String(text);
+
+    return (
+      <TextInput
+        value={textValue}
+        editable={false}
+        multiline
+        style={styles}
+        selectionColor="rgba(0, 122, 255, 0.3)"
+      />
+    );
+  }
+
+  code(text: string, _language?: string, containerStyle?: ViewStyle, textStyle?: TextStyle): ReactNode {
+    return (
+      <View style={containerStyle}>
+        <TextInput
+          value={text}
+          editable={false}
+          multiline
+
+          style={{
+            ...textStyle,
+          }}
+          // style={containerStyle}
+          selectionColor="rgba(0, 122, 255, 0.3)"
+        />
+      </View>
+    )
+  }
+
+  codespan(text: string, _styles?: TextStyle): ReactNode {
+    // Convert ReactNode array to string if needed
+    const textValue = Array.isArray(text)
+      ? text.map(node => typeof node === 'string' ? node : '').join('')
+      : String(text);
+
+    return (
+      <TextInput
+        value={textValue}
+        editable={false}
+        multiline
+      // style={styles}xx
+      // selectionColor="rgba(0, 122, 255, 0.3)"
+      />
+    );
+  }
+
+
+}
+
+const renderer = new CustomRenderer();
 
 var initialMarkdownContent = `# Markdown Examples
 
@@ -190,16 +248,24 @@ export default function HomeScreen() {
   const [value, setValue] = React.useState(initialMarkdownContent);
 
   return (
-    <ScrollView style={{ padding: 16 }}>
-      <MarkdownTextInput
+    <>
+      {/* <Markdown
         value={value}
-        multiline={true}
-        onChangeText={setValue}
-        style={styles.input}
-        parser={parseExpensiMark}
-        markdownStyle={markdownStyle}
-      />
-    </ScrollView>
+        flatListProps={{
+          initialNumToRender: 8,
+        }}
+        renderer={renderer}
+      /> */}
+      <ScrollView>
+        <Text style={{ color: 'white' }}>{value}</Text>
+        <Renderer2
+          data={data}
+          config={config}
+          appearance={RendererAppearance.light}
+        />
+      </ScrollView>
+
+    </>
   );
 }
 

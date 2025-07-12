@@ -10,7 +10,14 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.decanotesexpo"
+      "bundleIdentifier": "com.anonymous.decanotesexpo",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSAllowsArbitraryLoads": true,
+        "NSAllowsArbitraryLoadsInWebContent": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,13 +25,19 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.decanotesexpo"
+      "package": "com.anonymous.decanotesexpo",
+      "permissions": [
+        "INTERNET"
+      ]
     },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "assetBundlePatterns": [
+      "assets/editor-js/**/*"
+    ],
     "plugins": [
       "expo-router",
       [
@@ -34,6 +47,14 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-asset",
+        {
+          "assets": [
+            "./assets/editor-js/**/*"
+          ]
         }
       ]
     ],
