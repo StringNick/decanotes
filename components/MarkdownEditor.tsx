@@ -26,6 +26,8 @@ export type MarkdownEditorRef = {
   focus: () => void;
   insertBlock: (type: BlockType, index?: number) => void;
   deleteBlock: (id: string) => void;
+  moveBlockUp: (id: string) => boolean;
+  moveBlockDown: (id: string) => boolean;
   toggleMode: () => void;
   getCurrentMode: () => 'live' | 'raw';
 };
@@ -145,7 +147,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({ visible, position, menuType
   if (!visible) return null;
 
   const actionOptions = [
-    { action: 'move', icon: '⋮⋮', label: 'Move Block', color: '#6b7280' },
+    { action: 'moveUp', icon: '↑', label: 'Move Up', color: '#6b7280' },
+    { action: 'moveDown', icon: '↓', label: 'Move Down', color: '#6b7280' },
     { action: 'add', icon: '+', label: 'Add Block', color: '#3b82f6' },
     { action: 'delete', icon: '×', label: 'Delete Block', color: '#ef4444' },
   ];
@@ -1283,42 +1286,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       setRawMarkdown(text);
     }, []);
 
-    // Expose methods via ref
-    useImperativeHandle(ref, () => ({
-      getMarkdown: () => blocksToMarkdown(blocks),
-      focus: () => {
-        if (blocks.length > 0) {
-          setActiveBlockId(blocks[0].id);
-        }
-      },
-      insertBlock: (type: BlockType, index?: number) => {
-        const newBlock: Block = {
-          id: generateId(),
-          type,
-          content: '',
-          meta: type === 'heading' ? { level: 1 } : undefined
-        };
-        
-        const insertIndex = index ?? blocks.length;
-        setBlocks(prev => {
-          const newBlocks = [...prev];
-          newBlocks.splice(insertIndex, 0, newBlock);
-          return newBlocks;
-        });
-        
-        setTimeout(() => setActiveBlockId(newBlock.id), 0);
-      },
-      deleteBlock: (id: string) => {
-        setBlocks(prev => prev.filter(block => block.id !== id));
-        setActiveBlockId(null);
-      },
-      toggleMode: () => {
-        toggleMode();
-      },
-      getCurrentMode: () => {
-        return mode;
-      },
-    }));
+
 
     const handleRawTextChange = useCallback((blockId: string, text: string) => {
       const blockIndex = blocks.findIndex(b => b.id === blockId);
@@ -1516,13 +1484,45 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       }
     }, [activeBlockId, blocks]);
 
+    // Move block up in the list
+    const moveBlockUp = useCallback((blockId: string) => {
+      const currentIndex = blocks.findIndex(b => b.id === blockId);
+      if (currentIndex <= 0) return false; // Can't move first block up
+      
+      setBlocks(prev => {
+        const newBlocks = [...prev];
+        const [movedBlock] = newBlocks.splice(currentIndex, 1);
+        newBlocks.splice(currentIndex - 1, 0, movedBlock);
+        return newBlocks;
+      });
+      
+      return true;
+    }, [blocks]);
+
+    // Move block down in the list
+    const moveBlockDown = useCallback((blockId: string) => {
+      const currentIndex = blocks.findIndex(b => b.id === blockId);
+      if (currentIndex >= blocks.length - 1) return false; // Can't move last block down
+      
+      setBlocks(prev => {
+        const newBlocks = [...prev];
+        const [movedBlock] = newBlocks.splice(currentIndex, 1);
+        newBlocks.splice(currentIndex + 1, 0, movedBlock);
+        return newBlocks;
+      });
+      
+      return true;
+    }, [blocks]);
+
     const handleAction = useCallback((action: string) => {
       if (!activeBlockId) return;
       
       switch (action) {
-        case 'move':
-          // TODO: Implement block moving functionality
-          console.log('Move block:', activeBlockId);
+        case 'moveUp':
+          moveBlockUp(activeBlockId);
+          break;
+        case 'moveDown':
+          moveBlockDown(activeBlockId);
           break;
         case 'add':
           // Switch to block selection menu
@@ -1538,7 +1538,46 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           }
           break;
       }
-    }, [activeBlockId, blocks]);
+    }, [activeBlockId, blocks, moveBlockUp, moveBlockDown]);
+
+    // Expose methods via ref
+    useImperativeHandle(ref, () => ({
+      getMarkdown: () => blocksToMarkdown(blocks),
+      focus: () => {
+        if (blocks.length > 0) {
+          setActiveBlockId(blocks[0].id);
+        }
+      },
+      insertBlock: (type: BlockType, index?: number) => {
+        const newBlock: Block = {
+          id: generateId(),
+          type,
+          content: '',
+          meta: type === 'heading' ? { level: 1 } : undefined
+        };
+        
+        const insertIndex = index ?? blocks.length;
+        setBlocks(prev => {
+          const newBlocks = [...prev];
+          newBlocks.splice(insertIndex, 0, newBlock);
+          return newBlocks;
+        });
+        
+        setTimeout(() => setActiveBlockId(newBlock.id), 0);
+      },
+      deleteBlock: (id: string) => {
+        setBlocks(prev => prev.filter(block => block.id !== id));
+        setActiveBlockId(null);
+      },
+      moveBlockUp: (id: string) => moveBlockUp(id),
+      moveBlockDown: (id: string) => moveBlockDown(id),
+      toggleMode: () => {
+        toggleMode();
+      },
+      getCurrentMode: () => {
+        return mode;
+      },
+    }), [blocks, mode, toggleMode, moveBlockUp, moveBlockDown]);
 
     // Close floating menu when switching modes or losing focus
     useEffect(() => {
