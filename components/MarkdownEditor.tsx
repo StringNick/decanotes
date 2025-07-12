@@ -1,5 +1,6 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
+  Animated,
   NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
@@ -91,6 +92,217 @@ export interface BlockProps {
   theme?: EditorTheme;
   placeholder?: string;
 }
+
+// Add new interface for floating menu
+interface FloatingMenuProps {
+  visible: boolean;
+  position: { x: number; y: number };
+  menuType: MenuType;
+  onInsertBlock: (type: BlockType) => void;
+  onAction: (action: string) => void;
+  onClose: () => void;
+}
+
+// Add state for menu type
+type MenuType = 'actions' | 'blocks';
+
+// Floating Menu Component
+const FloatingMenu: React.FC<FloatingMenuProps> = ({ visible, position, menuType, onInsertBlock, onAction, onClose }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 300,
+          friction: 20,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible, fadeAnim, scaleAnim]);
+
+  if (!visible) return null;
+
+  const actionOptions = [
+    { action: 'move', icon: '⋮⋮', label: 'Move Block', color: '#6b7280' },
+    { action: 'add', icon: '+', label: 'Add Block', color: '#3b82f6' },
+    { action: 'delete', icon: '×', label: 'Delete Block', color: '#ef4444' },
+  ];
+
+  const blockOptions = [
+    { type: 'paragraph' as BlockType, icon: '¶', label: 'Text' },
+    { type: 'heading' as BlockType, icon: 'H₁', label: 'Heading' },
+    { type: 'code' as BlockType, icon: '</>', label: 'Code' },
+    { type: 'quote' as BlockType, icon: '❝', label: 'Quote' },
+    { type: 'list' as BlockType, icon: '•', label: 'List' },
+    { type: 'checklist' as BlockType, icon: '☐', label: 'Checklist' },
+    { type: 'divider' as BlockType, icon: '—', label: 'Divider' },
+    { type: 'image' as BlockType, icon: '🖼', label: 'Image' },
+  ];
+
+  return (
+    <View style={styles.floatingMenuOverlay}>
+      {/* Background overlay to close menu when clicking outside */}
+      <TouchableOpacity 
+        style={styles.floatingMenuBackground}
+        onPress={onClose}
+        activeOpacity={1}
+      />
+      
+      <Animated.View
+        style={[
+          styles.floatingMenu,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+            left: position.x,
+            top: position.y,
+          },
+        ]}
+      >
+        <View style={styles.floatingMenuContent}>
+          {menuType === 'actions' ? (
+            actionOptions.map((option, index) => (
+              <TouchableOpacity
+                key={option.action}
+                style={[
+                  styles.floatingMenuItem,
+                  index === actionOptions.length - 1 && styles.floatingMenuItemLast,
+                ]}
+                onPress={() => {
+                  onAction(option.action);
+                  if (option.action !== 'add') {
+                    onClose();
+                  }
+                }}
+              >
+                <Text style={[styles.floatingMenuIcon, { color: option.color }]}>
+                  {option.icon}
+                </Text>
+                <Text style={styles.floatingMenuLabel}>{option.label}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            blockOptions.map((option, index) => (
+              <TouchableOpacity
+                key={option.type}
+                style={[
+                  styles.floatingMenuItem,
+                  index === blockOptions.length - 1 && styles.floatingMenuItemLast,
+                ]}
+                onPress={() => {
+                  onInsertBlock(option.type);
+                  onClose();
+                }}
+              >
+                <Text style={styles.floatingMenuIcon}>{option.icon}</Text>
+                <Text style={styles.floatingMenuLabel}>{option.label}</Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </Animated.View>
+    </View>
+  );
+};
+
+// Floating Plus Button Component
+const FloatingPlusButton: React.FC<{
+  visible: boolean;
+  position: { x: number; y: number };
+  onPress: () => void;
+}> = ({ visible, position, onPress }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 300,
+          friction: 20,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible, fadeAnim, scaleAnim]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View
+      style={[
+        styles.floatingPlusButton,
+        {
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+          left: position.x,
+          top: position.y,
+        },
+      ]}
+    >
+      <TouchableOpacity style={styles.plusButtonTouchable} onPress={onPress}>
+        <Text style={styles.plusButtonText}>+</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// Mode Switcher Component
+const ModeSwitcher: React.FC<{
+  mode: 'live' | 'raw';
+  onToggle: () => void;
+}> = ({ mode, onToggle }) => {
+  return (
+    <TouchableOpacity style={styles.modeSwitcher} onPress={onToggle}>
+      <View style={styles.modeSwitcherContent}>
+        <Text style={styles.modeSwitcherText}>
+          {mode === 'live' ? '◉' : '◦'} {mode === 'live' ? 'Live' : 'Raw'}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 // Utility functions
 const parseMarkdownToBlocks = (markdown: string): Block[] => {
@@ -1030,6 +1242,11 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const [mode, setMode] = useState<'live' | 'raw'>('live');
     const [rawMarkdown, setRawMarkdown] = useState<string>('');
     const scrollViewRef = useRef<ScrollView>(null);
+    
+    // Floating menu state
+    const [showFloatingMenu, setShowFloatingMenu] = useState(false);
+    const [floatingMenuPosition, setFloatingMenuPosition] = useState({ x: 0, y: 0 });
+    const [menuType, setMenuType] = useState<MenuType>('actions');
 
     const mergedTheme = { ...defaultTheme, ...theme };
 
@@ -1208,8 +1425,17 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
         isActive,
         displayValue,
         onRawTextChange: (text: string) => handleRawTextChange(block.id, text),
-        onFocus: () => setActiveBlockId(block.id),
-        onBlur: () => setActiveBlockId(null),
+        onFocus: () => {
+          setActiveBlockId(block.id);
+        },
+        onBlur: () => {
+          // Don't immediately hide on blur to allow menu interaction
+          setTimeout(() => {
+            if (!showFloatingMenu) {
+              setActiveBlockId(null);
+            }
+          }, 100);
+        },
         onKeyPress: (e) => handleKeyPress(e, block.id, index),
         theme: mergedTheme,
         placeholder
@@ -1231,7 +1457,24 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
             isActive && mergedTheme.focusedBlock
           ]}
         >
-          <UniversalBlock {...blockProps} />
+          <View style={styles.blockContent}>
+            <UniversalBlock {...blockProps} />
+            
+            {/* Block Handle - appears on focus */}
+            {isActive && (
+              <TouchableOpacity 
+                style={styles.blockHandle}
+                onPress={() => {
+                  // Position the action menu near the handle and reset to actions
+                  setFloatingMenuPosition({ x: 50, y: 50 });
+                  setMenuType('actions');
+                  setShowFloatingMenu(true);
+                }}
+              >
+                <Text style={styles.blockHandleIcon}>⋮⋮</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       );
     };
@@ -1246,30 +1489,76 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       );
     }
 
+
+
+    const handleFloatingMenuClose = useCallback(() => {
+      setShowFloatingMenu(false);
+      setMenuType('actions'); // Reset to actions when closing
+    }, []);
+
+    const handleInsertBlock = useCallback((type: BlockType) => {
+      if (activeBlockId) {
+        const activeIndex = blocks.findIndex(b => b.id === activeBlockId);
+        const newBlock: Block = {
+          id: generateId(),
+          type,
+          content: '',
+          meta: type === 'heading' ? { level: 1 } : undefined
+        };
+        
+        setBlocks(prev => {
+          const newBlocks = [...prev];
+          newBlocks.splice(activeIndex + 1, 0, newBlock);
+          return newBlocks;
+        });
+        
+        setTimeout(() => setActiveBlockId(newBlock.id), 0);
+      }
+    }, [activeBlockId, blocks]);
+
+    const handleAction = useCallback((action: string) => {
+      if (!activeBlockId) return;
+      
+      switch (action) {
+        case 'move':
+          // TODO: Implement block moving functionality
+          console.log('Move block:', activeBlockId);
+          break;
+        case 'add':
+          // Switch to block selection menu
+          setMenuType('blocks');
+          break;
+        case 'delete':
+          // TODO: Add confirmation dialog
+          console.log('Delete block:', activeBlockId);
+          if (blocks.length > 1) {
+            setBlocks(prev => prev.filter(b => b.id !== activeBlockId));
+            setActiveBlockId(null);
+            setShowFloatingMenu(false);
+          }
+          break;
+      }
+    }, [activeBlockId, blocks]);
+
+    // Close floating menu when switching modes or losing focus
+    useEffect(() => {
+      if (mode === 'raw' || !activeBlockId) {
+        setShowFloatingMenu(false);
+      }
+    }, [activeBlockId, mode]);
+
     return (
       <View style={[styles.container, mergedTheme.container]}>
-        {/* Toggle Button */}
-        <View style={styles.toolbar}>
-          <TouchableOpacity 
-            style={[styles.toggleButton, mode === 'raw' ? styles.toggleButtonActive : null]}
-            onPress={toggleMode}
-          >
-            <Text style={[styles.toggleButtonText, mode === 'raw' ? styles.toggleButtonTextActive : null]}>
-              {mode === 'live' ? '◦ Raw' : '◦ Live'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Content */}
         {mode === 'live' ? (
-      <ScrollView 
+          <ScrollView 
             ref={scrollViewRef}
             style={styles.scrollView}
             contentContainerStyle={styles.contentContainer}
-        keyboardShouldPersistTaps="handled"
-      >
+            keyboardShouldPersistTaps="handled"
+          >
             {blocks.map(renderBlock)}
-      </ScrollView>
+          </ScrollView>
         ) : (
           <View style={styles.rawContainer}>
             <TextInput
@@ -1286,6 +1575,21 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
             />
           </View>
         )}
+
+
+
+        {/* Floating Menu */}
+        <FloatingMenu
+          visible={showFloatingMenu}
+          position={floatingMenuPosition}
+          menuType={menuType}
+          onInsertBlock={handleInsertBlock}
+          onAction={handleAction}
+          onClose={handleFloatingMenuClose}
+        />
+
+        {/* Mode Switcher */}
+        <ModeSwitcher mode={mode} onToggle={toggleMode} />
       </View>
     );
   }
@@ -1295,10 +1599,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
   },
   contentContainer: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 100,
   },
   block: {
@@ -1308,6 +1612,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59, 130, 246, 0.05)',
     borderRadius: 6,
     padding: 2,
+  },
+  blockContent: {
+    flex: 1,
+    position: 'relative',
+  },
+  blockHandle: {
+    position: 'absolute',
+    left: -35,
+    top: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    backgroundColor: '#f8fafc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    opacity: 0.8,
+    zIndex: 10,
+  },
+  blockHandleIcon: {
+    fontSize: 12,
+    color: '#94a3b8',
+    lineHeight: 12,
   },
   blockTouchable: {
     minHeight: 44,
@@ -1384,36 +1712,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 8,
   },
-  toolbar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#fafafa',
-  },
-  toggleButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  toggleButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  toggleButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  toggleButtonTextActive: {
-    color: '#ffffff',
-  },
+
   scrollView: {
     flex: 1,
   },
@@ -1433,6 +1732,112 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 16,
     textAlignVertical: 'top',
+  },
+  // Floating Menu Styles
+  floatingMenuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  floatingMenuBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  floatingMenu: {
+    position: 'absolute',
+    zIndex: 1001,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  floatingMenuContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    minWidth: 200,
+    overflow: 'hidden',
+  },
+  floatingMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  floatingMenuItemLast: {
+    borderBottomWidth: 0,
+  },
+  floatingMenuIcon: {
+    fontSize: 16,
+    marginRight: 12,
+    width: 20,
+    textAlign: 'center',
+    color: '#6b7280',
+  },
+  floatingMenuLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  // Floating Plus Button Styles
+  floatingPlusButton: {
+    position: 'absolute',
+    zIndex: 999,
+  },
+  plusButtonTouchable: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  plusButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#ffffff',
+    lineHeight: 18,
+  },
+  // Mode Switcher Styles
+  modeSwitcher: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    zIndex: 998,
+  },
+  modeSwitcherContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  modeSwitcherText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
   },
 });
 
