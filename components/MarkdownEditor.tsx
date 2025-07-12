@@ -218,7 +218,8 @@ const parseMarkdownToBlocks = (markdown: string): Block[] => {
     const checklistMatch = trimmedLine.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
     if (checklistMatch) {
       const [, checked, content] = checklistMatch;
-      if (!currentBlock || currentBlock.type !== 'checklist') {
+      if (!currentBlock || currentBlock.type !== 'checklist' || 
+          (currentBlock.meta?.checked !== (checked.toLowerCase() === 'x'))) {
         if (currentBlock) blocks.push(currentBlock);
         currentBlock = {
           id: generateId(),
@@ -227,7 +228,7 @@ const parseMarkdownToBlocks = (markdown: string): Block[] => {
           meta: { checked: checked.toLowerCase() === 'x' }
         };
       } else {
-        // Continue existing checklist
+        // Continue existing checklist with same checked state
         currentBlock.content += '\n' + content;
       }
       continue;
