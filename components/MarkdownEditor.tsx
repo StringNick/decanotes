@@ -19,6 +19,8 @@ export type MarkdownEditorRef = {
   focus: () => void;
   insertBlock: (type: BlockType, index?: number) => void;
   deleteBlock: (id: string) => void;
+  toggleMode: () => void;
+  getCurrentMode: () => 'live' | 'raw';
 };
 
 export type BlockType = 'paragraph' | 'heading' | 'code' | 'quote' | 'list' | 'checklist' | 'divider' | 'image';
@@ -822,6 +824,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
   }, ref) => {
     const [blocks, setBlocks] = useState<Block[]>(() => parseMarkdownToBlocks(initialMarkdown));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+    const [mode, setMode] = useState<'live' | 'raw'>('live');
+    const [rawMarkdown, setRawMarkdown] = useState<string>('');
     const scrollViewRef = useRef<ScrollView>(null);
 
     const mergedTheme = { ...defaultTheme, ...theme };
@@ -839,6 +843,25 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       onMarkdownChange?.(markdown);
       onBlockChange?.(blocks);
     }, [blocks, onMarkdownChange, onBlockChange]);
+
+    // Toggle between live and raw modes
+    const toggleMode = useCallback(() => {
+      if (mode === 'live') {
+        // Switch to raw mode - store current markdown
+        setRawMarkdown(blocksToMarkdown(blocks));
+        setMode('raw');
+      } else {
+        // Switch to live mode - parse raw markdown back to blocks
+        const newBlocks = parseMarkdownToBlocks(rawMarkdown);
+        setBlocks(newBlocks);
+        setMode('live');
+      }
+    }, [mode, blocks, rawMarkdown]);
+
+    // Update raw markdown when typing in raw mode
+    const handleRawMarkdownChange = useCallback((text: string) => {
+      setRawMarkdown(text);
+    }, []);
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
@@ -868,6 +891,12 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       deleteBlock: (id: string) => {
         setBlocks(prev => prev.filter(block => block.id !== id));
         setActiveBlockId(null);
+      },
+      toggleMode: () => {
+        toggleMode();
+      },
+      getCurrentMode: () => {
+        return mode;
       },
     }));
 
@@ -1015,14 +1044,46 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     }
 
     return (
-      <ScrollView 
-        ref={scrollViewRef}
-        style={[styles.container, mergedTheme.container]}
-        contentContainerStyle={styles.contentContainer}
-        keyboardShouldPersistTaps="handled"
-      >
-        {blocks.map(renderBlock)}
-      </ScrollView>
+      <View style={[styles.container, mergedTheme.container]}>
+        {/* Toggle Button */}
+        <View style={styles.toolbar}>
+          <TouchableOpacity 
+            style={[styles.toggleButton, mode === 'raw' ? styles.toggleButtonActive : null]}
+            onPress={toggleMode}
+          >
+            <Text style={[styles.toggleButtonText, mode === 'raw' ? styles.toggleButtonTextActive : null]}>
+              {mode === 'live' ? '◦ Raw' : '◦ Live'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Content */}
+        {mode === 'live' ? (
+          <ScrollView 
+            ref={scrollViewRef}
+            style={styles.scrollView}
+            contentContainerStyle={styles.contentContainer}
+            keyboardShouldPersistTaps="handled"
+          >
+            {blocks.map(renderBlock)}
+          </ScrollView>
+        ) : (
+          <View style={styles.rawContainer}>
+            <TextInput
+              style={[styles.rawInput, mergedTheme.input]}
+              value={rawMarkdown}
+              onChangeText={handleRawMarkdownChange}
+              placeholder={placeholder}
+              placeholderTextColor="#9ca3af"
+              multiline
+              textAlignVertical="top"
+              autoCorrect={false}
+              autoCapitalize="none"
+              spellCheck={false}
+            />
+          </View>
+        )}
+      </View>
     );
   }
 );
@@ -1119,6 +1180,56 @@ const styles = StyleSheet.create({
   imageContainer: {
     alignItems: 'center',
     marginVertical: 8,
+  },
+  toolbar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#fafafa',
+  },
+  toggleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  toggleButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  toggleButtonTextActive: {
+    color: '#ffffff',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  rawContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  rawInput: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Courier',
+    color: '#1f2937',
+    backgroundColor: '#fafafa',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    padding: 16,
+    textAlignVertical: 'top',
   },
 });
 
