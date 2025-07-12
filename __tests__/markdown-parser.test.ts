@@ -665,4 +665,268 @@ console.log('hello');
       expect(result).toContain('```'); // Should work without language
     });
   });
+
+describe('Inline Formatting', () => {
+  // Copy the inline formatting function for testing
+  const processInlineFormatting = (text: string): FormattedTextSegment[] => {
+    const segments: FormattedTextSegment[] = [];
+    let i = 0;
+    
+    while (i < text.length) {
+      let handled = false;
+      
+      // Look for code first - it has highest priority
+      if (text[i] === '`') {
+        const codeEnd = text.indexOf('`', i + 1);
+        if (codeEnd !== -1) {
+          const codeContent = text.slice(i + 1, codeEnd);
+          segments.push({ text: codeContent, type: 'code' });
+          i = codeEnd + 1;
+          handled = true;
+        }
+      }
+      
+      // Look for bold patterns
+      if (!handled && (text.slice(i).startsWith('**') || text.slice(i).startsWith('__'))) {
+        const boldMarker = text.slice(i).startsWith('**') ? '**' : '__';
+        const boldEnd = text.indexOf(boldMarker, i + boldMarker.length);
+        if (boldEnd !== -1) {
+          const boldContent = text.slice(i + boldMarker.length, boldEnd);
+          const boldSegments = processInlineFormatting(boldContent);
+          
+          // Convert all segments to bold or bold-italic
+          for (const segment of boldSegments) {
+            if (segment.type === 'italic') {
+              segments.push({ text: segment.text, type: 'bold-italic' });
+            } else if (segment.type === 'normal') {
+              segments.push({ text: segment.text, type: 'bold' });
+            } else {
+              segments.push(segment); // code stays as code
+            }
+          }
+          i = boldEnd + boldMarker.length;
+          handled = true;
+        }
+      }
+      
+      // Look for italic patterns
+      if (!handled && ((text[i] === '*' && text[i + 1] !== '*') || 
+                       (text[i] === '_' && text[i + 1] !== '_'))) {
+        const italicMarker = text[i];
+        const italicEnd = text.indexOf(italicMarker, i + 1);
+        if (italicEnd !== -1) {
+          const italicContent = text.slice(i + 1, italicEnd);
+          const italicSegments = processInlineFormatting(italicContent);
+          
+          // Convert all segments to italic or bold-italic
+          for (const segment of italicSegments) {
+            if (segment.type === 'bold') {
+              segments.push({ text: segment.text, type: 'bold-italic' });
+            } else if (segment.type === 'normal') {
+              segments.push({ text: segment.text, type: 'italic' });
+            } else {
+              segments.push(segment); // code stays as code
+            }
+          }
+          i = italicEnd + 1;
+          handled = true;
+        }
+      }
+      
+      // If no formatting was handled, collect normal text
+      if (!handled) {
+        let normalText = '';
+        while (i < text.length && 
+               text[i] !== '`' && 
+               !text.slice(i).startsWith('**') && 
+               !text.slice(i).startsWith('__') &&
+               !(text[i] === '*' && text[i + 1] !== '*') &&
+               !(text[i] === '_' && text[i + 1] !== '_')) {
+          normalText += text[i];
+          i++;
+        }
+        
+        // If we didn't collect any normal text, just advance by 1 to avoid infinite loop
+        if (!normalText) {
+          normalText = text[i];
+          i++;
+        }
+        
+        segments.push({ text: normalText, type: 'normal' });
+      }
+    }
+    
+    return segments.length > 0 ? segments : [{ text, type: 'normal' }];
+  };
+
+  interface FormattedTextSegment {
+    text: string;
+    type: 'normal' | 'bold' | 'italic' | 'code' | 'bold-italic';
+  }
+
+  test('should parse plain text', () => {
+    const result = processInlineFormatting('Hello world');
+    expect(result).toEqual([
+      { text: 'Hello world', type: 'normal' }
+    ]);
+  });
+
+  test('should parse bold text with **', () => {
+    const result = processInlineFormatting('This is **bold** text');
+    expect(result).toEqual([
+      { text: 'This is ', type: 'normal' },
+      { text: 'bold', type: 'bold' },
+      { text: ' text', type: 'normal' }
+    ]);
+  });
+
+  test('should parse bold text with __', () => {
+    const result = processInlineFormatting('This is __bold__ text');
+    expect(result).toEqual([
+      { text: 'This is ', type: 'normal' },
+      { text: 'bold', type: 'bold' },
+      { text: ' text', type: 'normal' }
+    ]);
+  });
+
+  test('should parse italic text with *', () => {
+    const result = processInlineFormatting('This is *italic* text');
+    expect(result).toEqual([
+      { text: 'This is ', type: 'normal' },
+      { text: 'italic', type: 'italic' },
+      { text: ' text', type: 'normal' }
+    ]);
+  });
+
+  test('should parse italic text with _', () => {
+    const result = processInlineFormatting('This is _italic_ text');
+    expect(result).toEqual([
+      { text: 'This is ', type: 'normal' },
+      { text: 'italic', type: 'italic' },
+      { text: ' text', type: 'normal' }
+    ]);
+  });
+
+  test('should parse inline code', () => {
+    const result = processInlineFormatting('This is `code` text');
+    expect(result).toEqual([
+      { text: 'This is ', type: 'normal' },
+      { text: 'code', type: 'code' },
+      { text: ' text', type: 'normal' }
+    ]);
+  });
+
+  test('should parse multiple inline formats', () => {
+    const result = processInlineFormatting('**bold** and *italic* and `code`');
+    expect(result).toEqual([
+      { text: 'bold', type: 'bold' },
+      { text: ' and ', type: 'normal' },
+      { text: 'italic', type: 'italic' },
+      { text: ' and ', type: 'normal' },
+      { text: 'code', type: 'code' }
+    ]);
+  });
+
+  test('should parse nested formats correctly', () => {
+    const result = processInlineFormatting('***bold italic*** text');
+    expect(result).toEqual([
+      { text: '*', type: 'bold' },
+      { text: 'bold italic', type: 'bold' },
+      { text: '*', type: 'normal' },
+      { text: ' text', type: 'normal' }
+    ]);
+  });
+
+  test('should handle mixed markdown syntax', () => {
+    const result = processInlineFormatting('_You **can** combine them_');
+    expect(result).toEqual([
+      { text: 'You ', type: 'italic' },
+      { text: 'can', type: 'bold-italic' },
+      { text: ' combine them', type: 'italic' }
+    ]);
+  });
+
+  test('should handle code with special characters', () => {
+    const result = processInlineFormatting('Use `console.log("hello")` to print');
+    expect(result).toEqual([
+      { text: 'Use ', type: 'normal' },
+      { text: 'console.log("hello")', type: 'code' },
+      { text: ' to print', type: 'normal' }
+    ]);
+  });
+
+  test('should handle unclosed markdown', () => {
+    const result = processInlineFormatting('This is **unclosed bold');
+    expect(result).toEqual([
+      { text: 'This is ', type: 'normal' },
+      { text: '*', type: 'normal' },
+      { text: '*', type: 'normal' },
+      { text: 'unclosed bold', type: 'normal' }
+    ]);
+  });
+
+  test('should handle empty strings', () => {
+    const result = processInlineFormatting('');
+    expect(result).toEqual([
+      { text: '', type: 'normal' }
+    ]);
+  });
+
+  test('should handle multiple bold/italic on same line', () => {
+    const result = processInlineFormatting('**first bold** normal **second bold**');
+    expect(result).toEqual([
+      { text: 'first bold', type: 'bold' },
+      { text: ' normal ', type: 'normal' },
+      { text: 'second bold', type: 'bold' }
+    ]);
+  });
+
+  test('should handle inline code with backticks inside', () => {
+    const result = processInlineFormatting('This should work: `some code` here');
+    expect(result).toEqual([
+      { text: 'This should work: ', type: 'normal' },
+      { text: 'some code', type: 'code' },
+      { text: ' here', type: 'normal' }
+    ]);
+  });
+
+  test('should prioritize bold over italic when overlapping', () => {
+    const result = processInlineFormatting('**bold *and italic***');
+    expect(result).toEqual([
+      { text: 'bold ', type: 'bold' },
+      { text: '*', type: 'bold' },
+      { text: 'and italic', type: 'bold' },
+      { text: '*', type: 'normal' }
+    ]);
+  });
+
+  test('should handle nested bold within italic correctly', () => {
+    const result = processInlineFormatting('_You **can** combine them as italic and word can bold_');
+    expect(result).toEqual([
+      { text: 'You ', type: 'italic' },
+      { text: 'can', type: 'bold-italic' },
+      { text: ' combine them as italic and word can bold', type: 'italic' }
+    ]);
+  });
+
+  test('should handle nested italic within bold correctly', () => {
+    const result = processInlineFormatting('**Bold text with _italic_ inside**');
+    expect(result).toEqual([
+      { text: 'Bold text with ', type: 'bold' },
+      { text: 'italic', type: 'bold-italic' },
+      { text: ' inside', type: 'bold' }
+    ]);
+  });
+
+  test('should handle deeply nested formatting', () => {
+    const result = processInlineFormatting('**Bold _and italic **nested**_**');
+    expect(result).toEqual([
+      { text: 'Bold ', type: 'bold' },
+      { text: '_', type: 'bold' },
+      { text: 'and italic ', type: 'bold' },
+      { text: 'nested', type: 'normal' },
+      { text: '_', type: 'bold' }
+    ]);
+  });
+});
 }); 

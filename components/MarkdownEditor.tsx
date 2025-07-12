@@ -13,6 +13,12 @@ import {
 } from 'react-native';
 import MarkdownDisplay from 'react-native-markdown-display';
 
+// Types for formatted text
+export interface FormattedTextSegment {
+  text: string;
+  type: 'normal' | 'bold' | 'italic' | 'code' | 'bold-italic';
+}
+
 // Types
 export type MarkdownEditorRef = {
   getMarkdown: () => string;
@@ -68,6 +74,9 @@ export interface EditorTheme {
   codeBlock?: ViewStyle;
   quote?: TextStyle;
   quoteBlock?: ViewStyle;
+  bold?: TextStyle;
+  italic?: TextStyle;
+  inlineCode?: TextStyle;
 }
 
 export interface BlockProps {
@@ -268,9 +277,9 @@ const parseLineToBlock = (line: string): Block => {
   // Heading
   const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
   if (headingMatch) {
-    return {
+      return {
       id: generateId(),
-      type: 'heading',
+        type: 'heading',
       content: headingMatch[2],
       meta: { level: headingMatch[1].length }
     };
@@ -279,7 +288,7 @@ const parseLineToBlock = (line: string): Block => {
   // Image
   const imageMatch = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]*)")?\)$/);
   if (imageMatch) {
-    return {
+      return {
       id: generateId(),
       type: 'image',
       content: imageMatch[1], // alt text
@@ -823,10 +832,16 @@ const UniversalBlock: React.FC<BlockProps> = ({
   const blockStyle = getBlockStyle();
   const containerStyle = getBlockContainer();
 
+  // Format the content if it exists, otherwise show placeholder
+  const textContent = block.content || placeholder || `Enter ${block.type}...`;
+  const formattedSegments = block.content ? processInlineFormatting(block.content) : [{ text: textContent, type: 'normal' as const }];
+
   const content = (
-    <Text style={[styles.paragraph, blockStyle, theme?.input]}>
-      {block.content || placeholder || `Enter ${block.type}...`}
-    </Text>
+    <FormattedText
+      segments={formattedSegments}
+      style={StyleSheet.flatten([styles.paragraph, blockStyle, theme?.input])}
+      theme={theme as Required<EditorTheme>}
+    />
   );
 
   if (containerStyle.length > 0) {
@@ -847,10 +862,133 @@ const UniversalBlock: React.FC<BlockProps> = ({
 };
 
 // Helper function to process inline markdown formatting
-const processInlineFormatting = (text: string): string => {
-  // This is a simplified approach - in a real app you'd want to use a proper markdown parser
-  // For now, we'll keep the raw text to show the markdown syntax
-  return text;
+const processInlineFormatting = (text: string): FormattedTextSegment[] => {
+  const segments: FormattedTextSegment[] = [];
+  let i = 0;
+  
+  while (i < text.length) {
+    let handled = false;
+    
+    // Look for code first - it has highest priority
+    if (text[i] === '`') {
+      const codeEnd = text.indexOf('`', i + 1);
+      if (codeEnd !== -1) {
+        const codeContent = text.slice(i + 1, codeEnd);
+        segments.push({ text: codeContent, type: 'code' });
+        i = codeEnd + 1;
+        handled = true;
+      }
+    }
+    
+    // Look for bold patterns
+    if (!handled && (text.slice(i).startsWith('**') || text.slice(i).startsWith('__'))) {
+      const boldMarker = text.slice(i).startsWith('**') ? '**' : '__';
+      const boldEnd = text.indexOf(boldMarker, i + boldMarker.length);
+      if (boldEnd !== -1) {
+        const boldContent = text.slice(i + boldMarker.length, boldEnd);
+        const boldSegments = processInlineFormatting(boldContent);
+        
+        // Convert all segments to bold or bold-italic
+        for (const segment of boldSegments) {
+          if (segment.type === 'italic') {
+            segments.push({ text: segment.text, type: 'bold-italic' });
+          } else if (segment.type === 'normal') {
+            segments.push({ text: segment.text, type: 'bold' });
+          } else {
+            segments.push(segment); // code stays as code
+          }
+        }
+        i = boldEnd + boldMarker.length;
+        handled = true;
+      }
+    }
+    
+    // Look for italic patterns
+    if (!handled && ((text[i] === '*' && text[i + 1] !== '*') || 
+                     (text[i] === '_' && text[i + 1] !== '_'))) {
+      const italicMarker = text[i];
+      const italicEnd = text.indexOf(italicMarker, i + 1);
+      if (italicEnd !== -1) {
+        const italicContent = text.slice(i + 1, italicEnd);
+        const italicSegments = processInlineFormatting(italicContent);
+        
+        // Convert all segments to italic or bold-italic
+        for (const segment of italicSegments) {
+          if (segment.type === 'bold') {
+            segments.push({ text: segment.text, type: 'bold-italic' });
+          } else if (segment.type === 'normal') {
+            segments.push({ text: segment.text, type: 'italic' });
+          } else {
+            segments.push(segment); // code stays as code
+          }
+        }
+        i = italicEnd + 1;
+        handled = true;
+      }
+    }
+    
+    // If no formatting was handled, collect normal text
+    if (!handled) {
+      let normalText = '';
+      while (i < text.length && 
+             text[i] !== '`' && 
+             !text.slice(i).startsWith('**') && 
+             !text.slice(i).startsWith('__') &&
+             !(text[i] === '*' && text[i + 1] !== '*') &&
+             !(text[i] === '_' && text[i + 1] !== '_')) {
+        normalText += text[i];
+        i++;
+      }
+      
+      // If we didn't collect any normal text, just advance by 1 to avoid infinite loop
+      if (!normalText) {
+        normalText = text[i];
+        i++;
+      }
+      
+      segments.push({ text: normalText, type: 'normal' });
+    }
+  }
+  
+  return segments.length > 0 ? segments : [{ text, type: 'normal' }];
+};
+
+// Component to render formatted text
+const FormattedText: React.FC<{ 
+  segments: FormattedTextSegment[]; 
+  style?: TextStyle; 
+  theme: Required<EditorTheme>;
+}> = ({ segments, style, theme }) => {
+  return (
+    <Text style={style}>
+      {segments.map((segment, index) => {
+        let segmentStyle: TextStyle = {};
+        
+        switch (segment.type) {
+          case 'bold':
+            segmentStyle = theme.bold;
+            break;
+          case 'italic':
+            segmentStyle = theme.italic;
+            break;
+          case 'bold-italic':
+            segmentStyle = { ...theme.bold, ...theme.italic };
+            break;
+          case 'code':
+            segmentStyle = theme.inlineCode;
+            break;
+          default:
+            segmentStyle = {};
+        }
+      
+      return (
+          <Text key={index} style={segmentStyle}>
+            {segment.text}
+          </Text>
+        );
+      })}
+    </Text>
+  );
 };
 
 // Default theme
@@ -871,6 +1009,9 @@ const defaultTheme: Required<EditorTheme> = {
   codeBlock: { backgroundColor: '#f6f8fa', borderRadius: 6, padding: 16 },
   quote: { fontStyle: 'italic', color: '#6b7280' },
   quoteBlock: { borderLeftWidth: 4, borderLeftColor: '#d1d5db', paddingLeft: 16 },
+  bold: { fontWeight: '700' },
+  italic: { fontStyle: 'italic' },
+  inlineCode: { fontFamily: 'Courier', fontSize: 14, backgroundColor: '#f1f5f9', paddingHorizontal: 4, borderRadius: 3 },
 };
 
 // Main Editor Component
@@ -1039,7 +1180,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                   : block
               )
             );
-            return;
+                  return;
           }
         }
         
@@ -1096,7 +1237,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     };
 
     if (readOnly) {
-      return (
+    return (
         <ScrollView style={[styles.container, mergedTheme.container]}>
           <MarkdownDisplay>
             {blocksToMarkdown(blocks)}
@@ -1121,14 +1262,14 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
 
         {/* Content */}
         {mode === 'live' ? (
-          <ScrollView 
+      <ScrollView 
             ref={scrollViewRef}
             style={styles.scrollView}
             contentContainerStyle={styles.contentContainer}
-            keyboardShouldPersistTaps="handled"
-          >
+        keyboardShouldPersistTaps="handled"
+      >
             {blocks.map(renderBlock)}
-          </ScrollView>
+      </ScrollView>
         ) : (
           <View style={styles.rawContainer}>
             <TextInput

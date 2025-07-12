@@ -25,7 +25,9 @@ _This will also be italic_
 **This text will be bold**  
 __This will also be bold__
 
-_You **can** combine them_
+_You **can** combine them as italic and word 'can' bold_
+
+And here's some \`inline code\` for testing.
 
 ## Lists
 
@@ -210,6 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   toolbar: {
+    display: 'none',
     marginHorizontal: 16,
     marginVertical: 8,
     paddingBottom: 8,
