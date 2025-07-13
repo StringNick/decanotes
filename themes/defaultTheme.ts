@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { EditorTheme } from '../types/editor';
 
 // Modern, minimalistic default theme used by editor & blocks
@@ -16,11 +15,6 @@ const defaultTheme: Required<EditorTheme> = {
     fontSize: 16,
     lineHeight: 26,
     color: '#1a1a1a',
-    fontFamily: Platform.select({
-      ios: 'San Francisco',
-      android: 'Roboto',
-      default: 'System',
-    }),
   },
   focusedInput: {
     color: '#1a1a1a',
@@ -69,11 +63,6 @@ const defaultTheme: Required<EditorTheme> = {
     color: '#1a1a1a',
   },
   code: {
-    fontFamily: Platform.select({
-      ios: 'Menlo',
-      android: 'monospace',
-      default: 'Monaco, Menlo, monospace',
-    }),
     fontSize: 14,
     lineHeight: 22,
     color: '#2d3748',
@@ -104,14 +93,10 @@ const defaultTheme: Required<EditorTheme> = {
   },
   italic: {
     fontStyle: 'italic',
-    color: '#2d3748',
+    color: '#1a1a1a',
   },
   inlineCode: {
-    fontFamily: Platform.select({
-      ios: 'Menlo',
-      android: 'monospace',
-      default: 'Monaco, Menlo, monospace',
-    }),
+
     fontSize: 14,
     backgroundColor: '#f0f0f0',
     color: '#2d3748',

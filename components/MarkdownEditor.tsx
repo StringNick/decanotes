@@ -887,7 +887,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 10,
     fontFamily: Platform.select({
-      ios: 'San Francisco',
+      ios: 'System',
       android: 'Roboto',
       default: 'System',
     }),
@@ -920,9 +920,9 @@ const styles = StyleSheet.create({
   },
   codeInput: {
     fontFamily: Platform.select({
-      ios: 'Menlo',
+      ios: 'Courier',
       android: 'monospace',
-      default: 'Monaco, Menlo, monospace',
+      default: 'monospace',
     }),
     fontSize: 14,
     lineHeight: 22,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { NativeSyntheticEvent, Platform, StyleSheet, Text, TextInput, TextInputKeyPressEventData, TextStyle } from 'react-native';
+import { NativeSyntheticEvent, StyleSheet, Text, TextInput, TextInputKeyPressEventData, TextStyle } from 'react-native';
 import defaultTheme from '../themes/defaultTheme';
 import { BlockProps } from '../types/editor';
 import { calculatePreservedCursor } from '../utils/cursorPreservation';
@@ -92,10 +92,8 @@ const UniversalBlock: React.FC<BlockProps> = ({
     <TextInput
       ref={inputRef}
       style={StyleSheet.flatten([
-        styles.input,
         getBlockStyle(),
         theme?.input,
-        isActive && styles.focusedInput,
         isActive && theme?.focusedInput,
       ])}
       value={displayValue}
@@ -130,7 +128,7 @@ const UniversalBlock: React.FC<BlockProps> = ({
 
   if (!isActive) {
     const previewSegments = processInlineFormatting(block.content);
-    const previewStyle = StyleSheet.flatten([styles.input, getBlockStyle(), theme?.input]);
+    const previewStyle = StyleSheet.flatten([getBlockStyle(), theme?.input]);
     return (
       <Text style={previewStyle}>
         {previewSegments.map((seg, idx) => {
@@ -164,26 +162,6 @@ const UniversalBlock: React.FC<BlockProps> = ({
   return input;
 };
 
-const styles = StyleSheet.create({
-  input: {
-    fontSize: 16,
-    lineHeight: 26,
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    borderWidth: 0,
-    minHeight: 48,
-    paddingHorizontal: 0,
-    paddingVertical: 10,
-    fontFamily: Platform.select({
-      ios: 'San Francisco',
-      android: 'Roboto',
-      default: 'System',
-    }),
-    color: '#1a1a1a',
-  },
-  focusedInput: {
-    backgroundColor: 'transparent',
-  },
-});
+
 
 export default UniversalBlock; 
