@@ -22,6 +22,7 @@ import {
   Block,
   BlockProps,
   BlockType,
+  EditorMode,
   EditorTheme,
   FormattedTextSegment,
   MarkdownEditorRef,
@@ -37,10 +38,23 @@ import ModeSwitcher from './ModeSwitcher';
 
 // (local UI-specific types that extend shared types continue below)
 export interface MarkdownEditorProps {
+  /* Controlled markdown string */
+  value?: string;
+  /* Default markdown string (uncontrolled) */
+  defaultValue?: string;
+  /* Legacy prop; kept for backward-compat */
   initialMarkdown?: string;
+
   onMarkdownChange?: (markdown: string) => void;
   onBlockChange?: (blocks: Block[]) => void;
+
+  /* New unified mode prop */
+  mode?: EditorMode;
+  onModeChange?: (mode: EditorMode) => void;
+
+  /* Deprecated – use mode='preview' instead */
   readOnly?: boolean;
+
   placeholder?: string;
   theme?: EditorTheme;
   customBlocks?: Record<string, React.ComponentType<BlockProps>>;
@@ -93,17 +107,28 @@ const FormattedText: React.FC<{
 // Main Editor Component
 const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
   ({ 
-    initialMarkdown = '', 
+    value,
+    defaultValue,
+    initialMarkdown = '',
     onMarkdownChange, 
     onBlockChange,
+    mode: controlledMode,
+    onModeChange,
     readOnly = false,
     placeholder = 'Start typing...',
     theme = {},
     customBlocks = {}
   }, ref) => {
-    const [blocks, setBlocks] = useState<Block[]>(() => parseMarkdownToBlocks(initialMarkdown));
+    // Use controlled or uncontrolled markdown value
+    const initialText = value ?? defaultValue ?? initialMarkdown;
+
+    const [blocks, setBlocks] = useState<Block[]>(() => parseMarkdownToBlocks(initialText));
     const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
-    const [mode, setMode] = useState<'live' | 'raw'>('live');
+
+    const isControlled = controlledMode !== undefined;
+    const [uncontrolledMode, setUncontrolledMode] = useState<EditorMode>('edit');
+    const mode = isControlled ? controlledMode! : uncontrolledMode;
+
     const [rawMarkdown, setRawMarkdown] = useState<string>('');
     const scrollViewRef = useRef<ScrollView>(null);
     
@@ -134,17 +159,27 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const dragReadyTimer = useRef<number | null>(null);
     const pulseAnimation = useRef<Animated.CompositeAnimation | null>(null);
 
-    // Toggle between live and raw modes
+    // Internal toggle between edit and raw. Preview is handled externally via props.
     const toggleMode = useCallback(() => {
-      if (mode === 'live') {
+      let next: EditorMode;
+      if (mode === 'edit') {
         setRawMarkdown(blocksToMarkdown(blocks));
-        setMode('raw');
-      } else {
+        next = 'raw';
+      } else if (mode === 'raw') {
         const newBlocks = parseMarkdownToBlocks(rawMarkdown);
         setBlocks(newBlocks);
-        setMode('live');
+        next = 'edit';
+      } else {
+        // if currently in preview, switch to edit first
+        next = 'edit';
       }
-    }, [mode, blocks, rawMarkdown]);
+
+      if (isControlled) {
+        onModeChange?.(next);
+      } else {
+        setUncontrolledMode(next);
+      }
+    }, [mode, blocks, rawMarkdown, isControlled, onModeChange]);
 
     // Move block up in the list
     const moveBlockUp = useCallback((blockId: string) => {
@@ -484,25 +519,34 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       },
       moveBlockUp: (id: string) => moveBlockUp(id),
       moveBlockDown: (id: string) => moveBlockDown(id),
-      toggleMode: () => {
-        toggleMode();
-      },
-      getCurrentMode: () => {
-        return mode;
-      },
+      toggleMode: () => toggleMode(),
+      getCurrentMode: () => mode,
     }), [blocks, mode, toggleMode, moveBlockUp, moveBlockDown]);
 
-    // Update blocks when initialMarkdown changes
+    // Update blocks when markdown value changes (controlled)
     useEffect(() => {
-      if (initialMarkdown !== blocksToMarkdown(blocks)) {
+      if (value !== undefined && value !== blocksToMarkdown(blocks)) {
+        setBlocks(parseMarkdownToBlocks(value));
+      }
+    }, [value]);
+
+    // support legacy initialMarkdown prop (uncontrolled)
+    useEffect(() => {
+      if (value === undefined && initialMarkdown !== blocksToMarkdown(blocks)) {
         setBlocks(parseMarkdownToBlocks(initialMarkdown));
       }
-    }, [initialMarkdown]);
+    }, [initialMarkdown, value]);
 
     // Notify parent of changes
     useEffect(() => {
       const markdown = blocksToMarkdown(blocks);
-      onMarkdownChange?.(markdown);
+      if (!value) {
+        // uncontrolled: internal state drives value
+        onMarkdownChange?.(markdown);
+      } else {
+        // controlled: rely on external value change
+        onMarkdownChange?.(markdown);
+      }
       onBlockChange?.(blocks);
     }, [blocks, onMarkdownChange, onBlockChange]);
 
@@ -678,11 +722,11 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           <TouchableOpacity
             activeOpacity={1}
             onPress={() => {
-              if (!readOnly) {
+              if (!isPreview) {
                 setFocusedBlockId(block.id);
               }
             }}
-            disabled={readOnly}
+            disabled={isPreview}
             style={styles.blockTouchWrapper}
           >
             <Animated.View style={blockAnimatedStyle}>
@@ -694,7 +738,9 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       );
     };
 
-    if (readOnly) {
+    const isPreview = readOnly || mode === 'preview';
+
+    if (isPreview) {
       return (
         <ScrollView style={[styles.container, mergedTheme.container]}>
           <View style={styles.contentContainer}>
@@ -726,7 +772,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
 
     return (
       <View style={[styles.container, mergedTheme.container]}>
-        {mode === 'live' ? (
+        {mode === 'edit' ? (
           <TouchableOpacity 
             style={styles.scrollViewContainer}
             activeOpacity={1}
@@ -1005,3 +1051,7 @@ const styles = StyleSheet.create({
 });
 
 export default MarkdownEditor;
+
+// Re-export shared types for convenience so consumers can import from this module
+export type { Block, EditorMode, EditorTheme, MarkdownEditorRef } from '../types/editor';
+

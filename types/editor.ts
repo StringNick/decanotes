@@ -52,6 +52,8 @@ export interface EditorTheme {
   inlineCode?: Record<string, any>;
 }
 
+export type EditorMode = 'edit' | 'raw' | 'preview';
+
 export type MarkdownEditorRef = {
   getMarkdown: () => string;
   focus: () => void;
@@ -60,7 +62,7 @@ export type MarkdownEditorRef = {
   moveBlockUp: (id: string) => boolean;
   moveBlockDown: (id: string) => boolean;
   toggleMode: () => void;
-  getCurrentMode: () => 'live' | 'raw';
+  getCurrentMode: () => EditorMode;
 };
 
 // Forward declared here to break circular deps. UI components can extend this.

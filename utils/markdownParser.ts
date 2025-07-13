@@ -106,6 +106,24 @@ export const parseMarkdownToBlocks = (markdown: string): Block[] => {
       continue;
     }
 
+    // checklist (must come before generic list detection)
+    const checklistMatch = trimmedLine.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
+    if (checklistMatch) {
+      const [, checked, content] = checklistMatch;
+      if (!currentBlock || currentBlock.type !== 'checklist' || currentBlock.meta?.checked !== (checked.toLowerCase() === 'x')) {
+        if (currentBlock) blocks.push(currentBlock);
+        currentBlock = {
+          id: generateId(),
+          type: 'checklist',
+          content,
+          meta: { checked: checked.toLowerCase() === 'x' },
+        };
+      } else {
+        currentBlock.content += '\n' + content;
+      }
+      continue;
+    }
+
     // lists (unordered / ordered) incl. nesting by 2-space indent
     const listMatch = trimmedLine.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
     if (listMatch) {
@@ -119,24 +137,6 @@ export const parseMarkdownToBlocks = (markdown: string): Block[] => {
           type: 'list',
           content,
           meta: { ordered: isOrdered, depth },
-        };
-      } else {
-        currentBlock.content += '\n' + content;
-      }
-      continue;
-    }
-
-    // checklist
-    const checklistMatch = trimmedLine.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
-    if (checklistMatch) {
-      const [, checked, content] = checklistMatch;
-      if (!currentBlock || currentBlock.type !== 'checklist' || currentBlock.meta?.checked !== (checked.toLowerCase() === 'x')) {
-        if (currentBlock) blocks.push(currentBlock);
-        currentBlock = {
-          id: generateId(),
-          type: 'checklist',
-          content,
-          meta: { checked: checked.toLowerCase() === 'x' },
         };
       } else {
         currentBlock.content += '\n' + content;

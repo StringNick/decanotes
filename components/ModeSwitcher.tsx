@@ -1,19 +1,21 @@
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { EditorMode } from '../types/editor';
 
 interface ModeSwitcherProps {
-  mode: 'live' | 'raw';
+  mode: EditorMode; // expecting 'edit' | 'raw' | 'preview'
   onToggle: () => void;
 }
 
+// This switcher only toggles between 'edit' and 'raw'. If 'preview' is passed, it will switch to 'edit' first.
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ mode, onToggle }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const translateX = useRef(new Animated.Value(mode === 'live' ? 0 : 28)).current;
+  const translateX = useRef(new Animated.Value(mode === 'edit' ? 0 : 28)).current;
 
   useEffect(() => {
     Animated.spring(translateX, {
-      toValue: mode === 'live' ? 0 : 28,
+      toValue: mode === 'edit' ? 0 : 28,
       useNativeDriver: true,
       tension: 100,
       friction: 10,
@@ -51,7 +53,7 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ mode, onToggle }) => {
             style={[styles.thumb, { transform: [{ translateX }] }]}
           />
           <View style={styles.labels}>
-            <Text style={[styles.label, mode === 'live' && styles.labelActive]}>Live</Text>
+            <Text style={[styles.label, mode === 'edit' && styles.labelActive]}>Edit</Text>
             <Text style={[styles.label, mode === 'raw' && styles.labelActive]}>Raw</Text>
           </View>
         </View>

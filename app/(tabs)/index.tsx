@@ -1,12 +1,13 @@
 // app/(tabs)/index.tsx
 import React, { useCallback, useRef, useState } from 'react';
 import { Button, Platform, StatusBar, StyleSheet, View } from 'react-native';
-import MarkdownEditor, { Block, MarkdownEditorRef } from '../../components/MarkdownEditor';
+import MarkdownEditor from '../../components/MarkdownEditor';
+import { Block, EditorMode, MarkdownEditorRef } from '../../types/editor';
 
 export default function EditorScreen() {
   const editorRef = useRef<MarkdownEditorRef>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [currentMode, setCurrentMode] = useState<'live' | 'raw'>('live');
+  const [currentMode, setCurrentMode] = useState<EditorMode>('edit');
 
   // Example initial markdown content
   const initialMarkdown = `# Markdown Editor - All Components
@@ -246,17 +247,22 @@ Ready to test all markdown features!
       editorRef.current.insertBlock('image');
     }
   }, []);
-
+ 
   // Handle real-time markdown changes
   const handleMarkdownChange = useCallback((markdown: string) => {
     // console.log('Markdown changed:', markdown);
   }, []);
 
   // Handle block changes
-  const handleBlockChange = useCallback((newBlocks: Block[]) => {
-    setBlocks(newBlocks);
-    // console.log('Blocks changed:', newBlocks);
-  }, []);
+  const handleBlockChange = (blocks: Block[]) => {
+    console.log(
+      'checklist',
+      blocks,
+      blocks
+        .filter(b => b.type === 'checklist')
+        .map(b => ({ id: b.id, checked: b.meta?.checked, text: b.content }))
+    );
+  };
 
   return (
     <View style={styles.container}>
