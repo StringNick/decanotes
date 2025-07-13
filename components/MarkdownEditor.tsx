@@ -1,9 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   Animated,
   NativeSyntheticEvent,
   PanResponder,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -98,153 +100,72 @@ export interface BlockProps {
   placeholder?: string;
 }
 
-// Add new interface for floating menu
-interface FloatingMenuProps {
-  visible: boolean;
-  position: { x: number; y: number };
-  menuType: MenuType;
-  onInsertBlock: (type: BlockType) => void;
-  onAction: (action: string) => void;
-  onClose: () => void;
-}
-
-// Add state for menu type
-type MenuType = 'actions' | 'blocks';
-
-// Floating Menu Component
-const FloatingMenu: React.FC<FloatingMenuProps> = ({ visible, position, menuType, onInsertBlock, onAction, onClose }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 300,
-          friction: 20,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible, fadeAnim, scaleAnim]);
-
-  if (!visible) return null;
-
-  const actionOptions = [
-    { action: 'add', icon: '+', label: 'Add Block', color: '#3b82f6' },
-    { action: 'delete', icon: '×', label: 'Delete Block', color: '#ef4444' },
-  ];
-
-  const blockOptions = [
-    { type: 'paragraph' as BlockType, icon: '¶', label: 'Text' },
-    { type: 'heading' as BlockType, icon: 'H₁', label: 'Heading' },
-    { type: 'code' as BlockType, icon: '</>', label: 'Code' },
-    { type: 'quote' as BlockType, icon: '❝', label: 'Quote' },
-    { type: 'list' as BlockType, icon: '•', label: 'List' },
-    { type: 'checklist' as BlockType, icon: '☐', label: 'Checklist' },
-    { type: 'divider' as BlockType, icon: '—', label: 'Divider' },
-    { type: 'image' as BlockType, icon: '🖼', label: 'Image' },
-  ];
-
-  return (
-    <View style={styles.floatingMenuOverlay}>
-      {/* Background overlay to close menu when clicking outside */}
-      <TouchableOpacity 
-        style={styles.floatingMenuBackground}
-        onPress={onClose}
-        activeOpacity={1}
-      />
-      
-      <Animated.View
-        style={[
-          styles.floatingMenu,
-          {
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
-            left: position.x,
-            top: position.y,
-          },
-        ]}
-      >
-        <View style={styles.floatingMenuContent}>
-          {menuType === 'actions' ? (
-            actionOptions.map((option, index) => (
-              <TouchableOpacity
-                key={option.action}
-                style={[
-                  styles.floatingMenuItem,
-                  index === actionOptions.length - 1 && styles.floatingMenuItemLast,
-                ]}
-                onPress={() => {
-                  onAction(option.action);
-                  if (option.action !== 'add') {
-                    onClose();
-                  }
-                }}
-              >
-                <Text style={[styles.floatingMenuIcon, { color: option.color }]}>
-                  {option.icon}
-                </Text>
-                <Text style={styles.floatingMenuLabel}>{option.label}</Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            blockOptions.map((option, index) => (
-              <TouchableOpacity
-                key={option.type}
-                style={[
-                  styles.floatingMenuItem,
-                  index === blockOptions.length - 1 && styles.floatingMenuItemLast,
-                ]}
-                onPress={() => {
-                  onInsertBlock(option.type);
-                  onClose();
-                }}
-              >
-                <Text style={styles.floatingMenuIcon}>{option.icon}</Text>
-                <Text style={styles.floatingMenuLabel}>{option.label}</Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-      </Animated.View>
-    </View>
-  );
-};
-
-// Removed FloatingPlusButton component (unused)
-
-// Mode Switcher Component
+// Mode Switcher Component - Updated with modern design
 const ModeSwitcher: React.FC<{
   mode: 'live' | 'raw';
   onToggle: () => void;
 }> = ({ mode, onToggle }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const translateX = useRef(new Animated.Value(mode === 'live' ? 0 : 28)).current;
+
+  useEffect(() => {
+    Animated.spring(translateX, {
+      toValue: mode === 'live' ? 0 : 28,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 10,
+    }).start();
+  }, [mode, translateX]);
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onToggle();
+  };
+
   return (
-    <TouchableOpacity style={styles.modeSwitcher} onPress={onToggle}>
-      <View style={styles.modeSwitcherContent}>
-        <Text style={styles.modeSwitcherText}>
-          {mode === 'live' ? '◉' : '◦'} {mode === 'live' ? 'Live' : 'Raw'}
-        </Text>
-      </View>
+    <TouchableOpacity activeOpacity={0.8} onPress={handlePress}>
+      <Animated.View style={[
+        styles.modeSwitcher,
+        { transform: [{ scale: scaleAnim }] }
+      ]}>
+        <View style={styles.modeSwitcherTrack}>
+          <Animated.View 
+            style={[
+              styles.modeSwitcherThumb,
+              {
+                transform: [{ translateX }]
+              }
+            ]}
+          />
+          <View style={styles.modeSwitcherLabels}>
+            <Text style={[
+              styles.modeSwitcherLabel,
+              mode === 'live' && styles.modeSwitcherLabelActive
+            ]}>
+              Live
+            </Text>
+            <Text style={[
+              styles.modeSwitcherLabel,
+              mode === 'raw' && styles.modeSwitcherLabelActive
+            ]}>
+              Raw
+            </Text>
+          </View>
+        </View>
+      </Animated.View>
     </TouchableOpacity>
   );
 };
@@ -321,39 +242,39 @@ const parseMarkdownToBlocks = (markdown: string): Block[] => {
       continue;
     }
 
-              // Handle quotes (can be nested) - require space after > markers
-      const quoteMatch = trimmedLine.match(/^(>+)\s+(.*)$/);
-      if (quoteMatch) {
-        const [, markers, content] = quoteMatch;
-        const quoteDepth = markers.length - 1; // 0 for >, 1 for >>, etc.
-        
-        // Always create a new quote block for each quote line
-        if (currentBlock) blocks.push(currentBlock);
-        currentBlock = {
-          id: generateId(),
-          type: 'quote',
-          content: content,
-          meta: { depth: quoteDepth }
-        };
-        continue;
-      }
+    // Handle quotes (can be nested) - require space after > markers
+    const quoteMatch = trimmedLine.match(/^(>+)\s+(.*)$/);
+    if (quoteMatch) {
+      const [, markers, content] = quoteMatch;
+      const quoteDepth = markers.length - 1; // 0 for >, 1 for >>, etc.
+      
+      // Always create a new quote block for each quote line
+      if (currentBlock) blocks.push(currentBlock);
+      currentBlock = {
+        id: generateId(),
+        type: 'quote',
+        content: content,
+        meta: { depth: quoteDepth }
+      };
+      continue;
+    }
 
-      // Handle empty quote lines (just > markers)
-      const emptyQuoteMatch = trimmedLine.match(/^(>+)\s*$/);
-      if (emptyQuoteMatch) {
-        const [, markers] = emptyQuoteMatch;
-        const quoteDepth = markers.length - 1;
-        
-        // Always create a new quote block for each quote line
-        if (currentBlock) blocks.push(currentBlock);
-        currentBlock = {
-          id: generateId(),
-          type: 'quote',
-          content: '',
-          meta: { depth: quoteDepth }
-        };
-        continue;
-      }
+    // Handle empty quote lines (just > markers)
+    const emptyQuoteMatch = trimmedLine.match(/^(>+)\s*$/);
+    if (emptyQuoteMatch) {
+      const [, markers] = emptyQuoteMatch;
+      const quoteDepth = markers.length - 1;
+      
+      // Always create a new quote block for each quote line
+      if (currentBlock) blocks.push(currentBlock);
+      currentBlock = {
+        id: generateId(),
+        type: 'quote',
+        content: '',
+        meta: { depth: quoteDepth }
+      };
+      continue;
+    }
 
     // Handle lists (can be nested)
     const listMatch = trimmedLine.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
@@ -427,8 +348,6 @@ const parseMarkdownToBlocks = (markdown: string): Block[] => {
 
   return blocks.length > 0 ? blocks : [{ id: generateId(), type: 'paragraph', content: '' }];
 };
-
-// Removed parseLineToBlock function (unused)
 
 const blocksToMarkdown = (blocks: Block[]): string => {
   const result: string[] = [];
@@ -539,19 +458,19 @@ const getDisplayValue = (block: Block, isActive: boolean): string => {
       const language = block.meta?.language ? ` ${block.meta.language}` : '';
       return `\`\`\`${language}${block.content ? '\n' + block.content : ''}`;
       
-          case 'quote':
-        const quoteDepth = block.meta?.depth || 0;
-        const quotePrefix = '>'.repeat(quoteDepth + 1); // > for depth 0, >> for depth 1, etc.
-        
-        // Handle empty quote
-        if (!block.content.trim()) {
-          return `${quotePrefix} `;
-        }
-        
-        return block.content
-          .split('\n')
-          .map(line => `${quotePrefix} ${line}`)
-          .join('\n');
+    case 'quote':
+      const quoteDepth = block.meta?.depth || 0;
+      const quotePrefix = '>'.repeat(quoteDepth + 1); // > for depth 0, >> for depth 1, etc.
+      
+      // Handle empty quote
+      if (!block.content.trim()) {
+        return `${quotePrefix} `;
+      }
+      
+      return block.content
+        .split('\n')
+        .map(line => `${quotePrefix} ${line}`)
+        .join('\n');
         
     case 'list':
       const listDepth = block.meta?.depth || 0;
@@ -774,12 +693,15 @@ const UniversalBlock: React.FC<BlockProps> = ({
   placeholder 
 }) => {
   const inputRef = useRef<TextInput>(null);
+  const blurTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     if (isEditing) {
-      inputRef.current?.focus();
+      // guarantee focus even after re-renders
+      const t = setTimeout(() => inputRef.current?.focus(), 0);
+      return () => clearTimeout(t);
     }
-  }, [isEditing]);
+  }, [isEditing, displayValue]);
 
   const getBlockStyle = (): TextStyle => {
     switch (block.type) {
@@ -826,7 +748,7 @@ const UniversalBlock: React.FC<BlockProps> = ({
           theme?.quoteBlock,
           { 
             marginLeft: quoteDepth * 16, // Visual indentation for nesting
-            borderLeftColor: quoteDepth > 0 ? '#94a3b8' : '#d1d5db' // Different border color for nested quotes
+            borderLeftColor: quoteDepth > 0 ? '#94a3b8' : '#3b82f6' // Different border color for nested quotes
           }
         ];
       case 'list':
@@ -853,79 +775,76 @@ const UniversalBlock: React.FC<BlockProps> = ({
     }
   };
 
-  if (isEditing) {
-    const containerStyle = getBlockContainer();
-    const blockStyle = getBlockStyle();
-    const inputStyle = getInputStyle();
-
-    const input = (
-      <TextInput
-        ref={inputRef}
-        style={[
-          styles.input,
-          blockStyle,
-          inputStyle,
-          theme?.input,
-          styles.focusedInput,
-          theme?.focusedInput,
-        ]}
-        value={displayValue}
-        onChangeText={onRawTextChange}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        onKeyPress={onKeyPress}
-        placeholder={placeholder || `Enter ${block.type}...`}
-        placeholderTextColor={theme?.placeholder?.color || '#9CA3AF'}
-        multiline
-        autoFocus
-        textAlignVertical="top"
-        autoCapitalize={block.type === 'code' ? 'none' : 'sentences'}
-        autoCorrect={block.type === 'code' ? false : true}
-        spellCheck={block.type === 'code' ? false : true}
-      />
-    );
-
-    if (containerStyle.length > 0) {
-      return (
-        <View style={containerStyle}>
-          {input}
-        </View>
-      );
-    }
-
-    return input;
-  }
-
-  const blockStyle = getBlockStyle();
+  // Always show editable input
   const containerStyle = getBlockContainer();
+  const blockStyle = getBlockStyle();
+  const inputStyle = getInputStyle();
 
-  // Format the content if it exists, otherwise show placeholder
-  const textContent = block.content || placeholder || `Enter ${block.type}...`;
-  const formattedSegments = block.content ? processInlineFormatting(block.content) : [{ text: textContent, type: 'normal' as const }];
-
-  const content = (
-    <FormattedText
-      segments={formattedSegments}
-      style={StyleSheet.flatten([styles.paragraph, blockStyle, theme?.input])}
-      theme={theme as Required<EditorTheme>}
+  const input = (
+    <TextInput
+      ref={inputRef}
+      style={[
+        styles.input,
+        blockStyle,
+        inputStyle,
+        theme?.input,
+        isActive && styles.focusedInput,
+        isActive && theme?.focusedInput,
+      ]}
+      value={displayValue}
+      onChangeText={onRawTextChange}
+      onFocus={() => {
+        if (blurTimeout.current) {
+          clearTimeout(blurTimeout.current);
+          blurTimeout.current = null;
+        }
+        onFocus();
+      }}
+      onBlur={() => {
+        // wait a moment – if we refocus quickly (because component re-mounted) do not drop focus state
+        blurTimeout.current = setTimeout(() => {
+          onBlur();
+        }, 100);
+      }}
+      onKeyPress={onKeyPress}
+      placeholder={placeholder || `Type something...`}
+      placeholderTextColor={theme?.placeholder?.color || '#a8a8a8'}
+      multiline
+      textAlignVertical="top"
+      autoCapitalize={block.type === 'code' ? 'none' : 'sentences'}
+      autoCorrect={block.type === 'code' ? false : true}
+      spellCheck={block.type === 'code' ? false : true}
+      selectionColor="#3b82f6"
     />
   );
 
+  // PREVIEW MODE (not active) – render formatted, non-editable text so gestures bubble up
+  if (!isActive) {
+    const previewSegments = processInlineFormatting(block.content);
+    const previewStyle = StyleSheet.flatten([styles.input, getBlockStyle(), theme?.input]);
+    const preview = (
+      <FormattedText
+        segments={previewSegments}
+        style={previewStyle}
+        theme={{ ...defaultTheme, ...theme }}
+      />
+    );
+    if (containerStyle.length > 0) {
+      return <View style={containerStyle}>{preview}</View>;
+    }
+    return preview;
+  }
+
+  // EDIT MODE – show TextInput
   if (containerStyle.length > 0) {
     return (
-      <TouchableOpacity onPress={isActive ? onEdit : onFocus} style={styles.blockTouchable}>
-        <View style={containerStyle}>
-          {content}
-        </View>
-      </TouchableOpacity>
+      <View style={containerStyle}>
+        {input}
+      </View>
     );
   }
 
-  return (
-    <TouchableOpacity onPress={isActive ? onEdit : onFocus} style={styles.blockTouchable}>
-      {content}
-    </TouchableOpacity>
-  );
+  return input;
 };
 
 // Helper function to process inline markdown formatting
@@ -1048,7 +967,7 @@ const FormattedText: React.FC<{
             segmentStyle = {};
         }
       
-      return (
+        return (
           <Text key={index} style={segmentStyle}>
             {segment.text}
           </Text>
@@ -1058,27 +977,132 @@ const FormattedText: React.FC<{
   );
 };
 
-// Default theme
+// Default theme - Modern and minimalistic
 const defaultTheme: Required<EditorTheme> = {
-  container: {},
-  block: {},
-  focusedBlock: {},
-  input: {},
-  focusedInput: {},
-  placeholder: { color: '#9CA3AF' },
-  heading1: { fontSize: 32, fontWeight: '700', lineHeight: 40 },
-  heading2: { fontSize: 28, fontWeight: '600', lineHeight: 36 },
-  heading3: { fontSize: 24, fontWeight: '600', lineHeight: 32 },
-  heading4: { fontSize: 20, fontWeight: '600', lineHeight: 28 },
-  heading5: { fontSize: 18, fontWeight: '600', lineHeight: 26 },
-  heading6: { fontSize: 16, fontWeight: '600', lineHeight: 24 },
-  code: { fontFamily: 'Courier', fontSize: 14, lineHeight: 20 },
-  codeBlock: { backgroundColor: '#f6f8fa', borderRadius: 6, padding: 16 },
-  quote: { fontStyle: 'italic', color: '#6b7280' },
-  quoteBlock: { borderLeftWidth: 4, borderLeftColor: '#d1d5db', paddingLeft: 16 },
-  bold: { fontWeight: '700' },
-  italic: { fontStyle: 'italic' },
-  inlineCode: { fontFamily: 'Courier', fontSize: 14, backgroundColor: '#f1f5f9', paddingHorizontal: 4, borderRadius: 3 },
+  container: {
+    backgroundColor: '#fafafa',
+  },
+  block: {
+    backgroundColor: 'transparent',
+  },
+  focusedBlock: {
+    backgroundColor: 'rgba(59, 130, 246, 0.03)',
+  },
+  input: {
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#1a1a1a',
+    fontFamily: Platform.select({
+      ios: 'San Francisco',
+      android: 'Roboto',
+      default: 'System',
+    }),
+  },
+  focusedInput: {
+    color: '#1a1a1a',
+  },
+  placeholder: { 
+    color: '#a8a8a8',
+    fontWeight: '300',
+  },
+  heading1: { 
+    fontSize: 32, 
+    fontWeight: '700', 
+    lineHeight: 40, 
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
+  },
+  heading2: { 
+    fontSize: 28, 
+    fontWeight: '600', 
+    lineHeight: 36, 
+    color: '#1a1a1a',
+    letterSpacing: -0.3,
+  },
+  heading3: { 
+    fontSize: 24, 
+    fontWeight: '600', 
+    lineHeight: 32, 
+    color: '#1a1a1a',
+    letterSpacing: -0.2,
+  },
+  heading4: { 
+    fontSize: 20, 
+    fontWeight: '600', 
+    lineHeight: 28, 
+    color: '#1a1a1a' 
+  },
+  heading5: { 
+    fontSize: 18, 
+    fontWeight: '600', 
+    lineHeight: 26, 
+    color: '#1a1a1a' 
+  },
+  heading6: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    lineHeight: 24, 
+    color: '#1a1a1a' 
+  },
+  code: { 
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'Monaco, Menlo, monospace',
+    }),
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#2d3748',
+    backgroundColor: '#f7f7f7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  codeBlock: { 
+    backgroundColor: '#f7f7f7',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  quote: { 
+    fontStyle: 'italic',
+    color: '#4a5568',
+    fontSize: 16,
+    lineHeight: 26,
+    fontWeight: '300',
+  },
+  quoteBlock: { 
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+    paddingLeft: 20,
+    marginLeft: 0,
+  },
+  bold: { 
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  italic: { 
+    fontStyle: 'italic',
+    color: '#2d3748',
+  },
+  inlineCode: { 
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'Monaco, Menlo, monospace',
+    }),
+    fontSize: 14,
+    backgroundColor: '#f0f0f0',
+    color: '#2d3748',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
 };
 
 // Main Editor Component
@@ -1093,8 +1117,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     customBlocks = {}
   }, ref) => {
     const [blocks, setBlocks] = useState<Block[]>(() => parseMarkdownToBlocks(initialMarkdown));
-    const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
-    const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+    const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
     const [mode, setMode] = useState<'live' | 'raw'>('live');
     const [rawMarkdown, setRawMarkdown] = useState<string>('');
     const scrollViewRef = useRef<ScrollView>(null);
@@ -1105,20 +1128,17 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       ...theme,
     };
     
-    // Floating menu state
-    const [showFloatingMenu, setShowFloatingMenu] = useState(false);
-    const [floatingMenuPosition, setFloatingMenuPosition] = useState({ x: 0, y: 0 });
-    const [menuType, setMenuType] = useState<MenuType>('actions');
-    
-    // Drag and drop state - redesigned with long press
+    // Drag and drop state - simplified with long press
     const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
-    const [dropZoneIndex, setDropZoneIndex] = useState<number | null>(null);
-    const [dragPreviewMode, setDragPreviewMode] = useState(false);
+    const [isDragReady, setIsDragReady] = useState<string | null>(null);
+    const [originalDragIndex, setOriginalDragIndex] = useState<number | null>(null);
     
-    // Animation values for smooth drag experience
+    // Visual animation values
     const dragScale = useRef(new Animated.Value(1)).current;
     const dragOpacity = useRef(new Animated.Value(1)).current;
-    const dragElevation = useRef(new Animated.Value(0)).current;
+    const dragY = useRef(new Animated.Value(0)).current;
+    const dragShadow = 0; // placeholder kept for compatibility, no longer animated
+    const pulseAnim = new Animated.Value(1); // kept but not animated (pulse disabled)
     
     // Auto-scroll state
     const [scrollViewLayout, setScrollViewLayout] = useState<{ height: number; y: number } | null>(null);
@@ -1126,6 +1146,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const [contentHeight, setContentHeight] = useState(0);
     const autoScrollTimer = useRef<number | null>(null);
     const longPressTimer = useRef<number | null>(null);
+    const dragReadyTimer = useRef<number | null>(null);
+    const pulseAnimation = useRef<Animated.CompositeAnimation | null>(null);
 
     // Toggle between live and raw modes
     const toggleMode = useCallback(() => {
@@ -1173,8 +1195,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const handleAutoScroll = useCallback((gestureY: number) => {
       if (!scrollViewRef.current || !scrollViewLayout || !draggingBlockId) return;
       
-      const edgeThreshold = 40; // Slightly larger for better UX
-      const scrollSpeed = 15; // Smooth scroll speed
+      const edgeThreshold = 50;
+      const scrollSpeed = 8;
       
       // Clear existing timer
       if (autoScrollTimer.current) {
@@ -1213,81 +1235,119 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       }
     }, [scrollViewLayout, currentScrollY, contentHeight, draggingBlockId]);
 
-    // Long press drag functions - professional UX
-    const startDragPreview = useCallback((blockId: string) => {
-      if (draggingBlockId) return;
+    // Enhanced drag functions with better feedback
+    const prepareDrag = useCallback((blockId: string) => {
+      if (draggingBlockId || isDragReady) {
+        return;
+      }
       
-      setDragPreviewMode(true);
-      setActiveBlockId(blockId);
-      setEditingBlockId(null);
-      setShowFloatingMenu(false);
+      setIsDragReady(blockId);
       
-      // Haptic feedback for drag start
+      // Medium haptic feedback to indicate drag is ready
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
-      // Smooth animation for drag preview
+      // Visual feedback - simple scale up
+      Animated.parallel([
+        Animated.spring(dragScale, {
+          toValue: 1.02,
+          useNativeDriver: true,
+          tension: 400,
+          friction: 20,
+        }),
+      ]).start();
+    }, [draggingBlockId, isDragReady, dragScale]);
+
+    const startDrag = useCallback((blockId: string) => {
+      if (draggingBlockId || isDragReady !== blockId) {
+        return;
+      }
+      
+      // Stop pulse animation
+      if (pulseAnimation.current) {
+        pulseAnimation.current.stop();
+        pulseAnimation.current = null;
+      }
+      
+      // Store original position for reference
+      const originalIndex = blocks.findIndex(b => b.id === blockId);
+      setOriginalDragIndex(originalIndex);
+      
+      dragY.setValue(0);
+      setDraggingBlockId(blockId);
+      setIsDragReady(null);
+      
+      // Strong haptic feedback for drag start
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      
+      // Enhanced drag animation with shadow
       Animated.parallel([
         Animated.spring(dragScale, {
           toValue: 1.05,
           useNativeDriver: true,
           tension: 300,
-          friction: 20,
-        }),
-        Animated.timing(dragElevation, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, [draggingBlockId, dragScale, dragElevation]);
-
-    const startActualDrag = useCallback((blockId: string) => {
-      setDraggingBlockId(blockId);
-      setDragPreviewMode(false);
-      
-      // Enhanced haptic feedback for actual drag
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      
-      // Enhanced drag animation
-      Animated.parallel([
-        Animated.spring(dragScale, {
-          toValue: 1.1,
-          useNativeDriver: true,
-          tension: 300,
           friction: 15,
         }),
-        Animated.spring(dragOpacity, {
-          toValue: 0.9,
+        Animated.timing(dragOpacity, {
+          toValue: 0.85,
           useNativeDriver: true,
-          tension: 300,
-          friction: 20,
-        }),
-        Animated.timing(dragElevation, {
-          toValue: 2,
-          duration: 150,
-          useNativeDriver: true,
+          duration: 200,
         }),
       ]).start();
-    }, [dragScale, dragOpacity, dragElevation]);
+    }, [draggingBlockId, isDragReady, dragScale, dragOpacity, blocks]);
 
     const updateDrag = useCallback((gestureY: number, blockId: string) => {
-      if (!draggingBlockId) return;
+      if (!draggingBlockId || draggingBlockId !== blockId) {
+        return;
+      }
       
       // Handle auto-scroll first
       handleAutoScroll(gestureY);
       
-      // Calculate drop zone based on block positions
+      // Calculate current position in the (potentially reordered) blocks array
       const currentBlockIndex = blocks.findIndex(b => b.id === blockId);
-      const blockHeight = 80;
-      const deltaBlocks = Math.round((gestureY - scrollViewLayout?.y! - currentBlockIndex * blockHeight) / blockHeight);
-      const newDropZone = Math.max(0, Math.min(blocks.length, currentBlockIndex + deltaBlocks));
+      if (currentBlockIndex === -1) return;
       
-      if (newDropZone !== dropZoneIndex) {
-        setDropZoneIndex(newDropZone);
-        // Subtle haptic feedback for drop zone changes
+      // More accurate block height calculation
+      const blockHeight = 64; // minHeight 56 + marginBottom 4 + paddingVertical 4
+      const contentPaddingTop = 24; // from contentContainer style
+      const scrollViewY = scrollViewLayout?.y || 0;
+      
+      // Calculate gesture position relative to content area
+      const absoluteGestureY = gestureY - scrollViewY + currentScrollY - contentPaddingTop;
+      
+      // Calculate target position based on block positions
+      let targetIndex = Math.round(absoluteGestureY / blockHeight);
+      
+      // Clamp to valid range
+      targetIndex = Math.max(0, Math.min(blocks.length - 1, targetIndex));
+      
+      // Add debug logging temporarily
+      console.log('Drag debug:', { 
+        gestureY, 
+        scrollViewY, 
+        currentScrollY, 
+        contentPaddingTop,
+        absoluteGestureY, 
+        targetIndex, 
+        currentBlockIndex,
+        blockHeight,
+        calculatedPosition: absoluteGestureY / blockHeight
+      });
+      
+      // Only reorder if we're moving to a different position and the difference is significant
+      // This helps reduce jittery behavior
+      if (Math.abs(targetIndex - currentBlockIndex) >= 1) {
+        setBlocks(prev => {
+          const newBlocks = [...prev];
+          const [movedBlock] = newBlocks.splice(currentBlockIndex, 1);
+          newBlocks.splice(targetIndex, 0, movedBlock);
+          return newBlocks;
+        });
+        
+        // Haptic feedback for position changes
         Haptics.selectionAsync();
       }
-    }, [draggingBlockId, blocks, dropZoneIndex, handleAutoScroll, scrollViewLayout]);
+    }, [draggingBlockId, blocks, handleAutoScroll, scrollViewLayout, currentScrollY]);
 
     const endDrag = useCallback(() => {
       // Clear timers
@@ -1299,31 +1359,26 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
       }
+      if (dragReadyTimer.current) {
+        clearTimeout(dragReadyTimer.current);
+        dragReadyTimer.current = null;
+      }
+      if (pulseAnimation.current) {
+        pulseAnimation.current.stop();
+        pulseAnimation.current = null;
+      }
       
-      if (!draggingBlockId && !dragPreviewMode) return;
+      if (!draggingBlockId && !isDragReady) return;
 
-      const currentIndex = blocks.findIndex(b => b.id === (draggingBlockId || activeBlockId));
-      
-      // Perform reordering if we were actually dragging
-      if (draggingBlockId && currentIndex !== -1 && dropZoneIndex !== null && dropZoneIndex !== currentIndex) {
-        setBlocks(prev => {
-          const newBlocks = [...prev];
-          const [movedBlock] = newBlocks.splice(currentIndex, 1);
-          
-          const adjustedDropIndex = dropZoneIndex > currentIndex ? dropZoneIndex - 1 : dropZoneIndex;
-          newBlocks.splice(adjustedDropIndex, 0, movedBlock);
-          
-          return newBlocks;
-        });
-        
-        // Success haptic feedback
+      // Success haptic feedback when drag ends
+      if (draggingBlockId) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
       // Reset all states
       setDraggingBlockId(null);
-      setDropZoneIndex(null);
-      setDragPreviewMode(false);
+      setIsDragReady(null);
+      setOriginalDragIndex(null);
       
       // Smooth return animation
       Animated.parallel([
@@ -1339,36 +1394,31 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           tension: 300,
           friction: 20,
         }),
-        Animated.timing(dragElevation, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
+        // shadow & pulse reset animations removed
       ]).start();
-    }, [draggingBlockId, dragPreviewMode, dropZoneIndex, blocks, activeBlockId, dragScale, dragOpacity, dragElevation]);
+    }, [draggingBlockId, isDragReady, blocks, dragScale, dragOpacity]);
 
-    // Create PanResponder for drag gestures - Enhanced with long press
+    // Create PanResponder for drag gestures
     const createDragResponder = useCallback((blockId: string) => {
       return PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (evt, gestureState) => {
-          return Math.abs(gestureState.dy) > 3 && Math.abs(gestureState.dx) < 30;
+        onStartShouldSetPanResponder: () => {
+          return isDragReady === blockId;
         },
-        onStartShouldSetPanResponderCapture: (evt, gestureState) => {
-          return Math.abs(gestureState.dy) > 3;
-        },
-        onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
-          return draggingBlockId === blockId || (Math.abs(gestureState.dy) > 3 && Math.abs(gestureState.dx) < 30);
+        onMoveShouldSetPanResponder: () => {
+          return draggingBlockId === blockId;
         },
         onPanResponderGrant: (evt, gestureState) => {
-          evt.preventDefault?.();
-          startDragPreview(blockId);
-          longPressTimer.current = setTimeout(() => {
-            startActualDrag(blockId);
-          }, 500) as unknown as number;
+          if (isDragReady === blockId) {
+            startDrag(blockId);
+          }
         },
         onPanResponderMove: (evt, gestureState) => {
-          updateDrag(evt.nativeEvent.pageY, blockId);
+          if (draggingBlockId === blockId) {
+            // Update drag position immediately for smooth animation
+            dragY.setValue(gestureState.dy);
+            // Throttle the updateDrag calls to reduce lag
+            updateDrag(evt.nativeEvent.pageY, blockId);
+          }
         },
         onPanResponderRelease: () => {
           endDrag();
@@ -1376,20 +1426,52 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
         onPanResponderTerminate: () => {
           endDrag();
         },
-        onPanResponderTerminationRequest: (evt, gestureState) => {
-          return draggingBlockId !== blockId;
-        },
-        onShouldBlockNativeResponder: () => true,
       });
-    }, [startDragPreview, startActualDrag, updateDrag, endDrag, draggingBlockId]);
+    }, [isDragReady, draggingBlockId, startDrag, updateDrag, endDrag]);
+
+    const handleBlockBlur = useCallback(() => {
+      // Use timeout to prevent immediate blur when switching between blocks
+      setTimeout(() => {
+        setFocusedBlockId(null);
+        
+        // Stop pulse animation if running
+        if (pulseAnimation.current) {
+          pulseAnimation.current.stop();
+          pulseAnimation.current = null;
+        }
+        
+        // Reset animations
+        Animated.parallel([
+          Animated.spring(dragScale, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 300,
+            friction: 20,
+          }),
+          Animated.spring(dragOpacity, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 300,
+            friction: 20,
+          }),
+          // shadow & pulse reset animations removed
+        ]).start();
+      }, 100);
+    }, [dragScale, dragOpacity]);
+
+    const handleContainerPress = useCallback(() => {
+      // Click outside to blur focused block
+      if (focusedBlockId) {
+        setFocusedBlockId(null);
+      }
+    }, [focusedBlockId]);
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
       getMarkdown: () => blocksToMarkdown(blocks),
       focus: () => {
         if (blocks.length > 0) {
-          setActiveBlockId(blocks[0].id);
-          setEditingBlockId(blocks[0].id);
+          setFocusedBlockId(blocks[0].id);
         }
       },
       insertBlock: (type: BlockType, index?: number) => {
@@ -1408,14 +1490,12 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
         });
         
         setTimeout(() => {
-          setActiveBlockId(newBlock.id);
-          setEditingBlockId(newBlock.id);
+          setFocusedBlockId(newBlock.id);
         }, 0);
       },
       deleteBlock: (id: string) => {
         setBlocks(prev => prev.filter(block => block.id !== id));
-        setActiveBlockId(null);
-        setEditingBlockId(null);
+        setFocusedBlockId(null);
       },
       moveBlockUp: (id: string) => moveBlockUp(id),
       moveBlockDown: (id: string) => moveBlockDown(id),
@@ -1489,8 +1569,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
         });
 
         setTimeout(() => {
-          setActiveBlockId(newBlock.id);
-          setEditingBlockId(newBlock.id);
+          setFocusedBlockId(newBlock.id);
         }, 0);
       }
 
@@ -1530,88 +1609,27 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           
           if (blockIndex > 0) {
             setTimeout(() => {
-              setActiveBlockId(blocks[blockIndex - 1].id);
-              setEditingBlockId(blocks[blockIndex - 1].id);
+              setFocusedBlockId(blocks[blockIndex - 1].id);
             }, 0);
           }
         }
       }
     }, [blocks]);
 
-    const handleFloatingMenuClose = useCallback(() => {
-      setShowFloatingMenu(false);
-      setMenuType('actions');
-    }, []);
-
-    const handleInsertBlock = useCallback((type: BlockType) => {
-      if (activeBlockId) {
-        const activeIndex = blocks.findIndex(b => b.id === activeBlockId);
-        const newBlock: Block = {
-          id: generateId(),
-          type,
-          content: '',
-          meta: type === 'heading' ? { level: 1 } : undefined
-        };
-        
-        setBlocks(prev => {
-          const newBlocks = [...prev];
-          newBlocks.splice(activeIndex + 1, 0, newBlock);
-          return newBlocks;
-        });
-        
-        setTimeout(() => {
-          setActiveBlockId(newBlock.id);
-          setEditingBlockId(newBlock.id);
-        }, 0);
-      }
-    }, [activeBlockId, blocks]);
-
-    const handleAction = useCallback((action: string) => {
-      if (!activeBlockId) return;
-      
-      switch (action) {
-        case 'add':
-          setMenuType('blocks');
-          break;
-        case 'delete':
-          if (blocks.length > 1) {
-            setBlocks(prev => prev.filter(b => b.id !== activeBlockId));
-            setActiveBlockId(null);
-            setEditingBlockId(null);
-            setShowFloatingMenu(false);
-          }
-          break;
-      }
-    }, [activeBlockId, blocks]);
-
     const renderBlock = (block: Block, index: number) => {
-      const isActive = activeBlockId === block.id;
-      const isEditing = editingBlockId === block.id;
-      const isDragging = draggingBlockId === block.id;
-      const isPreview = dragPreviewMode && isActive;
-      const displayValue = getDisplayValue(block, isActive);
+      const isFocused = focusedBlockId === block.id;
+      const displayValue = getDisplayValue(block, isFocused);
       
       const blockProps: BlockProps = {
         block,
         index,
-        isActive,
-        isEditing,
+        isActive: isFocused,
+        isEditing: isFocused,
         displayValue,
         onRawTextChange: (text: string) => handleRawTextChange(block.id, text),
-        onFocus: () => {
-          setActiveBlockId(block.id);
-        },
-        onEdit: () => {
-          setEditingBlockId(block.id);
-        },
-        onBlur: () => {
-          setTimeout(() => {
-            if (!showFloatingMenu) {
-              setActiveBlockId(null);
-              setEditingBlockId(null);
-            }
-          }, 100);
-        },
+        onFocus: () => setFocusedBlockId(block.id),
+        onEdit: () => setFocusedBlockId(block.id),
+        onBlur: handleBlockBlur,
         onKeyPress: (e) => handleKeyPress(e, block.id, index),
         theme: mergedTheme,
         placeholder
@@ -1622,66 +1640,74 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
         return <CustomBlock key={block.id} {...blockProps} />;
       }
 
+      const actionButtons = isFocused ? (
+        <View style={styles.blockActions} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              if (index > 0) {
+                moveBlockUp(block.id);
+                Haptics.selectionAsync();
+              }
+            }}
+            disabled={index === 0}
+          >
+            <Ionicons
+              name="arrow-up"
+              size={16}
+              color={index === 0 ? '#cbd5e1' : '#4b5563'}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              if (index < blocks.length - 1) {
+                moveBlockDown(block.id);
+                Haptics.selectionAsync();
+              }
+            }}
+            disabled={index === blocks.length - 1}
+          >
+            <Ionicons
+              name="arrow-down"
+              size={16}
+              color={index === blocks.length - 1 ? '#cbd5e1' : '#4b5563'}
+            />
+          </TouchableOpacity>
+        </View>
+      ) : null;
+
+      const blockContent = (
+        <View style={styles.blockContent} pointerEvents="box-none">
+          <UniversalBlock {...blockProps} />
+        </View>
+      );
+
+      const blockAnimatedStyle = [
+        styles.block,
+        mergedTheme.block,
+        isFocused && styles.focusedBlock,
+        isFocused && mergedTheme.focusedBlock,
+      ];
+
       return (
-        <Animated.View 
-          key={block.id} 
-          style={[
-            styles.block,
-            mergedTheme.block,
-            isActive && styles.focusedBlock,
-            isActive && mergedTheme.focusedBlock,
-            isEditing && styles.editingBlock,
-            isDragging && styles.draggingBlock,
-            draggingBlockId && draggingBlockId !== block.id && styles.nonDraggingBlock,
-            (isDragging || isPreview) && {
-              transform: [{ scale: dragScale }],
-              opacity: dragOpacity,
-              elevation: dragElevation,
-            }
-          ]}
-        >
-          <View style={styles.blockContent}>
-            <UniversalBlock {...blockProps} />
-            
-            {isActive && (
-              <View style={styles.blockHandleContainer}>
-                <View
-                  style={[
-                    styles.blockHandle,
-                    (isDragging || isPreview) && styles.blockHandleDragging,
-                  ]}
-                  {...createDragResponder(block.id).panHandlers}
-                >
-                  <View style={styles.blockHandleTouchable}>
-                    <TouchableOpacity 
-                      style={styles.blockHandleButton}
-                      onPress={() => {
-                        if (!draggingBlockId && !dragPreviewMode) {
-                          setFloatingMenuPosition({ x: 50, y: 50 });
-                          setMenuType('actions');
-                          setShowFloatingMenu(true);
-                        }
-                      }}
-                      delayPressIn={200}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[
-                        styles.blockHandleIcon,
-                        (isDragging || isPreview) && styles.blockHandleIconDragging
-                      ]}>
-                        ⋮⋮
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
-          </View>
-          
-          {dropZoneIndex === index && draggingBlockId && draggingBlockId !== block.id && (
-            <View style={styles.dropZoneIndicator} />
-          )}
-        </Animated.View>
+        <View key={block.id}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {
+              if (!readOnly) {
+                setFocusedBlockId(block.id);
+              }
+            }}
+            disabled={readOnly}
+            style={styles.blockTouchWrapper}
+          >
+            <Animated.View style={blockAnimatedStyle}>
+              {blockContent}
+              {actionButtons}
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
       );
     };
 
@@ -1689,67 +1715,64 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       return (
         <ScrollView style={[styles.container, mergedTheme.container]}>
           <View style={styles.contentContainer}>
-            {blocks.map((block, index) => (
-              <UniversalBlock
-                key={block.id}
-                block={block}
-                index={index}
-                isActive={false}
-                isEditing={false}
-                displayValue={block.content}
-                onRawTextChange={() => {}}
-                onFocus={() => {}}
-                onEdit={() => {}}
-                onBlur={() => {}}
-                onKeyPress={() => {}}
-                theme={mergedTheme}
-                placeholder={placeholder}
-              />
-            ))}
+            {blocks.map((block, index) => {
+              const displayValue = getDisplayValue(block, false);
+              return (
+                <View key={block.id} style={[styles.block, mergedTheme.block]}>
+                  <UniversalBlock
+                    block={block}
+                    index={index}
+                    isActive={false}
+                    isEditing={false}
+                    displayValue={displayValue}
+                    onRawTextChange={() => {}}
+                    onFocus={() => {}}
+                    onEdit={() => {}}
+                    onBlur={() => {}}
+                    onKeyPress={() => {}}
+                    theme={mergedTheme}
+                    placeholder={placeholder}
+                  />
+                </View>
+              );
+            })}
           </View>
         </ScrollView>
       );
     }
 
-    // Close floating menu when switching modes or losing focus
-    useEffect(() => {
-      if (mode === 'raw' || !activeBlockId) {
-        setShowFloatingMenu(false);
-        setEditingBlockId(null);
-      }
-    }, [activeBlockId, mode]);
-
     return (
       <View style={[styles.container, mergedTheme.container]}>
         {mode === 'live' ? (
-          <ScrollView 
-            ref={scrollViewRef}
-            style={styles.scrollView}
-            contentContainerStyle={styles.contentContainer}
-            keyboardShouldPersistTaps="handled"
-            scrollEnabled={!draggingBlockId}
-            onLayout={(event) => {
-              setScrollViewLayout({
-                height: event.nativeEvent.layout.height,
-                y: event.nativeEvent.layout.y,
-              });
-            }}
-            onScroll={(event) => {
-              setCurrentScrollY(event.nativeEvent.contentOffset.y);
-            }}
-            onContentSizeChange={(width, height) => {
-              setContentHeight(height);
-            }}
-            scrollEventThrottle={16}
+          <TouchableOpacity 
+            style={styles.scrollViewContainer}
+            activeOpacity={1}
+            onPress={handleContainerPress}
           >
-            {blocks.map(renderBlock)}
-            
-            {dropZoneIndex === blocks.length && draggingBlockId && (
-              <View style={styles.finalDropZone}>
-                <View style={styles.dropZoneIndicator} />
-              </View>
-            )}
-          </ScrollView>
+            <ScrollView 
+              ref={scrollViewRef}
+              style={styles.scrollView}
+              contentContainerStyle={styles.contentContainer}
+              keyboardShouldPersistTaps="handled"
+              scrollEnabled={true}
+              showsVerticalScrollIndicator={false}
+              onLayout={(event) => {
+                setScrollViewLayout({
+                  height: event.nativeEvent.layout.height,
+                  y: event.nativeEvent.layout.y,
+                });
+              }}
+              onScroll={(event) => {
+                setCurrentScrollY(event.nativeEvent.contentOffset.y);
+              }}
+              onContentSizeChange={(width, height) => {
+                setContentHeight(height);
+              }}
+              scrollEventThrottle={16}
+            >
+              {blocks.map(renderBlock)}
+            </ScrollView>
+          </TouchableOpacity>
         ) : (
           <View style={styles.rawContainer}>
             <TextInput
@@ -1757,24 +1780,16 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
               value={rawMarkdown}
               onChangeText={handleRawMarkdownChange}
               placeholder={placeholder}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#a1a1aa"
               multiline
               textAlignVertical="top"
               autoCorrect={false}
               autoCapitalize="none"
               spellCheck={false}
+              selectionColor="#3b82f6"
             />
           </View>
         )}
-
-        <FloatingMenu
-          visible={showFloatingMenu}
-          position={floatingMenuPosition}
-          menuType={menuType}
-          onInsertBlock={handleInsertBlock}
-          onAction={handleAction}
-          onClose={handleFloatingMenuClose}
-        />
 
         <ModeSwitcher mode={mode} onToggle={toggleMode} />
       </View>
@@ -1782,318 +1797,227 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
   }
 );
 
-// Styles
+// Styles - Modern and minimalistic
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fafafa',
+  },
+  scrollViewContainer: {
+    flex: 1,
   },
   contentContainer: {
-    padding: 20,
-    paddingBottom: 100,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 120,
   },
   block: {
     marginBottom: 4,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 2,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    minHeight: 56, // Increased minimum height for better touch target
   },
   focusedBlock: {
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-    borderRadius: 6,
-    padding: 2,
-  },
-  editingBlock: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderRadius: 6,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
-  },
-  draggingBlock: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  nonDraggingBlock: {
-    opacity: 0.6,
+    borderColor: 'rgba(59, 130, 246, 0.15)',
+    backgroundColor: 'rgba(59, 130, 246, 0.02)',
   },
   blockContent: {
-    flex: 1,
-    position: 'relative',
+    minHeight: 48,
   },
-  blockHandleContainer: {
+  blockTouchWrapper: {
+    // Empty style, TouchableOpacity will handle the touch area
+  },
+  blockActions: {
     position: 'absolute',
-    left: -35,
-    top: 8,
-    width: 24,
-    height: 24,
-    zIndex: 10,
-  },
-  blockHandle: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    opacity: 0.8,
+    right: 8,
+    top: '50%',
+    transform: [{ translateY: -20 }],
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 8,
+    flexDirection: 'column',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
-  blockHandleTouchable: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  blockHandleButton: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  blockHandleIcon: {
-    fontSize: 12,
-    color: '#94a3b8',
-    lineHeight: 12,
-  },
-  blockHandleIconDragging: {
-    color: '#3b82f6', // Highlight color when dragging
-  },
-  blockHandleDragging: {
-    backgroundColor: '#3b82f6',
-    transform: [{ scale: 1.1 }],
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  blockTouchable: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  actionButton: {
+    padding: 4,
   },
   input: {
     fontSize: 16,
-    lineHeight: 24,
-    padding: 12,
+    lineHeight: 26,
     backgroundColor: 'transparent',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    minHeight: 44,
-    fontFamily: 'System',
-    color: '#1f2937',
+    borderRadius: 0,
+    borderWidth: 0,
+    minHeight: 48,
+    paddingHorizontal: 0,
+    paddingVertical: 10,
+    fontFamily: Platform.select({
+      ios: 'San Francisco',
+      android: 'Roboto',
+      default: 'System',
+    }),
+    color: '#1a1a1a',
   },
   focusedInput: {
-    backgroundColor: '#ffffff',
-    borderColor: '#3b82f6',
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    backgroundColor: 'transparent',
   },
   paragraph: {
     fontSize: 16,
-    lineHeight: 24,
-    color: '#1f2937',
+    lineHeight: 26,
+    color: '#1a1a1a',
+    paddingVertical: 10,
+    minHeight: 48,
+  },
+  placeholderText: {
+    color: '#a8a8a8',
+    fontWeight: '300',
   },
   codeBlockContainer: {
-    backgroundColor: '#f6f8fa',
-    borderRadius: 6,
-    padding: 16,
-    marginVertical: 4,
+    backgroundColor: '#f7f7f7',
+    borderRadius: 12,
+    padding: 20,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   codeInput: {
-    fontFamily: 'Courier',
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'Monaco, Menlo, monospace',
+    }),
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 22,
     backgroundColor: 'transparent',
-    borderWidth: 0,
-    padding: 0,
+    color: '#2d3748',
   },
   quoteContainer: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#d1d5db',
-    paddingLeft: 16,
-    marginVertical: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+    paddingLeft: 20,
+    marginVertical: 8,
   },
   quoteInput: {
     fontStyle: 'italic',
-    color: '#6b7280',
+    color: '#4a5568',
     backgroundColor: 'transparent',
-    borderWidth: 0,
-    padding: 0,
+    fontWeight: '300',
   },
   listContainer: {
-    paddingLeft: 8,
     marginVertical: 4,
   },
   checklistContainer: {
-    paddingLeft: 8,
     marginVertical: 4,
   },
   dividerContainer: {
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: 24,
   },
   imageContainer: {
     alignItems: 'center',
-    marginVertical: 8,
+    marginVertical: 16,
   },
   dropZoneIndicator: {
-    position: 'absolute',
-    top: 0,
-    left: -10, // Extend slightly outside the block
-    width: 4,
-    height: '100%',
-    backgroundColor: '#3b82f6', // Highlight color for drop zone
-    opacity: 0.8,
-    zIndex: 1, // Ensure it's above other content
-    borderRadius: 2,
+    height: 3,
+    backgroundColor: '#3b82f6',
+    borderRadius: 1.5,
+    marginVertical: 8,
+    marginHorizontal: 20,
+    opacity: 0.8, // More visible
   },
   finalDropZone: {
-    height: 40, // Adjust height as needed
+    height: 60,
     justifyContent: 'center',
-    alignItems: 'flex-start',
-    backgroundColor: 'transparent', // Ensure it doesn't interfere with scrolling
-    zIndex: 1, // Ensure it's above other content
-    marginTop: 10,
+    alignItems: 'center',
+    marginTop: 20,
   },
-
   scrollView: {
     flex: 1,
   },
   rawContainer: {
     flex: 1,
-    padding: 16,
+    padding: 24,
   },
   rawInput: {
     flex: 1,
     fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Courier',
-    color: '#1f2937',
-    backgroundColor: '#fafafa',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 6,
-    padding: 16,
-    textAlignVertical: 'top',
-  },
-  // Floating Menu Styles
-  floatingMenuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
-  },
-  floatingMenuBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  floatingMenu: {
-    position: 'absolute',
-    zIndex: 1001,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  floatingMenuContent: {
+    lineHeight: 22,
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'Monaco, Menlo, monospace',
+    }),
+    color: '#2d3748',
     backgroundColor: '#ffffff',
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    minWidth: 200,
-    overflow: 'hidden',
-  },
-  floatingMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  floatingMenuItemLast: {
-    borderBottomWidth: 0,
-  },
-  floatingMenuIcon: {
-    fontSize: 16,
-    marginRight: 12,
-    width: 20,
-    textAlign: 'center',
-    color: '#6b7280',
-  },
-  floatingMenuLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  // Floating Plus Button Styles
-  floatingPlusButton: {
-    position: 'absolute',
-    zIndex: 999,
-  },
-  plusButtonTouchable: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#3b82f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  plusButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
-    lineHeight: 18,
+    borderRadius: 12,
+    padding: 20,
+    textAlignVertical: 'top',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   // Mode Switcher Styles
   modeSwitcher: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
-    zIndex: 998,
-  },
-  modeSwitcherContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    bottom: 30,
+    right: 24,
+    zIndex: 1000,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modeSwitcherTrack: {
+    width: 64,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  modeSwitcherText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6b7280',
+  modeSwitcherThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#3b82f6',
+    position: 'absolute',
+    left: 4,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modeSwitcherLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  modeSwitcherLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#9ca3af',
+  },
+  modeSwitcherLabelActive: {
+    color: '#ffffff',
   },
 });
 

@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx
 import React, { useCallback, useRef, useState } from 'react';
-import { Alert, Button, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { Button, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import MarkdownEditor, { Block, MarkdownEditorRef } from '../../components/MarkdownEditor';
 
 export default function EditorScreen() {
@@ -177,8 +177,8 @@ Ready to test all markdown features!
   const handleGetMarkdown = useCallback(() => {
     if (editorRef.current) {
       const markdown = editorRef.current.getMarkdown();
-      console.log('Current markdown:', markdown);
-      Alert.alert('Markdown Content', `${markdown.slice(0, 200)}...`);
+      // console.log('Currentxmarkdown:', markdown);
+      // Alert.alert('Markdown Content', `${markdown.slice(0, 200)}...`);
     }
   }, []);
 
@@ -249,13 +249,13 @@ Ready to test all markdown features!
 
   // Handle real-time markdown changes
   const handleMarkdownChange = useCallback((markdown: string) => {
-    console.log('Markdown changed:', markdown);
+    // console.log('Markdown changed:', markdown);
   }, []);
 
   // Handle block changes
   const handleBlockChange = useCallback((newBlocks: Block[]) => {
     setBlocks(newBlocks);
-    console.log('Blocks changed:', newBlocks);
+    // console.log('Blocks changed:', newBlocks);
   }, []);
 
   return (
