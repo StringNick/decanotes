@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import defaultTheme from '../themes/defaultTheme';
 import { BlockProps } from '../types/editor';
 import UniversalBlock from './UniversalBlock';
@@ -39,15 +39,19 @@ const ChecklistBlock: React.FC<BlockProps> = (props) => {
   }
 
   return (
-    <TouchableOpacity style={styles.row} onPress={toggleChecked} activeOpacity={0.6}>
-      <Ionicons
-        name={checked ? 'checkbox' : 'square-outline'}
-        size={20}
-        color={checked ? '#4F46E5' : '#9CA3AF'}
-        style={styles.icon}
-      />
-      <Text style={styles.text}>{block.content}</Text>
-    </TouchableOpacity>
+    <View style={styles.row}>
+      <TouchableOpacity onPress={toggleChecked} activeOpacity={0.6} style={styles.iconWrapper}>
+        <Ionicons
+          name={checked ? 'checkbox' : 'square-outline'}
+          size={20}
+          color={checked ? '#4F46E5' : '#9CA3AF'}
+          style={styles.icon}
+        />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.textWrapper} onPress={props.onEdit} activeOpacity={0.8}>
+        <Text style={styles.text}>{block.content || placeholder}</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -56,6 +60,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 6,
+  },
+  iconWrapper: {
+    padding: 4,
+  },
+  textWrapper: {
+    flex: 1,
   },
   icon: {
     marginRight: 8,
