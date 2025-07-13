@@ -1,7 +1,9 @@
+import * as Haptics from 'expo-haptics';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   Animated,
   NativeSyntheticEvent,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,7 +14,6 @@ import {
   View,
   ViewStyle
 } from 'react-native';
-import MarkdownDisplay from 'react-native-markdown-display';
 
 // Types for formatted text
 export interface FormattedTextSegment {
@@ -86,9 +87,11 @@ export interface BlockProps {
   block: Block;
   index: number;
   isActive: boolean;
+  isEditing: boolean;
   displayValue: string;
   onRawTextChange: (text: string) => void;
   onFocus: () => void;
+  onEdit: () => void;
   onBlur: () => void;
   onKeyPress: (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => void;
   theme?: EditorTheme;
@@ -147,8 +150,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({ visible, position, menuType
   if (!visible) return null;
 
   const actionOptions = [
-    { action: 'moveUp', icon: '↑', label: 'Move Up', color: '#6b7280' },
-    { action: 'moveDown', icon: '↓', label: 'Move Down', color: '#6b7280' },
     { action: 'add', icon: '+', label: 'Add Block', color: '#3b82f6' },
     { action: 'delete', icon: '×', label: 'Delete Block', color: '#ef4444' },
   ];
@@ -230,66 +231,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({ visible, position, menuType
   );
 };
 
-// Floating Plus Button Component
-const FloatingPlusButton: React.FC<{
-  visible: boolean;
-  position: { x: number; y: number };
-  onPress: () => void;
-}> = ({ visible, position, onPress }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 300,
-          friction: 20,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible, fadeAnim, scaleAnim]);
-
-  if (!visible) return null;
-
-  return (
-    <Animated.View
-      style={[
-        styles.floatingPlusButton,
-        {
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
-          left: position.x,
-          top: position.y,
-        },
-      ]}
-    >
-      <TouchableOpacity style={styles.plusButtonTouchable} onPress={onPress}>
-        <Text style={styles.plusButtonText}>+</Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
+// Removed FloatingPlusButton component (unused)
 
 // Mode Switcher Component
 const ModeSwitcher: React.FC<{
@@ -486,99 +428,7 @@ const parseMarkdownToBlocks = (markdown: string): Block[] => {
   return blocks.length > 0 ? blocks : [{ id: generateId(), type: 'paragraph', content: '' }];
 };
 
-const parseLineToBlock = (line: string): Block => {
-  const trimmed = line.trim();
-  
-  // Heading
-  const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
-  if (headingMatch) {
-      return {
-      id: generateId(),
-        type: 'heading',
-      content: headingMatch[2],
-      meta: { level: headingMatch[1].length }
-    };
-  }
-
-  // Image
-  const imageMatch = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]*)")?\)$/);
-  if (imageMatch) {
-      return {
-      id: generateId(),
-      type: 'image',
-      content: imageMatch[1], // alt text
-      meta: { 
-        url: imageMatch[2], 
-        alt: imageMatch[1],
-        title: imageMatch[3] || ''
-      }
-    };
-  }
-
-  // Quote (can be nested) - require space after > markers
-  const quoteMatch = trimmed.match(/^(>+)\s+(.*)$/);
-  if (quoteMatch) {
-    const [, markers, content] = quoteMatch;
-    const quoteDepth = markers.length - 1; // 0 for >, 1 for >>, etc.
-    return {
-      id: generateId(),
-      type: 'quote',
-      content: content,
-      meta: { depth: quoteDepth }
-    };
-  }
-
-  // Handle empty quotes (just > markers)
-  const emptyQuoteMatch = trimmed.match(/^(>+)\s*$/);
-  if (emptyQuoteMatch) {
-    const [, markers] = emptyQuoteMatch;
-    const quoteDepth = markers.length - 1;
-    return {
-      id: generateId(),
-      type: 'quote',
-      content: '',
-      meta: { depth: quoteDepth }
-    };
-  }
-
-  // Checklist (must come before regular list)
-  const checkMatch = trimmed.match(/^[-*+]\s+\[([ xX])\]\s+(.*)$/);
-  if (checkMatch) {
-    return {
-      id: generateId(),
-      type: 'checklist',
-      content: checkMatch[2],
-      meta: { checked: checkMatch[1].toLowerCase() === 'x' }
-    };
-  }
-
-  // List item (ordered and unordered)
-  const listMatch = trimmed.match(/^(\d+\.|\*|\-|\+)\s+(.*)$/);
-  if (listMatch) {
-    return {
-      id: generateId(),
-      type: 'list',
-      content: listMatch[2],
-      meta: { ordered: /^\d+\./.test(listMatch[1]) }
-    };
-  }
-
-  // Divider
-  if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
-    return {
-      id: generateId(),
-      type: 'divider',
-      content: ''
-    };
-  }
-
-  // Default paragraph
-  return {
-    id: generateId(),
-    type: 'paragraph',
-    content: trimmed
-  };
-};
+// Removed parseLineToBlock function (unused)
 
 const blocksToMarkdown = (blocks: Block[]): string => {
   const result: string[] = [];
@@ -913,9 +763,11 @@ const parseRawText = (text: string, currentBlock: Block): { type: BlockType; con
 const UniversalBlock: React.FC<BlockProps> = ({ 
   block, 
   isActive, 
+  isEditing,
   displayValue,
   onRawTextChange,
   onFocus, 
+  onEdit,
   onBlur, 
   onKeyPress,
   theme,
@@ -924,10 +776,10 @@ const UniversalBlock: React.FC<BlockProps> = ({
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    if (isActive) {
+    if (isEditing) {
       inputRef.current?.focus();
     }
-  }, [isActive]);
+  }, [isEditing]);
 
   const getBlockStyle = (): TextStyle => {
     switch (block.type) {
@@ -1001,7 +853,7 @@ const UniversalBlock: React.FC<BlockProps> = ({
     }
   };
 
-  if (isActive) {
+  if (isEditing) {
     const containerStyle = getBlockContainer();
     const blockStyle = getBlockStyle();
     const inputStyle = getInputStyle();
@@ -1061,7 +913,7 @@ const UniversalBlock: React.FC<BlockProps> = ({
 
   if (containerStyle.length > 0) {
     return (
-      <TouchableOpacity onPress={onFocus} style={styles.blockTouchable}>
+      <TouchableOpacity onPress={isActive ? onEdit : onFocus} style={styles.blockTouchable}>
         <View style={containerStyle}>
           {content}
         </View>
@@ -1070,7 +922,7 @@ const UniversalBlock: React.FC<BlockProps> = ({
   }
 
   return (
-    <TouchableOpacity onPress={onFocus} style={styles.blockTouchable}>
+    <TouchableOpacity onPress={isActive ? onEdit : onFocus} style={styles.blockTouchable}>
       {content}
     </TouchableOpacity>
   );
@@ -1242,16 +1094,338 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
   }, ref) => {
     const [blocks, setBlocks] = useState<Block[]>(() => parseMarkdownToBlocks(initialMarkdown));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+    const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
     const [mode, setMode] = useState<'live' | 'raw'>('live');
     const [rawMarkdown, setRawMarkdown] = useState<string>('');
     const scrollViewRef = useRef<ScrollView>(null);
+    
+    // Merge themes
+    const mergedTheme = {
+      ...defaultTheme,
+      ...theme,
+    };
     
     // Floating menu state
     const [showFloatingMenu, setShowFloatingMenu] = useState(false);
     const [floatingMenuPosition, setFloatingMenuPosition] = useState({ x: 0, y: 0 });
     const [menuType, setMenuType] = useState<MenuType>('actions');
+    
+    // Drag and drop state - redesigned with long press
+    const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
+    const [dropZoneIndex, setDropZoneIndex] = useState<number | null>(null);
+    const [dragPreviewMode, setDragPreviewMode] = useState(false);
+    
+    // Animation values for smooth drag experience
+    const dragScale = useRef(new Animated.Value(1)).current;
+    const dragOpacity = useRef(new Animated.Value(1)).current;
+    const dragElevation = useRef(new Animated.Value(0)).current;
+    
+    // Auto-scroll state
+    const [scrollViewLayout, setScrollViewLayout] = useState<{ height: number; y: number } | null>(null);
+    const [currentScrollY, setCurrentScrollY] = useState(0);
+    const [contentHeight, setContentHeight] = useState(0);
+    const autoScrollTimer = useRef<number | null>(null);
+    const longPressTimer = useRef<number | null>(null);
 
-    const mergedTheme = { ...defaultTheme, ...theme };
+    // Toggle between live and raw modes
+    const toggleMode = useCallback(() => {
+      if (mode === 'live') {
+        setRawMarkdown(blocksToMarkdown(blocks));
+        setMode('raw');
+      } else {
+        const newBlocks = parseMarkdownToBlocks(rawMarkdown);
+        setBlocks(newBlocks);
+        setMode('live');
+      }
+    }, [mode, blocks, rawMarkdown]);
+
+    // Move block up in the list
+    const moveBlockUp = useCallback((blockId: string) => {
+      const currentIndex = blocks.findIndex(b => b.id === blockId);
+      if (currentIndex <= 0) return false;
+      
+      setBlocks(prev => {
+        const newBlocks = [...prev];
+        const [movedBlock] = newBlocks.splice(currentIndex, 1);
+        newBlocks.splice(currentIndex - 1, 0, movedBlock);
+        return newBlocks;
+      });
+      
+      return true;
+    }, [blocks]);
+
+    // Move block down in the list
+    const moveBlockDown = useCallback((blockId: string) => {
+      const currentIndex = blocks.findIndex(b => b.id === blockId);
+      if (currentIndex >= blocks.length - 1) return false;
+      
+      setBlocks(prev => {
+        const newBlocks = [...prev];
+        const [movedBlock] = newBlocks.splice(currentIndex, 1);
+        newBlocks.splice(currentIndex + 1, 0, movedBlock);
+        return newBlocks;
+      });
+      
+      return true;
+    }, [blocks]);
+
+    // Enhanced auto-scroll function with proper content boundary detection
+    const handleAutoScroll = useCallback((gestureY: number) => {
+      if (!scrollViewRef.current || !scrollViewLayout || !draggingBlockId) return;
+      
+      const edgeThreshold = 40; // Slightly larger for better UX
+      const scrollSpeed = 15; // Smooth scroll speed
+      
+      // Clear existing timer
+      if (autoScrollTimer.current) {
+        clearInterval(autoScrollTimer.current);
+        autoScrollTimer.current = null;
+      }
+      
+      const relativeY = gestureY - scrollViewLayout.y;
+      
+      // Only auto-scroll if we're dragging within the ScrollView bounds
+      if (relativeY < 0 || relativeY > scrollViewLayout.height) return;
+      
+      const maxScrollY = Math.max(0, contentHeight - scrollViewLayout.height);
+      
+      // Check if dragging near top edge and can scroll up
+      if (relativeY < edgeThreshold && currentScrollY > 0) {
+        autoScrollTimer.current = setInterval(() => {
+          const newScrollY = Math.max(0, currentScrollY - scrollSpeed);
+          scrollViewRef.current?.scrollTo({ 
+            y: newScrollY, 
+            animated: false 
+          });
+          setCurrentScrollY(newScrollY);
+        }, 16) as unknown as number;
+      } 
+      // Check if dragging near bottom edge and can scroll down
+      else if (relativeY > (scrollViewLayout.height - edgeThreshold) && currentScrollY < maxScrollY) {
+        autoScrollTimer.current = setInterval(() => {
+          const newScrollY = Math.min(maxScrollY, currentScrollY + scrollSpeed);
+          scrollViewRef.current?.scrollTo({ 
+            y: newScrollY, 
+            animated: false 
+          });
+          setCurrentScrollY(newScrollY);
+        }, 16) as unknown as number;
+      }
+    }, [scrollViewLayout, currentScrollY, contentHeight, draggingBlockId]);
+
+    // Long press drag functions - professional UX
+    const startDragPreview = useCallback((blockId: string) => {
+      if (draggingBlockId) return;
+      
+      setDragPreviewMode(true);
+      setActiveBlockId(blockId);
+      setEditingBlockId(null);
+      setShowFloatingMenu(false);
+      
+      // Haptic feedback for drag start
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Smooth animation for drag preview
+      Animated.parallel([
+        Animated.spring(dragScale, {
+          toValue: 1.05,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 20,
+        }),
+        Animated.timing(dragElevation, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, [draggingBlockId, dragScale, dragElevation]);
+
+    const startActualDrag = useCallback((blockId: string) => {
+      setDraggingBlockId(blockId);
+      setDragPreviewMode(false);
+      
+      // Enhanced haptic feedback for actual drag
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      
+      // Enhanced drag animation
+      Animated.parallel([
+        Animated.spring(dragScale, {
+          toValue: 1.1,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 15,
+        }),
+        Animated.spring(dragOpacity, {
+          toValue: 0.9,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 20,
+        }),
+        Animated.timing(dragElevation, {
+          toValue: 2,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, [dragScale, dragOpacity, dragElevation]);
+
+    const updateDrag = useCallback((gestureY: number, blockId: string) => {
+      if (!draggingBlockId) return;
+      
+      // Handle auto-scroll first
+      handleAutoScroll(gestureY);
+      
+      // Calculate drop zone based on block positions
+      const currentBlockIndex = blocks.findIndex(b => b.id === blockId);
+      const blockHeight = 80;
+      const deltaBlocks = Math.round((gestureY - scrollViewLayout?.y! - currentBlockIndex * blockHeight) / blockHeight);
+      const newDropZone = Math.max(0, Math.min(blocks.length, currentBlockIndex + deltaBlocks));
+      
+      if (newDropZone !== dropZoneIndex) {
+        setDropZoneIndex(newDropZone);
+        // Subtle haptic feedback for drop zone changes
+        Haptics.selectionAsync();
+      }
+    }, [draggingBlockId, blocks, dropZoneIndex, handleAutoScroll, scrollViewLayout]);
+
+    const endDrag = useCallback(() => {
+      // Clear timers
+      if (autoScrollTimer.current) {
+        clearInterval(autoScrollTimer.current);
+        autoScrollTimer.current = null;
+      }
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      
+      if (!draggingBlockId && !dragPreviewMode) return;
+
+      const currentIndex = blocks.findIndex(b => b.id === (draggingBlockId || activeBlockId));
+      
+      // Perform reordering if we were actually dragging
+      if (draggingBlockId && currentIndex !== -1 && dropZoneIndex !== null && dropZoneIndex !== currentIndex) {
+        setBlocks(prev => {
+          const newBlocks = [...prev];
+          const [movedBlock] = newBlocks.splice(currentIndex, 1);
+          
+          const adjustedDropIndex = dropZoneIndex > currentIndex ? dropZoneIndex - 1 : dropZoneIndex;
+          newBlocks.splice(adjustedDropIndex, 0, movedBlock);
+          
+          return newBlocks;
+        });
+        
+        // Success haptic feedback
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
+      // Reset all states
+      setDraggingBlockId(null);
+      setDropZoneIndex(null);
+      setDragPreviewMode(false);
+      
+      // Smooth return animation
+      Animated.parallel([
+        Animated.spring(dragScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 20,
+        }),
+        Animated.spring(dragOpacity, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 20,
+        }),
+        Animated.timing(dragElevation, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, [draggingBlockId, dragPreviewMode, dropZoneIndex, blocks, activeBlockId, dragScale, dragOpacity, dragElevation]);
+
+    // Create PanResponder for drag gestures - Enhanced with long press
+    const createDragResponder = useCallback((blockId: string) => {
+      return PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (evt, gestureState) => {
+          return Math.abs(gestureState.dy) > 3 && Math.abs(gestureState.dx) < 30;
+        },
+        onStartShouldSetPanResponderCapture: (evt, gestureState) => {
+          return Math.abs(gestureState.dy) > 3;
+        },
+        onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+          return draggingBlockId === blockId || (Math.abs(gestureState.dy) > 3 && Math.abs(gestureState.dx) < 30);
+        },
+        onPanResponderGrant: (evt, gestureState) => {
+          evt.preventDefault?.();
+          startDragPreview(blockId);
+          longPressTimer.current = setTimeout(() => {
+            startActualDrag(blockId);
+          }, 500) as unknown as number;
+        },
+        onPanResponderMove: (evt, gestureState) => {
+          updateDrag(evt.nativeEvent.pageY, blockId);
+        },
+        onPanResponderRelease: () => {
+          endDrag();
+        },
+        onPanResponderTerminate: () => {
+          endDrag();
+        },
+        onPanResponderTerminationRequest: (evt, gestureState) => {
+          return draggingBlockId !== blockId;
+        },
+        onShouldBlockNativeResponder: () => true,
+      });
+    }, [startDragPreview, startActualDrag, updateDrag, endDrag, draggingBlockId]);
+
+    // Expose methods via ref
+    useImperativeHandle(ref, () => ({
+      getMarkdown: () => blocksToMarkdown(blocks),
+      focus: () => {
+        if (blocks.length > 0) {
+          setActiveBlockId(blocks[0].id);
+          setEditingBlockId(blocks[0].id);
+        }
+      },
+      insertBlock: (type: BlockType, index?: number) => {
+        const newBlock: Block = {
+          id: generateId(),
+          type,
+          content: '',
+          meta: type === 'heading' ? { level: 1 } : undefined
+        };
+        
+        const insertIndex = index ?? blocks.length;
+        setBlocks(prev => {
+          const newBlocks = [...prev];
+          newBlocks.splice(insertIndex, 0, newBlock);
+          return newBlocks;
+        });
+        
+        setTimeout(() => {
+          setActiveBlockId(newBlock.id);
+          setEditingBlockId(newBlock.id);
+        }, 0);
+      },
+      deleteBlock: (id: string) => {
+        setBlocks(prev => prev.filter(block => block.id !== id));
+        setActiveBlockId(null);
+        setEditingBlockId(null);
+      },
+      moveBlockUp: (id: string) => moveBlockUp(id),
+      moveBlockDown: (id: string) => moveBlockDown(id),
+      toggleMode: () => {
+        toggleMode();
+      },
+      getCurrentMode: () => {
+        return mode;
+      },
+    }), [blocks, mode, toggleMode, moveBlockUp, moveBlockDown]);
 
     // Update blocks when initialMarkdown changes
     useEffect(() => {
@@ -1267,26 +1441,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       onBlockChange?.(blocks);
     }, [blocks, onMarkdownChange, onBlockChange]);
 
-    // Toggle between live and raw modes
-    const toggleMode = useCallback(() => {
-      if (mode === 'live') {
-        // Switch to raw mode - store current markdown
-        setRawMarkdown(blocksToMarkdown(blocks));
-        setMode('raw');
-      } else {
-        // Switch to live mode - parse raw markdown back to blocks
-        const newBlocks = parseMarkdownToBlocks(rawMarkdown);
-        setBlocks(newBlocks);
-        setMode('live');
-      }
-    }, [mode, blocks, rawMarkdown]);
-
     // Update raw markdown when typing in raw mode
     const handleRawMarkdownChange = useCallback((text: string) => {
       setRawMarkdown(text);
     }, []);
-
-
 
     const handleRawTextChange = useCallback((blockId: string, text: string) => {
       const blockIndex = blocks.findIndex(b => b.id === blockId);
@@ -1314,12 +1472,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       if (key === 'Enter') {
         const currentBlock = blocks[blockIndex];
         
-        // If current block is empty, don't create a new block
         if (!currentBlock.content.trim()) {
           return;
         }
 
-        // Create new paragraph block
         const newBlock: Block = {
           id: generateId(),
           type: 'paragraph',
@@ -1332,16 +1488,16 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           return newBlocks;
         });
 
-        // Focus new block
-        setTimeout(() => setActiveBlockId(newBlock.id), 0);
+        setTimeout(() => {
+          setActiveBlockId(newBlock.id);
+          setEditingBlockId(newBlock.id);
+        }, 0);
       }
 
       if (key === 'Backspace') {
         const currentBlock = blocks[blockIndex];
         
-        // Special handling for quote blocks
         if (currentBlock.type === 'quote') {
-          // If content is empty or very short, convert to paragraph on backspace
           if (!currentBlock.content.trim()) {
             e.preventDefault();
             setBlocks(prev => 
@@ -1354,8 +1510,6 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
             return;
           }
           
-          // If the content is just a single character or very short, also convert on backspace
-          // This helps when user deletes content and wants to convert the quote
           if (currentBlock.content.trim().length <= 1) {
             e.preventDefault();
             setBlocks(prev => 
@@ -1365,103 +1519,28 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                   : block
               )
             );
-                  return;
+            return;
           }
         }
         
-        // If block is empty and not the only block, delete it
         if (!currentBlock.content.trim() && blocks.length > 1) {
           e.preventDefault();
           
           setBlocks(prev => prev.filter(block => block.id !== blockId));
           
-          // Focus previous block if it exists
           if (blockIndex > 0) {
-            setTimeout(() => setActiveBlockId(blocks[blockIndex - 1].id), 0);
+            setTimeout(() => {
+              setActiveBlockId(blocks[blockIndex - 1].id);
+              setEditingBlockId(blocks[blockIndex - 1].id);
+            }, 0);
           }
         }
       }
     }, [blocks]);
 
-    const renderBlock = (block: Block, index: number) => {
-      const isActive = activeBlockId === block.id;
-      const displayValue = getDisplayValue(block, isActive);
-      
-      const blockProps: BlockProps = {
-        block,
-        index,
-        isActive,
-        displayValue,
-        onRawTextChange: (text: string) => handleRawTextChange(block.id, text),
-        onFocus: () => {
-          setActiveBlockId(block.id);
-        },
-        onBlur: () => {
-          // Don't immediately hide on blur to allow menu interaction
-          setTimeout(() => {
-            if (!showFloatingMenu) {
-              setActiveBlockId(null);
-            }
-          }, 100);
-        },
-        onKeyPress: (e) => handleKeyPress(e, block.id, index),
-        theme: mergedTheme,
-        placeholder
-      };
-
-      // Custom block component
-      if (customBlocks[block.type]) {
-        const CustomBlock = customBlocks[block.type];
-        return <CustomBlock key={block.id} {...blockProps} />;
-      }
-
-      return (
-        <View 
-          key={block.id} 
-          style={[
-            styles.block,
-            mergedTheme.block,
-            isActive && styles.focusedBlock,
-            isActive && mergedTheme.focusedBlock
-          ]}
-        >
-          <View style={styles.blockContent}>
-            <UniversalBlock {...blockProps} />
-            
-            {/* Block Handle - appears on focus */}
-            {isActive && (
-              <TouchableOpacity 
-                style={styles.blockHandle}
-                onPress={() => {
-                  // Position the action menu near the handle and reset to actions
-                  setFloatingMenuPosition({ x: 50, y: 50 });
-                  setMenuType('actions');
-                  setShowFloatingMenu(true);
-                }}
-              >
-                <Text style={styles.blockHandleIcon}>⋮⋮</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      );
-    };
-
-    if (readOnly) {
-    return (
-        <ScrollView style={[styles.container, mergedTheme.container]}>
-          <MarkdownDisplay>
-            {blocksToMarkdown(blocks)}
-          </MarkdownDisplay>
-        </ScrollView>
-      );
-    }
-
-
-
     const handleFloatingMenuClose = useCallback(() => {
       setShowFloatingMenu(false);
-      setMenuType('actions'); // Reset to actions when closing
+      setMenuType('actions');
     }, []);
 
     const handleInsertBlock = useCallback((type: BlockType) => {
@@ -1480,123 +1559,196 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           return newBlocks;
         });
         
-        setTimeout(() => setActiveBlockId(newBlock.id), 0);
+        setTimeout(() => {
+          setActiveBlockId(newBlock.id);
+          setEditingBlockId(newBlock.id);
+        }, 0);
       }
     }, [activeBlockId, blocks]);
-
-    // Move block up in the list
-    const moveBlockUp = useCallback((blockId: string) => {
-      const currentIndex = blocks.findIndex(b => b.id === blockId);
-      if (currentIndex <= 0) return false; // Can't move first block up
-      
-      setBlocks(prev => {
-        const newBlocks = [...prev];
-        const [movedBlock] = newBlocks.splice(currentIndex, 1);
-        newBlocks.splice(currentIndex - 1, 0, movedBlock);
-        return newBlocks;
-      });
-      
-      return true;
-    }, [blocks]);
-
-    // Move block down in the list
-    const moveBlockDown = useCallback((blockId: string) => {
-      const currentIndex = blocks.findIndex(b => b.id === blockId);
-      if (currentIndex >= blocks.length - 1) return false; // Can't move last block down
-      
-      setBlocks(prev => {
-        const newBlocks = [...prev];
-        const [movedBlock] = newBlocks.splice(currentIndex, 1);
-        newBlocks.splice(currentIndex + 1, 0, movedBlock);
-        return newBlocks;
-      });
-      
-      return true;
-    }, [blocks]);
 
     const handleAction = useCallback((action: string) => {
       if (!activeBlockId) return;
       
       switch (action) {
-        case 'moveUp':
-          moveBlockUp(activeBlockId);
-          break;
-        case 'moveDown':
-          moveBlockDown(activeBlockId);
-          break;
         case 'add':
-          // Switch to block selection menu
           setMenuType('blocks');
           break;
         case 'delete':
-          // TODO: Add confirmation dialog
-          console.log('Delete block:', activeBlockId);
           if (blocks.length > 1) {
             setBlocks(prev => prev.filter(b => b.id !== activeBlockId));
             setActiveBlockId(null);
+            setEditingBlockId(null);
             setShowFloatingMenu(false);
           }
           break;
       }
-    }, [activeBlockId, blocks, moveBlockUp, moveBlockDown]);
+    }, [activeBlockId, blocks]);
 
-    // Expose methods via ref
-    useImperativeHandle(ref, () => ({
-      getMarkdown: () => blocksToMarkdown(blocks),
-      focus: () => {
-        if (blocks.length > 0) {
-          setActiveBlockId(blocks[0].id);
-        }
-      },
-      insertBlock: (type: BlockType, index?: number) => {
-        const newBlock: Block = {
-          id: generateId(),
-          type,
-          content: '',
-          meta: type === 'heading' ? { level: 1 } : undefined
-        };
-        
-        const insertIndex = index ?? blocks.length;
-        setBlocks(prev => {
-          const newBlocks = [...prev];
-          newBlocks.splice(insertIndex, 0, newBlock);
-          return newBlocks;
-        });
-        
-        setTimeout(() => setActiveBlockId(newBlock.id), 0);
-      },
-      deleteBlock: (id: string) => {
-        setBlocks(prev => prev.filter(block => block.id !== id));
-        setActiveBlockId(null);
-      },
-      moveBlockUp: (id: string) => moveBlockUp(id),
-      moveBlockDown: (id: string) => moveBlockDown(id),
-      toggleMode: () => {
-        toggleMode();
-      },
-      getCurrentMode: () => {
-        return mode;
-      },
-    }), [blocks, mode, toggleMode, moveBlockUp, moveBlockDown]);
+    const renderBlock = (block: Block, index: number) => {
+      const isActive = activeBlockId === block.id;
+      const isEditing = editingBlockId === block.id;
+      const isDragging = draggingBlockId === block.id;
+      const isPreview = dragPreviewMode && isActive;
+      const displayValue = getDisplayValue(block, isActive);
+      
+      const blockProps: BlockProps = {
+        block,
+        index,
+        isActive,
+        isEditing,
+        displayValue,
+        onRawTextChange: (text: string) => handleRawTextChange(block.id, text),
+        onFocus: () => {
+          setActiveBlockId(block.id);
+        },
+        onEdit: () => {
+          setEditingBlockId(block.id);
+        },
+        onBlur: () => {
+          setTimeout(() => {
+            if (!showFloatingMenu) {
+              setActiveBlockId(null);
+              setEditingBlockId(null);
+            }
+          }, 100);
+        },
+        onKeyPress: (e) => handleKeyPress(e, block.id, index),
+        theme: mergedTheme,
+        placeholder
+      };
+
+      if (customBlocks[block.type]) {
+        const CustomBlock = customBlocks[block.type];
+        return <CustomBlock key={block.id} {...blockProps} />;
+      }
+
+      return (
+        <Animated.View 
+          key={block.id} 
+          style={[
+            styles.block,
+            mergedTheme.block,
+            isActive && styles.focusedBlock,
+            isActive && mergedTheme.focusedBlock,
+            isEditing && styles.editingBlock,
+            isDragging && styles.draggingBlock,
+            draggingBlockId && draggingBlockId !== block.id && styles.nonDraggingBlock,
+            (isDragging || isPreview) && {
+              transform: [{ scale: dragScale }],
+              opacity: dragOpacity,
+              elevation: dragElevation,
+            }
+          ]}
+        >
+          <View style={styles.blockContent}>
+            <UniversalBlock {...blockProps} />
+            
+            {isActive && (
+              <View style={styles.blockHandleContainer}>
+                <View
+                  style={[
+                    styles.blockHandle,
+                    (isDragging || isPreview) && styles.blockHandleDragging,
+                  ]}
+                  {...createDragResponder(block.id).panHandlers}
+                >
+                  <View style={styles.blockHandleTouchable}>
+                    <TouchableOpacity 
+                      style={styles.blockHandleButton}
+                      onPress={() => {
+                        if (!draggingBlockId && !dragPreviewMode) {
+                          setFloatingMenuPosition({ x: 50, y: 50 });
+                          setMenuType('actions');
+                          setShowFloatingMenu(true);
+                        }
+                      }}
+                      delayPressIn={200}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.blockHandleIcon,
+                        (isDragging || isPreview) && styles.blockHandleIconDragging
+                      ]}>
+                        ⋮⋮
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+          
+          {dropZoneIndex === index && draggingBlockId && draggingBlockId !== block.id && (
+            <View style={styles.dropZoneIndicator} />
+          )}
+        </Animated.View>
+      );
+    };
+
+    if (readOnly) {
+      return (
+        <ScrollView style={[styles.container, mergedTheme.container]}>
+          <View style={styles.contentContainer}>
+            {blocks.map((block, index) => (
+              <UniversalBlock
+                key={block.id}
+                block={block}
+                index={index}
+                isActive={false}
+                isEditing={false}
+                displayValue={block.content}
+                onRawTextChange={() => {}}
+                onFocus={() => {}}
+                onEdit={() => {}}
+                onBlur={() => {}}
+                onKeyPress={() => {}}
+                theme={mergedTheme}
+                placeholder={placeholder}
+              />
+            ))}
+          </View>
+        </ScrollView>
+      );
+    }
 
     // Close floating menu when switching modes or losing focus
     useEffect(() => {
       if (mode === 'raw' || !activeBlockId) {
         setShowFloatingMenu(false);
+        setEditingBlockId(null);
       }
     }, [activeBlockId, mode]);
 
     return (
       <View style={[styles.container, mergedTheme.container]}>
-        {/* Content */}
         {mode === 'live' ? (
           <ScrollView 
             ref={scrollViewRef}
             style={styles.scrollView}
             contentContainerStyle={styles.contentContainer}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled={!draggingBlockId}
+            onLayout={(event) => {
+              setScrollViewLayout({
+                height: event.nativeEvent.layout.height,
+                y: event.nativeEvent.layout.y,
+              });
+            }}
+            onScroll={(event) => {
+              setCurrentScrollY(event.nativeEvent.contentOffset.y);
+            }}
+            onContentSizeChange={(width, height) => {
+              setContentHeight(height);
+            }}
+            scrollEventThrottle={16}
           >
             {blocks.map(renderBlock)}
+            
+            {dropZoneIndex === blocks.length && draggingBlockId && (
+              <View style={styles.finalDropZone}>
+                <View style={styles.dropZoneIndicator} />
+              </View>
+            )}
           </ScrollView>
         ) : (
           <View style={styles.rawContainer}>
@@ -1615,9 +1767,6 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           </View>
         )}
 
-
-
-        {/* Floating Menu */}
         <FloatingMenu
           visible={showFloatingMenu}
           position={floatingMenuPosition}
@@ -1627,7 +1776,6 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           onClose={handleFloatingMenuClose}
         />
 
-        {/* Mode Switcher */}
         <ModeSwitcher mode={mode} onToggle={toggleMode} />
       </View>
     );
@@ -1652,14 +1800,38 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 2,
   },
+  editingBlock: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 6,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  draggingBlock: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  nonDraggingBlock: {
+    opacity: 0.6,
+  },
   blockContent: {
     flex: 1,
     position: 'relative',
   },
-  blockHandle: {
+  blockHandleContainer: {
     position: 'absolute',
     left: -35,
     top: 8,
+    width: 24,
+    height: 24,
+    zIndex: 10,
+  },
+  blockHandle: {
     width: 24,
     height: 24,
     borderRadius: 4,
@@ -1669,12 +1841,38 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     opacity: 0.8,
-    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  blockHandleTouchable: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blockHandleButton: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   blockHandleIcon: {
     fontSize: 12,
     color: '#94a3b8',
     lineHeight: 12,
+  },
+  blockHandleIconDragging: {
+    color: '#3b82f6', // Highlight color when dragging
+  },
+  blockHandleDragging: {
+    backgroundColor: '#3b82f6',
+    transform: [{ scale: 1.1 }],
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   blockTouchable: {
     minHeight: 44,
@@ -1750,6 +1948,25 @@ const styles = StyleSheet.create({
   imageContainer: {
     alignItems: 'center',
     marginVertical: 8,
+  },
+  dropZoneIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: -10, // Extend slightly outside the block
+    width: 4,
+    height: '100%',
+    backgroundColor: '#3b82f6', // Highlight color for drop zone
+    opacity: 0.8,
+    zIndex: 1, // Ensure it's above other content
+    borderRadius: 2,
+  },
+  finalDropZone: {
+    height: 40, // Adjust height as needed
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    backgroundColor: 'transparent', // Ensure it doesn't interfere with scrolling
+    zIndex: 1, // Ensure it's above other content
+    marginTop: 10,
   },
 
   scrollView: {

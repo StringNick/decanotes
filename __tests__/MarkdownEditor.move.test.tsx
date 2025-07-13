@@ -1,6 +1,6 @@
 
-// Simple test functions for the move functionality
-describe('MarkdownEditor - Block Moving Tests', () => {
+// Test functions for drag and drop reordering logic
+describe('MarkdownEditor - Drag and Drop Reordering Tests', () => {
   
   // Test data
   const testMarkdown = `# First Heading
@@ -15,202 +15,162 @@ This is paragraph 2.
 
 This is paragraph 3.`;
 
-  // Helper function to create a mock editor instance
-  const createMockEditor = () => {
-    const blocks = [
-      { id: 'block-1', type: 'heading', content: 'First Heading', meta: { level: 1 } },
-      { id: 'block-2', type: 'paragraph', content: 'This is paragraph 1.' },
-      { id: 'block-3', type: 'heading', content: 'Second Heading', meta: { level: 2 } },
-      { id: 'block-4', type: 'paragraph', content: 'This is paragraph 2.' },
-      { id: 'block-5', type: 'heading', content: 'Third Heading', meta: { level: 3 } },
-      { id: 'block-6', type: 'paragraph', content: 'This is paragraph 3.' }
-    ];
-
-    return {
-      blocks,
-      moveBlockUp: (blockId: string) => {
-        const currentIndex = blocks.findIndex(b => b.id === blockId);
-        if (currentIndex === -1 || currentIndex <= 0) return false;
-        
-        const [movedBlock] = blocks.splice(currentIndex, 1);
-        blocks.splice(currentIndex - 1, 0, movedBlock);
-        return true;
-      },
-      moveBlockDown: (blockId: string) => {
-        const currentIndex = blocks.findIndex(b => b.id === blockId);
-        if (currentIndex === -1 || currentIndex >= blocks.length - 1) return false;
-        
-        const [movedBlock] = blocks.splice(currentIndex, 1);
-        blocks.splice(currentIndex + 1, 0, movedBlock);
-        return true;
-      }
-    };
+  // Helper function to simulate reordering logic (extracted from component)
+  const simulateReorder = (blocks: Array<{id: string, content: string}>, fromIndex: number, toIndex: number) => {
+    const newBlocks = [...blocks];
+    const [movedBlock] = newBlocks.splice(fromIndex, 1);
+    
+    // Adjust drop index if moving down (same logic as component)
+    const adjustedDropIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
+    newBlocks.splice(adjustedDropIndex, 0, movedBlock);
+    
+    return newBlocks;
   };
 
-  it('should move block up successfully', () => {
-    const mockEditor = createMockEditor();
+  // Helper function to create test blocks
+  const createTestBlocks = () => [
+    { id: 'block-1', content: 'First Block' },
+    { id: 'block-2', content: 'Second Block' },
+    { id: 'block-3', content: 'Third Block' },
+    { id: 'block-4', content: 'Fourth Block' },
+    { id: 'block-5', content: 'Fifth Block' },
+  ];
+
+  it('should reorder block from top to middle', () => {
+    const blocks = createTestBlocks();
     
-    // Move block-2 up (should move before block-1)
-    const result = mockEditor.moveBlockUp('block-2');
+    // Move first block (index 0) to middle (index 2)
+    const reordered = simulateReorder(blocks, 0, 2);
     
-    expect(result).toBe(true);
-    expect(mockEditor.blocks[0].id).toBe('block-2');
-    expect(mockEditor.blocks[1].id).toBe('block-1');
+    expect(reordered[0].id).toBe('block-2'); // Second becomes first
+    expect(reordered[1].id).toBe('block-1'); // First moves to middle
+    expect(reordered[2].id).toBe('block-3'); // Third stays
+    expect(reordered[3].id).toBe('block-4'); // Fourth stays
+    expect(reordered[4].id).toBe('block-5'); // Fifth stays
   });
 
-  it('should move block down successfully', () => {
-    const mockEditor = createMockEditor();
+  it('should reorder block from middle to top', () => {
+    const blocks = createTestBlocks();
     
-    // Move block-1 down (should move after block-2)
-    const result = mockEditor.moveBlockDown('block-1');
+    // Move third block (index 2) to top (index 0)
+    const reordered = simulateReorder(blocks, 2, 0);
     
-    expect(result).toBe(true);
-    expect(mockEditor.blocks[0].id).toBe('block-2');
-    expect(mockEditor.blocks[1].id).toBe('block-1');
+    expect(reordered[0].id).toBe('block-3'); // Third moves to top
+    expect(reordered[1].id).toBe('block-1'); // First moves down
+    expect(reordered[2].id).toBe('block-2'); // Second moves down
+    expect(reordered[3].id).toBe('block-4'); // Fourth stays
+    expect(reordered[4].id).toBe('block-5'); // Fifth stays
   });
 
-  it('should not move first block up', () => {
-    const mockEditor = createMockEditor();
+  it('should reorder block from top to bottom', () => {
+    const blocks = createTestBlocks();
     
-    // Try to move first block up
-    const result = mockEditor.moveBlockUp('block-1');
+    // Move first block (index 0) to bottom (index 5)
+    const reordered = simulateReorder(blocks, 0, 5);
     
-    expect(result).toBe(false);
-    expect(mockEditor.blocks[0].id).toBe('block-1'); // Should remain first
+    expect(reordered[0].id).toBe('block-2'); // Second becomes first
+    expect(reordered[1].id).toBe('block-3'); // Third moves up
+    expect(reordered[2].id).toBe('block-4'); // Fourth moves up
+    expect(reordered[3].id).toBe('block-5'); // Fifth moves up
+    expect(reordered[4].id).toBe('block-1'); // First moves to bottom
   });
 
-  it('should not move last block down', () => {
-    const mockEditor = createMockEditor();
+  it('should reorder block from bottom to top', () => {
+    const blocks = createTestBlocks();
     
-    // Try to move last block down
-    const result = mockEditor.moveBlockDown('block-6');
+    // Move fifth block (index 4) to top (index 0)
+    const reordered = simulateReorder(blocks, 4, 0);
     
-    expect(result).toBe(false);
-    expect(mockEditor.blocks[5].id).toBe('block-6'); // Should remain last
+    expect(reordered[0].id).toBe('block-5'); // Fifth moves to top
+    expect(reordered[1].id).toBe('block-1'); // First moves down
+    expect(reordered[2].id).toBe('block-2'); // Second moves down
+    expect(reordered[3].id).toBe('block-3'); // Third moves down
+    expect(reordered[4].id).toBe('block-4'); // Fourth moves down
   });
 
-  it('should handle invalid block ID', () => {
-    const mockEditor = createMockEditor();
+  it('should handle moving block down correctly', () => {
+    const blocks = createTestBlocks();
     
-    // Try to move non-existent block
-    const resultUp = mockEditor.moveBlockUp('invalid-id');
-    const resultDown = mockEditor.moveBlockDown('invalid-id');
+    // Move second block (index 1) down to fourth position (index 4)
+    const reordered = simulateReorder(blocks, 1, 4);
     
-    expect(resultUp).toBe(false);
-    expect(resultDown).toBe(false);
+    expect(reordered[0].id).toBe('block-1'); // First stays
+    expect(reordered[1].id).toBe('block-3'); // Third moves up
+    expect(reordered[2].id).toBe('block-4'); // Fourth moves up
+    expect(reordered[3].id).toBe('block-2'); // Second moves to position 4
+    expect(reordered[4].id).toBe('block-5'); // Fifth stays
   });
 
-  it('should preserve block content when moving', () => {
-    const mockEditor = createMockEditor();
+  it('should handle moving block up correctly', () => {
+    const blocks = createTestBlocks();
     
-    const originalContent = mockEditor.blocks[1].content;
+    // Move fourth block (index 3) up to second position (index 1)
+    const reordered = simulateReorder(blocks, 3, 1);
     
-    // Move block up
-    mockEditor.moveBlockUp('block-2');
-    
-    // Content should be preserved
-    expect(mockEditor.blocks[0].content).toBe(originalContent);
+    expect(reordered[0].id).toBe('block-1'); // First stays
+    expect(reordered[1].id).toBe('block-4'); // Fourth moves to second
+    expect(reordered[2].id).toBe('block-2'); // Second moves down
+    expect(reordered[3].id).toBe('block-3'); // Third moves down
+    expect(reordered[4].id).toBe('block-5'); // Fifth stays
   });
 
-  it('should handle multiple move operations', () => {
-    const mockEditor = createMockEditor();
+  it('should preserve all blocks during reordering', () => {
+    const blocks = createTestBlocks();
+    const originalIds = blocks.map(b => b.id).sort();
     
-    // Move block-3 up twice
-    mockEditor.moveBlockUp('block-3');
-    mockEditor.moveBlockUp('block-3');
+    // Try various reorderings
+    let reordered = simulateReorder(blocks, 0, 4);
+    reordered = simulateReorder(reordered, 2, 0);
+    reordered = simulateReorder(reordered, 4, 1);
     
-    // block-3 should now be at index 0
-    expect(mockEditor.blocks[0].id).toBe('block-3');
-    expect(mockEditor.blocks[0].content).toBe('Second Heading');
+    const reorderedIds = reordered.map(b => b.id).sort();
+    
+    expect(reorderedIds).toEqual(originalIds);
+    expect(reordered).toHaveLength(5);
   });
 
-  it('should maintain block order integrity', () => {
-    const mockEditor = createMockEditor();
+  it('should preserve block content during reordering', () => {
+    const blocks = createTestBlocks();
     
-    // Move block-4 up
-    mockEditor.moveBlockUp('block-4');
+    const reordered = simulateReorder(blocks, 1, 3);
     
-    // Check that all blocks are still present
-    const blockIds = mockEditor.blocks.map(b => b.id);
-    expect(blockIds).toContain('block-1');
-    expect(blockIds).toContain('block-2');
-    expect(blockIds).toContain('block-3');
-    expect(blockIds).toContain('block-4');
-    expect(blockIds).toContain('block-5');
-    expect(blockIds).toContain('block-6');
+    // Find the moved block and verify its content is preserved
+    const movedBlock = reordered.find(b => b.id === 'block-2');
+    expect(movedBlock?.content).toBe('Second Block');
     
-    // Check that we still have 6 blocks
-    expect(mockEditor.blocks).toHaveLength(6);
+    // Verify all content is preserved
+    const originalContent = blocks.map(b => b.content).sort();
+    const reorderedContent = reordered.map(b => b.content).sort();
+    expect(reorderedContent).toEqual(originalContent);
   });
 
   it('should handle edge case with two blocks', () => {
-    const twoBlocksEditor = {
-      blocks: [
-        { id: 'first', type: 'paragraph', content: 'First' },
-        { id: 'second', type: 'paragraph', content: 'Second' }
-      ],
-      moveBlockUp: function(blockId: string) {
-        const currentIndex = this.blocks.findIndex(b => b.id === blockId);
-        if (currentIndex <= 0) return false;
-        
-        const [movedBlock] = this.blocks.splice(currentIndex, 1);
-        this.blocks.splice(currentIndex - 1, 0, movedBlock);
-        return true;
-      },
-      moveBlockDown: function(blockId: string) {
-        const currentIndex = this.blocks.findIndex(b => b.id === blockId);
-        if (currentIndex >= this.blocks.length - 1) return false;
-        
-        const [movedBlock] = this.blocks.splice(currentIndex, 1);
-        this.blocks.splice(currentIndex + 1, 0, movedBlock);
-        return true;
-      }
-    };
+    const twoBlocks = [
+      { id: 'first', content: 'First' },
+      { id: 'second', content: 'Second' }
+    ];
     
-    // Move second block up
-    const result = twoBlocksEditor.moveBlockUp('second');
+    // Swap the blocks
+    const reordered = simulateReorder(twoBlocks, 0, 2);
     
-    expect(result).toBe(true);
-    expect(twoBlocksEditor.blocks[0].id).toBe('second');
-    expect(twoBlocksEditor.blocks[1].id).toBe('first');
+    expect(reordered[0].id).toBe('second');
+    expect(reordered[1].id).toBe('first');
   });
 
-  it('should handle single block correctly', () => {
-    const singleBlockEditor = {
-      blocks: [
-        { id: 'only', type: 'paragraph', content: 'Only block' }
-      ],
-      moveBlockUp: function(blockId: string) {
-        const currentIndex = this.blocks.findIndex(b => b.id === blockId);
-        if (currentIndex <= 0) return false;
-        
-        const [movedBlock] = this.blocks.splice(currentIndex, 1);
-        this.blocks.splice(currentIndex - 1, 0, movedBlock);
-        return true;
-      },
-      moveBlockDown: function(blockId: string) {
-        const currentIndex = this.blocks.findIndex(b => b.id === blockId);
-        if (currentIndex >= this.blocks.length - 1) return false;
-        
-        const [movedBlock] = this.blocks.splice(currentIndex, 1);
-        this.blocks.splice(currentIndex + 1, 0, movedBlock);
-        return true;
-      }
-    };
+  it('should handle no-op reordering (same position)', () => {
+    const blocks = createTestBlocks();
     
-    // Both operations should fail
-    const resultUp = singleBlockEditor.moveBlockUp('only');
-    const resultDown = singleBlockEditor.moveBlockDown('only');
+    // Move block to its current position
+    const reordered = simulateReorder(blocks, 2, 2);
     
-    expect(resultUp).toBe(false);
-    expect(resultDown).toBe(false);
-    expect(singleBlockEditor.blocks[0].id).toBe('only');
+    // Should be unchanged
+    expect(reordered).toEqual(blocks);
   });
 });
 
-// Integration tests to verify the MarkdownEditor component exposes the move functions
-describe('MarkdownEditor - Move Function Integration', () => {
-  it('should expose moveBlockUp and moveBlockDown functions', () => {
+// Integration tests to verify the MarkdownEditor component still exposes the move functions for API compatibility
+describe('MarkdownEditor - Move Function API Compatibility', () => {
+  it('should still expose moveBlockUp and moveBlockDown for backward compatibility', () => {
     // Create a simple mock without Jest
     const mockRef = {
       current: {
@@ -235,7 +195,5 @@ describe('MarkdownEditor - Move Function Integration', () => {
     
     expect(typeof resultUp).toBe('boolean');
     expect(typeof resultDown).toBe('boolean');
-    expect(resultUp).toBe(false); // Should return false for invalid ID
-    expect(resultDown).toBe(false); // Should return false for invalid ID
   });
 }); 
