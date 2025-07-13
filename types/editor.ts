@@ -45,7 +45,6 @@ export interface EditorTheme {
   heading6?: Record<string, any>;
   code?: Record<string, any>;
   codeBlock?: Record<string, any>;
-  quote?: Record<string, any>;
   quoteBlock?: Record<string, any>;
   bold?: Record<string, any>;
   italic?: Record<string, any>;

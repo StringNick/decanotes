@@ -93,17 +93,9 @@ const defaultTheme: Required<EditorTheme> = {
     shadowRadius: 3,
     elevation: 1,
   },
-  quote: {
-    fontStyle: 'italic',
-    color: '#4a5568',
-    fontSize: 16,
-    lineHeight: 26,
-    fontWeight: '300',
-  },
   quoteBlock: {
     borderLeftWidth: 3,
     borderLeftColor: '#3b82f6',
-    paddingLeft: 20,
     marginLeft: 0,
   },
   bold: {

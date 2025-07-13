@@ -71,8 +71,9 @@ const UniversalBlock: React.FC<BlockProps> = ({
       case 'quote': {
         const depth = block.meta?.depth || 0;
         return {
-          ...(mergedTheme.quote as any),
-          paddingLeft: 16 + depth * 16,
+          ...(mergedTheme.quoteBlock as any),
+          paddingLeft: 10, // Increase indentation for deeper levels
+          marginLeft: depth * 16, // Additional margin for visual separation
         };
       }
       case 'list':
