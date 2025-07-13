@@ -256,10 +256,9 @@ Ready to test all markdown features!
   // Handle block changes
   const handleBlockChange = (blocks: Block[]) => {
     console.log(
-      'checklist',
-      blocks,
+      'image',
       blocks
-        .filter(b => b.type === 'checklist')
+        .filter(b => b.type === 'image')
         .map(b => ({ id: b.id, checked: b.meta?.checked, text: b.content }))
     );
   };
@@ -282,21 +281,12 @@ Ready to test all markdown features!
             color="#059669" 
           />
         </View>
-        <View style={styles.toolbarSection}>
-          <Button title="H" onPress={handleAddHeading} color="#6B7280" />
-          <Button title="<>" onPress={handleAddCodeBlock} color="#6B7280" />
-          <Button title="❝" onPress={handleAddQuote} color="#6B7280" />
-          <Button title="•" onPress={handleAddList} color="#6B7280" />
-          <Button title="☐" onPress={handleAddChecklist} color="#6B7280" />
-          <Button title="—" onPress={handleAddDivider} color="#6B7280" />
-          <Button title="🖼" onPress={handleAddImage} color="#6B7280" />
-        </View>
-      </View>
+             </View>
 
       <MarkdownEditor
         ref={editorRef}
         initialMarkdown={initialMarkdown}
-        onMarkdownChange={handleMarkdownChange}
+        // onMarkdownChange={handleMarkdownChange}
         onBlockChange={handleBlockChange}
         placeholder="Start typing... Use # for headings, ``` for code, > for quotes"
         theme={{

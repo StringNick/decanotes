@@ -19,9 +19,7 @@ const ChecklistBlock: React.FC<BlockProps> = (props) => {
     placeholder,
   } = props;
   console.log('ChecklistBlock render');
-
   if (block.type !== 'checklist') return null;
-  console.log('ChecklistBlock render');
 
   const mergedTheme = { ...defaultTheme, ...theme };
   const checked = !!block.meta?.checked;
@@ -78,4 +76,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChecklistBlock; 
+export default React.memo(ChecklistBlock, (prev, next) => {
+  return (
+    prev.block.content === next.block.content &&
+    prev.block.meta?.checked === next.block.meta?.checked &&
+    prev.isEditing === next.isEditing
+  );
+}); 

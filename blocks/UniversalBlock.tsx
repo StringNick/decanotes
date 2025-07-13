@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NativeSyntheticEvent, Platform, StyleSheet, Text, TextInput, TextInputKeyPressEventData, TextStyle } from 'react-native';
 import defaultTheme from '../themes/defaultTheme';
 import { BlockProps } from '../types/editor';
+import { calculatePreservedCursor } from '../utils/cursorPreservation';
 import { processInlineFormatting } from '../utils/markdownParser';
 
 // UniversalBlock replicates the per-block rendering / editing logic that used to be in MarkdownEditor.
@@ -21,16 +22,35 @@ const UniversalBlock: React.FC<BlockProps> = ({
   placeholder,
 }) => {
   const inputRef = useRef<TextInput>(null);
+  const [selection, setSelection] = useState<{ start: number; end: number } | undefined>(undefined);
+  const lastText = useRef(displayValue);
+  const lastDisplayValue = useRef(displayValue);
   const blurTimeout = useRef<number | null>(null);
   const mergedTheme = { ...defaultTheme, ...theme };
 
-  // Ensure focus for controlled TextInput
+  // Focus only when we ENTER edit mode, not on every text change,
+  // so the caret remains where the user placed it.
   useEffect(() => {
     if (isEditing) {
       const t = setTimeout(() => inputRef.current?.focus(), 0);
       return () => clearTimeout(t);
     }
-  }, [isEditing, displayValue]);
+  }, [isEditing]);
+
+  // Apply cursor preservation after text updates
+  useEffect(() => {
+    if (selection && displayValue !== lastText.current) {
+      const preservedPosition = calculatePreservedCursor(
+        lastText.current,
+        displayValue,
+        selection,
+        block.type
+      );
+      
+      setTimeout(() => setSelection(preservedPosition), 0);
+    }
+    lastText.current = displayValue;
+  }, [displayValue, block.type, selection]);
 
   const getBlockStyle = (): TextStyle => {
     switch (block.type) {
@@ -78,7 +98,11 @@ const UniversalBlock: React.FC<BlockProps> = ({
         isActive && theme?.focusedInput,
       ])}
       value={displayValue}
+      selection={isEditing ? selection : undefined}
       onChangeText={onRawTextChange}
+      onSelectionChange={(e) => {
+        setSelection(e.nativeEvent.selection);
+      }}
       onFocus={() => {
         if (blurTimeout.current) {
           clearTimeout(blurTimeout.current);
