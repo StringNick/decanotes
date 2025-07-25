@@ -344,7 +344,6 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       initialBlocks = [],
       initialMarkdown,
       plugins = [],
-      config = {},
       ...otherProps
     } = props;
 

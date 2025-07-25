@@ -651,33 +651,14 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         testID="editor-core"
         {...props}
       >
-        {renderToolbar()}
+        {editorConfig.toolbar?.enabled !== false && renderToolbar()}
         
         <ScrollView
           ref={scrollViewRef}
           style={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {blocks.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons 
-                name="document-text-outline" 
-                size={48} 
-                color={editorConfig.theme?.colors?.secondary || '#666'} 
-              />
-              <Text style={styles.emptyStateText}>
-                Start writing by adding your first block
-              </Text>
-              <TouchableOpacity
-                style={styles.emptyStateButton}
-                onPress={() => handleToolbarAction('add-block', 'paragraph')}
-              >
-                <Text style={styles.emptyStateButtonText}>Add Paragraph</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            blocks.map(renderBlock)
-          )}
+          {blocks.map(renderBlock)}
         </ScrollView>
         
         {/* Drag overlay */}
@@ -729,7 +710,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   toolbar: {
     flexDirection: 'row',
