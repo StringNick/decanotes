@@ -75,7 +75,7 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
     <View style={styles.container}>
       <View style={styles.headingContainer}>
         <Text style={styles.levelIndicator}>H{level}</Text>
-        {isFocused || readOnly === false ? (
+        {isFocused || !readOnly ? (
           <FormattedTextInput
             value={block.content}
             onChangeText={handleTextChange}
