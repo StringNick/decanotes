@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
@@ -43,7 +43,7 @@ const DIVIDER_STYLES: Record<DividerStyle, DividerConfig> = {
 /**
  * Divider block component
  */
-const DividerComponent: React.FC<BlockComponentProps> = ({
+const DividerComponent: React.FC<BlockComponentProps> = memo(({
   block,
   onUpdate,
   onFocus,
@@ -205,7 +205,17 @@ const DividerComponent: React.FC<BlockComponentProps> = ({
       </TouchableOpacity>
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.block.id === nextProps.block.id &&
+    prevProps.block.meta?.style === nextProps.block.meta?.style &&
+    prevProps.block.meta?.thickness === nextProps.block.meta?.thickness &&
+    prevProps.block.meta?.color === nextProps.block.meta?.color &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isEditing === nextProps.isEditing
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

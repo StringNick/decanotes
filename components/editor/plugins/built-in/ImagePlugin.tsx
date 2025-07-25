@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
@@ -7,7 +7,7 @@ import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 /**
  * Image block component
  */
-const ImageComponent: React.FC<BlockComponentProps> = ({
+const ImageComponent: React.FC<BlockComponentProps> = memo(({
   block,
   onUpdate,
   onFocus,
@@ -176,7 +176,21 @@ const ImageComponent: React.FC<BlockComponentProps> = ({
       )}
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.block.id === nextProps.block.id &&
+    prevProps.block.content === nextProps.block.content &&
+    prevProps.block.meta?.url === nextProps.block.meta?.url &&
+    prevProps.block.meta?.alt === nextProps.block.meta?.alt &&
+    prevProps.block.meta?.caption === nextProps.block.meta?.caption &&
+    prevProps.block.meta?.width === nextProps.block.meta?.width &&
+    prevProps.block.meta?.height === nextProps.block.meta?.height &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.style === nextProps.style
+  );
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -456,39 +470,9 @@ export class ImagePlugin implements BlockPlugin {
     const caption = block.meta?.caption;
     
     if (caption) {
-      return `![${alt}](${url} "${caption}")`;
+      return `![${alt}](${url} "${caption}")`;;
     }
     
     return `![${alt}](${url})`;
-  }
-
-  /**
-   * Get image dimensions from URL (if possible)
-   */
-  async getImageDimensions(url: string): Promise<{ width: number; height: number } | null> {
-    return new Promise((resolve) => {
-      Image.getSize(
-        url,
-        (width, height) => resolve({ width, height }),
-        () => resolve(null)
-      );
-    });
-  }
-
-  /**
-   * Optimize image URL for different sizes
-   */
-  getOptimizedImageUrl(url: string, width?: number, quality?: number): string {
-    // This is a basic implementation - in practice, you might use a service like Cloudinary
-    if (url.includes('unsplash.com')) {
-      const params = [];
-      if (width) params.push(`w=${width}`);
-      if (quality) params.push(`q=${quality}`);
-      
-      const separator = url.includes('?') ? '&' : '?';
-      return params.length > 0 ? `${url}${separator}${params.join('&')}` : url;
-    }
-    
-    return url;
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
@@ -63,7 +63,7 @@ const CALLOUT_CONFIGS: Record<CalloutType, CalloutConfig> = {
 /**
  * Callout block component
  */
-const CalloutComponent: React.FC<BlockComponentProps> = ({
+const CalloutComponent: React.FC<BlockComponentProps> = memo(({
   block,
   onUpdate,
   onFocus,
@@ -222,7 +222,18 @@ const CalloutComponent: React.FC<BlockComponentProps> = ({
       </View>
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.block.id === nextProps.block.id &&
+    prevProps.block.content === nextProps.block.content &&
+    prevProps.block.meta?.type === nextProps.block.meta?.type &&
+    prevProps.block.meta?.title === nextProps.block.meta?.title &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.style === nextProps.style
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

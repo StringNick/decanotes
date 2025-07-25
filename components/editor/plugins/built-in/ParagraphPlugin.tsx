@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { BlockPlugin } from '../BlockPlugin';
 import { BlockComponentProps } from '../../types/PluginTypes';
@@ -9,7 +9,7 @@ import { FormattedTextInput } from '../../components/FormattedTextInput';
 /**
  * Paragraph block component
  */
-const ParagraphComponent: React.FC<BlockComponentProps> = ({
+const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
   block,
   onUpdate,
   onBlockChange,
@@ -48,7 +48,16 @@ const ParagraphComponent: React.FC<BlockComponentProps> = ({
       />
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.block.id === nextProps.block.id &&
+    prevProps.block.content === nextProps.block.content &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.style === nextProps.style
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

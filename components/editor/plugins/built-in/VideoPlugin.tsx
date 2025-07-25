@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
 import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
@@ -8,7 +8,7 @@ import { generateId } from '../../../../utils/markdownParser';
 /**
  * Video block component
  */
-const VideoComponent: React.FC<BlockComponentProps> = ({
+const VideoComponent: React.FC<BlockComponentProps> = memo(({
   block,
   isSelected,
   isFocused,
@@ -134,7 +134,19 @@ const VideoComponent: React.FC<BlockComponentProps> = ({
       )}
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.block.id === nextProps.block.id &&
+    prevProps.block.content === nextProps.block.content &&
+    prevProps.block.meta?.url === nextProps.block.meta?.url &&
+    prevProps.block.meta?.title === nextProps.block.meta?.title &&
+    prevProps.block.meta?.thumbnail === nextProps.block.meta?.thumbnail &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.readOnly === nextProps.readOnly
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

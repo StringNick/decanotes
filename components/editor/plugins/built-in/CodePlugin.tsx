@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
@@ -8,7 +8,7 @@ import { generateId } from '../../../../utils/markdownParser';
 /**
  * Code block component
  */
-const CodeComponent: React.FC<BlockComponentProps> = ({
+const CodeComponent: React.FC<BlockComponentProps> = memo(({
   block,
   isSelected,
   isFocused,
@@ -138,7 +138,18 @@ const CodeComponent: React.FC<BlockComponentProps> = ({
       </View>
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.block.id === nextProps.block.id &&
+    prevProps.block.content === nextProps.block.content &&
+    prevProps.block.meta?.language === nextProps.block.meta?.language &&
+    prevProps.block.meta?.showLineNumbers === nextProps.block.meta?.showLineNumbers &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.readOnly === nextProps.readOnly
+  );
+});
 
 const COMMON_LANGUAGES = [
   'text', 'javascript', 'typescript', 'python', 'java', 'cpp', 'c',

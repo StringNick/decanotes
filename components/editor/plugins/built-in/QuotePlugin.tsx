@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { BlockPlugin } from '../BlockPlugin';
 import { BlockComponentProps } from '../../types/PluginTypes';
@@ -9,7 +9,7 @@ import { FormattedTextInput } from '../../components/FormattedTextInput';
 /**
  * Quote block component
  */
-const QuoteComponent: React.FC<BlockComponentProps> = ({
+const QuoteComponent: React.FC<BlockComponentProps> = memo(({
   block,
   onUpdate,
   onFocus,
@@ -69,7 +69,18 @@ const QuoteComponent: React.FC<BlockComponentProps> = ({
       </View>
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.block.id === nextProps.block.id &&
+    prevProps.block.content === nextProps.block.content &&
+    prevProps.block.meta?.author === nextProps.block.meta?.author &&
+    prevProps.block.meta?.source === nextProps.block.meta?.source &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.style === nextProps.style
+  );
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -129,20 +140,13 @@ const styles = StyleSheet.create({
 /**
  * Quote block plugin
  */
-export class QuotePlugin implements BlockPlugin {
-  readonly type = 'block';
+export class QuotePlugin extends BlockPlugin {
   readonly id = 'quote';
   readonly name = 'Quote';
   readonly version = '1.0.0';
   readonly description = 'Quote blocks for highlighting important text';
   readonly blockType = 'quote';
   readonly component = QuoteComponent;
-  readonly controller = {
-    transformContent: this.transformContent.bind(this),
-    handleEnter: this.handleEnter.bind(this),
-    handleBackspace: this.handleBackspace.bind(this),
-    getActions: this.getActions.bind(this)
-  };
 
   readonly markdownSyntax = {
     patterns: {
@@ -163,6 +167,10 @@ export class QuotePlugin implements BlockPlugin {
     validation: {},
     defaultMeta: {}
   };
+
+  constructor() {
+    super();
+  }
 
   protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
     // Create new paragraph after quote

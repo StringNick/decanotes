@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useEffect, useState } from 'react';
+import React, { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { EditorBlock } from '../../../types/editor';
 import { BlockPlugin, BlockComponentProps } from '../types/PluginTypes';
@@ -81,8 +81,8 @@ export function BlockRenderer({
     }
   }, [block, blockPlugin, onBlockChange, onBlockDelete, onBlockDuplicate, onBlockMove]);
   
-  // Get block component props
-  const blockComponentProps: BlockComponentProps = {
+  // Get block component props (memoized to prevent unnecessary re-renders)
+  const blockComponentProps: BlockComponentProps = useMemo(() => ({
     block,
     isSelected,
     isEditing,
@@ -91,7 +91,7 @@ export function BlockRenderer({
     config,
     onFocus: () => onBlockSelect(block.id),
     onBlur: () => {},
-  };
+  }), [block, isSelected, isEditing, handleAction, config, onBlockChange, onBlockSelect]);
   
   // Render the block component
   const BlockComponent = blockPlugin.component;
