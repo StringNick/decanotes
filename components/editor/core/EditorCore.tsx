@@ -478,6 +478,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       <View 
         style={[styles.container, style]} 
         ref={keyboardRef}
+        testID="editor-core"
         {...props}
       >
         {renderToolbar()}

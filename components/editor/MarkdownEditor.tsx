@@ -50,25 +50,8 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // Create plugin registry
     const pluginRegistry = new PluginRegistry();
     
-    // Built-in plugins array
-    const builtInPlugins = [
-      new ParagraphPlugin(),
-      new HeadingPlugin(),
-      new CodePlugin(),
-      new ImagePlugin(),
-      new ListPlugin(),
-      new QuotePlugin(),
-      new DividerPlugin(),
-      new VideoPlugin(),
-      new CalloutPlugin(),
-      new ChecklistPlugin()
-    ];
-    
-    // Combine built-in and custom plugins
-    const allPlugins = [
-      ...builtInPlugins,
-      ...(plugins || [])
-    ];
+    // Use the plugins passed from the parent component
+    const allPlugins = plugins || [];
   
   // Create actions object for compatibility
   const actions = {
@@ -317,6 +300,10 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       }
     }, [state.errors, onError]);
 
+    // Separate block and markdown plugins
+    const blockPlugins = allPlugins.filter(plugin => plugin.type === 'block');
+    const markdownPlugins = allPlugins.filter(plugin => plugin.type === 'markdown');
+
     return (
       <View 
         style={[styles.container, style]}
@@ -325,7 +312,8 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         <EditorCore
           ref={editorRef}
           initialBlocks={initialBlocks}
-          plugins={plugins}
+          blockPlugins={blockPlugins}
+          markdownPlugins={markdownPlugins}
           config={config}
           theme={theme}
           readOnly={readOnly}
@@ -370,13 +358,28 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       pluginRegistry.register(plugin);
     });
 
+    // Combine built-in and custom plugins
+    const allPlugins = [
+      new ParagraphPlugin(),
+      new HeadingPlugin(),
+      new CodePlugin(),
+      new ImagePlugin(),
+      new ListPlugin(),
+      new QuotePlugin(),
+      new DividerPlugin(),
+      new VideoPlugin(),
+      new CalloutPlugin(),
+      new ChecklistPlugin(),
+      ...plugins
+    ];
+
     return (
       <EditorProvider 
         initialBlocks={initialBlocks}
-        plugins={plugins}
+        plugins={allPlugins}
         onError={props.onError}
       >
-        <EditorWithContext ref={ref} {...otherProps} />
+        <EditorWithContext ref={ref} plugins={allPlugins} {...otherProps} />
       </EditorProvider>
     );
   }

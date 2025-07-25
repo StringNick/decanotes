@@ -143,6 +143,7 @@ export function BlockRenderer({
         onPress={handleBlockPress}
         onLongPress={() => setShowActions(true)}
         activeOpacity={0.7}
+        testID={`block-container-${block.id}`}
       >
         <BlockComponent {...blockComponentProps} />
       </TouchableOpacity>
