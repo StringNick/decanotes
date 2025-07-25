@@ -2,7 +2,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Button, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import MarkdownEditor from '../../components/MarkdownEditor';
-import { Block, EditorMode, MarkdownEditorRef } from '../../types/editor';
+import { Block, EditorBlock, EditorMode, MarkdownEditorRef } from '../../types/editor';
 
 export default function EditorScreen() {
   const editorRef = useRef<MarkdownEditorRef>(null);

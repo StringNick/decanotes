@@ -1,0 +1,188 @@
+import React from 'react';
+import { View, TextInput, StyleSheet, Text } from 'react-native';
+import { BlockPlugin } from '../BlockPlugin';
+import { BlockComponentProps } from '../../types/PluginTypes';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+
+/**
+ * Heading block component
+ */
+const HeadingComponent: React.FC<BlockComponentProps> = ({
+  block,
+  isSelected,
+  isFocused,
+  isDragging,
+  onBlockChange,
+  onFocus,
+  onBlur,
+  onKeyPress,
+  theme,
+  readOnly
+}) => {
+  const level = block.meta?.level || 1;
+  const headingStyle = getHeadingStyle(level);
+
+  const handleTextChange = (text: string) => {
+    onBlockChange({ content: text });
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.headingContainer}>
+        <Text style={styles.levelIndicator}>H{level}</Text>
+        <TextInput
+          style={[
+            styles.textInput,
+            headingStyle,
+            isSelected && styles.selected,
+            isFocused && styles.editing
+          ]}
+          value={block.content}
+          onChangeText={handleTextChange}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          onKeyPress={onKeyPress}
+          placeholder={`Heading ${level}`}
+          placeholderTextColor="#999"
+          multiline={false}
+          editable={!readOnly}
+        />
+      </View>
+    </View>
+  );
+};
+
+const getHeadingStyle = (level: number) => {
+  switch (level) {
+    case 1:
+      return styles.h1;
+    case 2:
+      return styles.h2;
+    case 3:
+      return styles.h3;
+    case 4:
+      return styles.h4;
+    case 5:
+      return styles.h5;
+    case 6:
+      return styles.h6;
+    default:
+      return styles.h1;
+  }
+};
+
+const styles = StyleSheet.create({
+  container: {
+    marginVertical: 8,
+  },
+  headingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  levelIndicator: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#666',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+    minWidth: 24,
+    textAlign: 'center',
+  },
+  textInput: {
+    flex: 1,
+    color: '#333',
+    padding: 8,
+    borderRadius: 4,
+    backgroundColor: 'transparent',
+  },
+  selected: {
+    backgroundColor: '#f0f8ff',
+    borderColor: '#007AFF',
+    borderWidth: 1,
+  },
+  editing: {
+    backgroundColor: '#fff',
+    borderColor: '#007AFF',
+    borderWidth: 2,
+  },
+  h1: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    lineHeight: 40,
+  },
+  h2: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    lineHeight: 36,
+  },
+  h3: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    lineHeight: 32,
+  },
+  h4: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    lineHeight: 28,
+  },
+  h5: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    lineHeight: 24,
+  },
+  h6: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    lineHeight: 22,
+  },
+});
+
+/**
+ * Heading block plugin
+ */
+export class HeadingPlugin extends BlockPlugin {
+  readonly id = 'heading';
+  readonly name = 'Heading';
+  readonly version = '1.0.0';
+  readonly description = 'Heading text block with multiple levels';
+  readonly blockType = 'heading';
+  readonly component = HeadingComponent;
+
+  readonly markdownSyntax = {
+    patterns: {
+      block: /^(#{1,6})\s+(.+)$/
+    },
+    priority: 80
+  };
+
+  readonly toolbar = {
+    icon: 'heading',
+    label: 'Heading',
+    shortcut: 'Ctrl+Alt+1',
+    group: 'text',
+    variants: [
+      { label: 'Heading 1', shortcut: 'Ctrl+Alt+1', meta: { level: 1 } },
+      { label: 'Heading 2', shortcut: 'Ctrl+Alt+2', meta: { level: 2 } },
+      { label: 'Heading 3', shortcut: 'Ctrl+Alt+3', meta: { level: 3 } },
+      { label: 'Heading 4', shortcut: 'Ctrl+Alt+4', meta: { level: 4 } },
+      { label: 'Heading 5', shortcut: 'Ctrl+Alt+5', meta: { level: 5 } },
+      { label: 'Heading 6', shortcut: 'Ctrl+Alt+6', meta: { level: 6 } },
+    ]
+  };
+
+  readonly settings = {
+    allowedParents: ['root', 'quote', 'callout'] as EditorBlockType[],
+    validation: {
+      required: [],
+      maxLength: 200
+    },
+    defaultMeta: {
+      level: 1
+    }
+  };
+
+
+};

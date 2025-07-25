@@ -1,3 +1,4 @@
+// Legacy types for old components
 export type BlockType =
   | 'paragraph'
   | 'heading'
@@ -21,6 +22,61 @@ export interface Block {
     alt?: string; // images
     title?: string; // images/links
     depth?: number; // nested lists & quotes
+  };
+}
+
+// Version 2 Editor Types
+export type EditorBlockType =
+  | 'root'
+  | 'paragraph'
+  | 'heading'
+  | 'code'
+  | 'quote'
+  | 'list'
+  | 'checklist'
+  | 'divider'
+  | 'image'
+  | 'video'
+  | 'callout';
+
+export interface EditorBlock {
+  id: string;
+  type: EditorBlockType;
+  content: string;
+  meta?: {
+    // Heading specific
+    level?: number; // 1-6
+    
+    // Code block specific
+    language?: string;
+    showLineNumbers?: boolean;
+    theme?: string;
+    
+    // List specific
+    ordered?: boolean;
+    depth?: number;
+    
+    // Checklist specific
+    checked?: boolean;
+    
+    // Media specific (image/video)
+    url?: string;
+    alt?: string;
+    title?: string;
+    caption?: string;
+    
+    // Video specific
+    autoplay?: boolean;
+    controls?: boolean;
+    
+    // Callout specific
+    calloutType?: 'note' | 'tip' | 'warning' | 'danger' | 'info' | 'success';
+    
+    // Divider specific
+    style?: 'solid' | 'dashed' | 'dotted';
+    
+    // General
+    [key: string]: any; // Allow plugins to add custom meta
   };
 }
 
@@ -78,4 +134,4 @@ export interface BlockProps {
   onKeyPress: (e: any) => void; // using any to avoid extra native imports here
   theme?: EditorTheme;
   placeholder?: string;
-} 
+}
