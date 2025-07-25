@@ -287,7 +287,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       
       // Check for image patterns ![alt](url) - single line only
         if (!isMultiline) {
-          const imageRegex = new RegExp('^!\\[([^\\]]*)\\]\\(([^)]+)(?:\\s+"([^"]*)")?\\)$');
+          const imageRegex = new RegExp('^!\\[([^\\]]*)\\]\\(([^\\s)]+)(?:\\s+"([^"]*)")?\\)$');
           const imageMatch = content.match(imageRegex);
           if (imageMatch) {
             return {

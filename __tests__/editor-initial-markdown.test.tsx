@@ -162,7 +162,8 @@ describe('Editor Initial Markdown', () => {
     const imageBlocks = capturedBlocks.filter(b => b.type === 'image');
     expect(imageBlocks.length).toBe(1);
     expect(imageBlocks[0].meta?.alt).toBe('Enhanced Image Support');
-    expect(imageBlocks[0].content).toBe('https://via.placeholder.com/400x200 "Enhanced image handling"');
+    expect(imageBlocks[0].content).toBe('https://via.placeholder.com/400x200');
+    expect(imageBlocks[0].meta?.caption).toBe('Enhanced image handling');
   });
 
   it('should handle round-trip conversion correctly', async () => {

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity, Image, Alert } from 'react-native';
-import { BlockPlugin } from '../../types/PluginTypes';
-import { BlockComponentProps } from '../../types/PluginTypes';
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
+import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
 /**
  * Image block component
@@ -19,6 +18,8 @@ const ImageComponent: React.FC<BlockComponentProps> = ({
 }) => {
   const [isUrlEditing, setIsUrlEditing] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  console.log('imageUrl', block.meta?.url, 'alt', block.meta?.alt, 'caption', block.meta?.caption);
   
   const imageUrl = block.meta?.url || block.content;
   const alt = block.meta?.alt || 'Image';
@@ -61,7 +62,11 @@ const ImageComponent: React.FC<BlockComponentProps> = ({
   const validateUrl = (url: string): boolean => {
     try {
       new URL(url);
-      return url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) !== null;
+      // More flexible validation - allow URLs that might have query parameters
+      return url.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i) !== null || 
+             url.includes('image') || 
+             url.includes('img') ||
+             url.startsWith('data:image/');
     } catch {
       return false;
     }
@@ -233,7 +238,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: {
-    maxWidth: '100%',
+    width: '100%',
+    height: 200,
     maxHeight: 400,
     minHeight: 100,
   },
@@ -308,7 +314,7 @@ export class ImagePlugin implements BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]+)")?\)$/
+      block: /^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)$/
     },
     priority: 75
   };
@@ -332,20 +338,9 @@ export class ImagePlugin implements BlockPlugin {
     }
   };
 
-  protected validateContent(content: string): boolean {
-    if (!content.trim()) return true; // Empty is allowed
-    
-    try {
-      new URL(content);
-      return content.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) !== null;
-    } catch {
-      return false;
-    }
-  }
-
   protected transformContent(content: string): string {
     // Extract URL from markdown syntax if present
-    const match = content.match(/^!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]+)")?\)$/);
+    const match = content.match(/^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)$/);
     if (match) {
       return match[2]; // Return just the URL
     }
@@ -353,30 +348,8 @@ export class ImagePlugin implements BlockPlugin {
   }
 
   protected onCreate(block: EditorBlock): EditorBlock {
-    const newBlock = block;
-    
-    // Parse markdown syntax if present
-    const match = newBlock.content.match(/^!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]+)")?\)$/);
-    if (match) {
-      newBlock.content = match[2];
-      newBlock.meta = {
-        ...newBlock.meta,
-        url: match[2],
-        alt: match[1] || 'Image',
-        // caption: match[3] // Caption not supported in current meta type
-      };
-    }
-    
-    // Ensure meta is set
-    if (!newBlock.meta?.url && newBlock.content) {
-      newBlock.meta = {
-        ...newBlock.meta,
-        url: newBlock.content,
-        alt: newBlock.meta?.alt || 'Image'
-      };
-    }
-    
-    return newBlock;
+    console.log('onCreate', block)
+     return block;
   }
 
   protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
@@ -435,6 +408,7 @@ export class ImagePlugin implements BlockPlugin {
     width?: number,
     height?: number
   ): EditorBlock {
+    console.log('create image block')
     return {
       id: generateId(),
       type: 'image',
@@ -454,7 +428,7 @@ export class ImagePlugin implements BlockPlugin {
    * Parse markdown image syntax
    */
   parseMarkdown(text: string): EditorBlock | null {
-    const match = text.match(this.markdownSyntax!.patterns.block!);
+     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
     
     const alt = match[1] || 'Image';
@@ -467,7 +441,8 @@ export class ImagePlugin implements BlockPlugin {
       content: url,
       meta: {
          url,
-         alt: alt || 'Image'
+         alt: alt || 'Image',
+         caption: caption || ''
        }
     };
   }

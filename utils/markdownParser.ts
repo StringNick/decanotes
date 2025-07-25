@@ -106,6 +106,20 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
       continue;
     }
 
+    // image ![alt](url "title")
+    const imageMatch = trimmedLine.match(/^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]*)")?\)$/);
+    if (imageMatch) {
+      if (currentBlock) blocks.push(currentBlock);
+      blocks.push({
+        id: generateId(),
+        type: 'image',
+        content: imageMatch[2], // URL should be the content
+        meta: { url: imageMatch[2], alt: imageMatch[1], caption: imageMatch[3] || '' },
+      });
+      currentBlock = null;
+      continue;
+    }
+
     // checklist (must come before generic list detection)
     const checklistMatch = trimmedLine.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
     if (checklistMatch) {
@@ -202,8 +216,8 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
         md = '---';
         break;
       case 'image': {
-        const title = block.meta?.title ? ` "${block.meta.title}"` : '';
-        md = `![${block.content}](${block.meta?.url || ''}${title})`;
+        const caption = block.meta?.caption ? ` "${block.meta.caption}"` : '';
+        md = `![${block.meta?.alt || ''}](${block.content}${caption})`;
         break;
       }
       default:
@@ -267,12 +281,12 @@ export const parseRawText = (
   }
 
   // image ![alt](url "title")
-  const imgMatch = text.match(/^!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]*)")?\)$/);
+  const imgMatch = text.match(/^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]*)")?\)$/);
   if (imgMatch) {
     return {
       type: 'image',
-      content: imgMatch[1],
-      meta: { url: imgMatch[2], alt: imgMatch[1], title: imgMatch[3] || '' },
+      content: imgMatch[2], // URL should be the content
+      meta: { url: imgMatch[2], alt: imgMatch[1], caption: imgMatch[3] || '' },
     };
   }
 
@@ -421,8 +435,8 @@ export const getDisplayValue = (block: EditorBlock, isActive: boolean): string =
     case 'divider':
       return '---';
     case 'image': {
-      const title = block.meta?.title ? ` "${block.meta.title}"` : '';
-      return `![${block.content}](${block.meta?.url || ''}${title})`;
+      const caption = block.meta?.caption ? ` "${block.meta.caption}"` : '';
+      return `![${block.meta?.alt || ''}](${block.content}${caption})`;
     }
     default:
       return block.content;
