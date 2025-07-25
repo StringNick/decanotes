@@ -125,7 +125,7 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       },
       getMarkdown: () => serializeBlocksToMarkdown(state.blocks),
       setMarkdown: (markdown: string) => {
-        const blocks = parseMarkdownToBlocks(markdown);
+        const blocks = parseMarkdownToBlocks(markdown, allPlugins);
         actions.setBlocks(blocks);
       },
       insertBlock: (type: any, index?: number) => {
@@ -264,7 +264,7 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       },
       importFromFormat: (content: string, format: 'markdown' | 'html' | 'json') => {
         if (format === 'markdown') {
-          const blocks = parseMarkdownToBlocks(content);
+          const blocks = parseMarkdownToBlocks(content, allPlugins);
           actions.setBlocks(blocks);
         }
       },
@@ -320,7 +320,7 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       >
         <EditorCore
           ref={editorRef}
-          initialBlocks={initialBlocks}
+          initialBlocks={state.blocks}
           blockPlugins={blockPlugins}
           markdownPlugins={markdownPlugins}
           config={config}
@@ -385,7 +385,7 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
 
     // Convert initialMarkdown to initialBlocks if provided
     const processedInitialBlocks = initialMarkdown 
-      ? parseMarkdownToBlocks(initialMarkdown)
+      ? parseMarkdownToBlocks(initialMarkdown, allPlugins)
       : initialBlocks;
 
     return (

@@ -305,10 +305,197 @@ export function registerMarkdownSyntax(
 }
 
 /**
- * Parse markdown text to blocks
+ * Parse markdown text to blocks using registered plugins
  */
-export function parseMarkdownToBlocks(markdown: string): EditorBlock[] {
+export function parseMarkdownToBlocks(markdown: string, plugins?: any[]): EditorBlock[] {
+  if (plugins && plugins.length > 0) {
+    return parseMarkdownWithPlugins(markdown, plugins);
+  }
   return globalMarkdownRegistry.parseMarkdown(markdown);
+}
+
+/**
+ * Parse markdown using block plugins that have parseMarkdown methods
+ */
+function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock[] {
+  const blocks: EditorBlock[] = [];
+  const lines = markdown.split('\n');
+  let currentBlock = '';
+  let inCodeBlock = false;
+  let codeBlockLanguage = '';
+  let codeBlockContent = '';
+
+  // Get plugins that can parse markdown (have parseMarkdown method)
+  const markdownCapablePlugins = plugins.filter(plugin => 
+    plugin.type === 'block' && typeof plugin.parseMarkdown === 'function'
+  ).sort((a, b) => (b.markdownSyntax?.priority || 0) - (a.markdownSyntax?.priority || 0));
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Handle code blocks
+    if (line.startsWith('```')) {
+      if (inCodeBlock) {
+        // End of code block
+        blocks.push({
+          id: generateId(),
+          type: 'code',
+          content: codeBlockContent.trim(),
+          meta: { language: codeBlockLanguage }
+        });
+        codeBlockContent = '';
+        inCodeBlock = false;
+        codeBlockLanguage = '';
+      } else {
+        // Start of code block
+        if (currentBlock.trim()) {
+          blocks.push({
+            id: generateId(),
+            type: 'paragraph',
+            content: currentBlock.trim()
+          });
+          currentBlock = '';
+        }
+        inCodeBlock = true;
+        codeBlockLanguage = line.substring(3).trim();
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeBlockContent += (codeBlockContent ? '\n' : '') + line;
+      continue;
+    }
+
+    // Try to parse with plugin parsers
+    let parsed = false;
+    for (const plugin of markdownCapablePlugins) {
+      try {
+        const block = plugin.parseMarkdown(line);
+        if (block) {
+          if (currentBlock.trim()) {
+            blocks.push({
+              id: generateId(),
+              type: 'paragraph',
+              content: currentBlock.trim()
+            });
+            currentBlock = '';
+          }
+          blocks.push(block);
+          parsed = true;
+          break;
+        }
+      } catch (error) {
+        console.warn(`Plugin ${plugin.id} failed to parse line:`, line, error);
+      }
+    }
+
+    if (!parsed) {
+      // Check for built-in markdown patterns
+      const block = parseBuiltInMarkdownLine(line);
+      if (block) {
+        if (currentBlock.trim()) {
+          blocks.push({
+            id: generateId(),
+            type: 'paragraph',
+            content: currentBlock.trim()
+          });
+          currentBlock = '';
+        }
+        blocks.push(block);
+      } else {
+        // Accumulate text for paragraph
+        if (line.trim()) {
+          currentBlock += (currentBlock ? '\n' : '') + line;
+        } else if (currentBlock.trim()) {
+          blocks.push({
+            id: generateId(),
+            type: 'paragraph',
+            content: currentBlock.trim()
+          });
+          currentBlock = '';
+        }
+      }
+    }
+  }
+
+  // Handle remaining content
+  if (currentBlock.trim()) {
+    if (inCodeBlock) {
+      blocks.push({
+        id: generateId(),
+        type: 'code',
+        content: codeBlockContent.trim(),
+        meta: { language: codeBlockLanguage }
+      });
+    } else {
+      blocks.push({
+        id: generateId(),
+        type: 'paragraph',
+        content: currentBlock.trim()
+      });
+    }
+  }
+
+  return blocks;
+}
+
+/**
+ * Parse built-in markdown patterns (extracted for reuse)
+ */
+function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
+  // Headings
+  const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+  if (headingMatch) {
+    return {
+      id: generateId(),
+      type: 'heading',
+      content: headingMatch[2],
+      meta: { level: headingMatch[1].length }
+    };
+  }
+
+  // Quotes
+  if (line.startsWith('> ')) {
+    return {
+      id: generateId(),
+      type: 'quote',
+      content: line.substring(2)
+    };
+  }
+
+  // Lists
+  const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
+  if (listMatch) {
+    const isOrdered = /\d+\./.test(listMatch[2]);
+    return {
+      id: generateId(),
+      type: 'list',
+      content: listMatch[3],
+      meta: {
+        ordered: isOrdered,
+        depth: Math.floor(listMatch[1].length / 2)
+      }
+    };
+  }
+
+  // Horizontal rule
+  if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
+    return {
+      id: generateId(),
+      type: 'divider',
+      content: ''
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Generate unique ID
+ */
+function generateId(): string {
+  return `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**

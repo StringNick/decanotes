@@ -1,8 +1,8 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Button, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import MarkdownEditor from '../../components/editor/MarkdownEditor';
-import { EditorBlock, EditorMode } from '../../types/editor';
 import { ExtendedMarkdownEditorRef } from '../../components/editor/types/EditorTypes';
+import { EditorBlock, EditorMode } from '../../types/editor';
 
 export default function NewEditorScreen() {
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
@@ -188,7 +188,7 @@ Enjoy the enhanced editing experience!
       <MarkdownEditor
         ref={editorRef}
         initialMarkdown={initialMarkdown}
-        onBlockChange={handleBlockChange}
+        onContentChange={handleBlockChange}
         placeholder="Start typing with the enhanced editor... Use # for headings, ``` for code, > for quotes"
       />
     </View>
