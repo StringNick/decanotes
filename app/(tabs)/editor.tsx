@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Button, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../../components/editor/MarkdownEditor';
 import { ExtendedMarkdownEditorRef } from '../../components/editor/types/EditorTypes';
 import { EditorBlock, EditorMode } from '../../types/editor';
@@ -53,7 +54,7 @@ const editor = new MarkdownEditor({
 
 #### Media Support
 
-![Enhanced Image Support](https://via.placeholder.com/400x200 "Enhanced image handling")
+![Enhanced Image Support](https://cdn.ananasposter.ru/image/cache/catalog/poster/mult/83/11037-1000x830.jpg "Enhanced image handling")
 
 ---
 
@@ -140,8 +141,9 @@ Enjoy the enhanced editing experience!
   }, []);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
       {/* Enhanced Toolbar */}
       <View style={styles.toolbar}>
@@ -185,20 +187,29 @@ Enjoy the enhanced editing experience!
         </View>
       </View>
 
-      <MarkdownEditor
-        ref={editorRef}
-        initialMarkdown={initialMarkdown}
-        onContentChange={handleBlockChange}
-        placeholder="Start typing with the enhanced editor... Use # for headings, ``` for code, > for quotes"
-      />
-    </View>
+        <MarkdownEditor
+          ref={editorRef}
+          initialMarkdown={initialMarkdown}
+          onContentChange={handleBlockChange}
+          placeholder="Start typing with the enhanced editor... Use # for headings, ``` for code, > for quotes"
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    paddingBottom: Platform.select({
+      ios: 90, // Account for iOS tab bar
+      android: 80, // Account for Android navigation
+    }),
   },
   toolbar: {
     backgroundColor: '#FFFFFF',
