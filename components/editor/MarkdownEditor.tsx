@@ -129,14 +129,23 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         actions.setBlocks(blocks);
       },
       insertBlock: (type: any, index?: number) => {
-        // Create a new block of the specified type
-        const newBlock = {
-          id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: type,
-          content: '',
-          meta: {}
-        };
-        actions.createBlock(newBlock.type, newBlock.content, index);
+        // Find the plugin for this block type and use its createBlock method
+        const plugin = allPlugins.find(p => p.type === 'block' && (p as any).blockType === type) as any;
+        if (plugin && plugin.createBlock) {
+          const newBlock = plugin.createBlock('', {});
+          // Create the block with the plugin's default meta
+          const blockToCreate = {
+            id: newBlock.id,
+            type: newBlock.type,
+            content: newBlock.content,
+            meta: newBlock.meta || {}
+          };
+          // Use dispatch directly to add the block with proper meta
+          context.dispatch({ type: 'ADD_BLOCK', block: blockToCreate, index });
+        } else {
+          // Fallback to basic block creation
+          actions.createBlock(type, '', index);
+        }
       },
       updateBlock: (id: string, updates: Partial<EditorBlock>) => {
         actions.updateBlock(id, updates);
@@ -333,6 +342,7 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
   (props, ref) => {
     const {
       initialBlocks = [],
+      initialMarkdown,
       plugins = [],
       config = {},
       ...otherProps
@@ -373,9 +383,14 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       ...plugins
     ];
 
+    // Convert initialMarkdown to initialBlocks if provided
+    const processedInitialBlocks = initialMarkdown 
+      ? parseMarkdownToBlocks(initialMarkdown)
+      : initialBlocks;
+
     return (
       <EditorProvider 
-        initialBlocks={initialBlocks}
+        initialBlocks={processedInitialBlocks}
         plugins={allPlugins}
         onError={props.onError}
       >
