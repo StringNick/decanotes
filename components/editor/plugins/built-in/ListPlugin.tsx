@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { BlockPlugin } from '../../types/PluginTypes';
-import { BlockComponentProps } from '../../types/PluginTypes';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
+import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
 type ListType = 'ordered' | 'unordered';
 
@@ -20,7 +19,7 @@ export const getListCursorPosition = (blockId: string): number => {
  */
 const ListComponent: React.FC<BlockComponentProps> = ({
   block,
-  onUpdate,
+  onBlockChange,
   onFocus,
   onBlur,
   isSelected,
@@ -34,9 +33,15 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const handleTextChange = (text: string) => {
-    onUpdate?.({
-      ...block,
-      content: text
+    // so we can use to convert to checklist
+    const listType = block.meta?.listType || 'unordered';
+    const level = block.meta?.level || 0;
+    const indent = '  '.repeat(level);
+    const marker = listType === 'ordered' ? '1.' : '-';
+    const content = `${indent}${marker} ${text}`;
+
+    onBlockChange({
+      content: content,
     });
   };
 
@@ -55,21 +60,21 @@ const ListComponent: React.FC<BlockComponentProps> = ({
       const level = block.meta?.level || 0;
       const indent = '  '.repeat(level);
       const marker = listType === 'ordered' ? '1.' : '-';
-      
-      onUpdate?.({
-        ...block,
-        type: 'paragraph',
-        content: `${indent}${marker} ${block.content}`,
+      const content = `${indent}${marker}${block.content}`;
+
+      onBlockChange({
+        type: 'paragraph' as EditorBlockType,
+        content: content,
         meta: {}
       });
-      
+
       event.preventDefault();
+      return;
     }
   };
 
   const toggleListType = () => {
-    onUpdate?.({
-      ...block,
+    onBlockChange({
       meta: {
         ...block.meta,
         listType: listType === 'ordered' ? 'unordered' : 'ordered'
@@ -109,7 +114,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
         >
           {renderBullet()}
         </TouchableOpacity>
-        
+
         <TextInput
           style={styles.textInput}
           value={block.content}
@@ -185,7 +190,6 @@ export class ListPlugin implements BlockPlugin {
   readonly controller = {
     transformContent: this.transformContent.bind(this),
     handleEnter: this.handleEnter.bind(this),
-    handleBackspace: this.handleBackspace.bind(this),
     handleKeyPress: this.handleKeyPress.bind(this),
     onCreate: this.onCreate.bind(this),
     getActions: this.getActions.bind(this)
@@ -224,14 +228,14 @@ export class ListPlugin implements BlockPlugin {
     if (event.key === 'Tab') {
       event.preventDefault();
       const currentLevel = block.meta?.level || 0;
-      const newLevel = event.shiftKey 
+      const newLevel = event.shiftKey
         ? Math.max(0, currentLevel - 1)
         : Math.min(5, currentLevel + 1);
-      
+
       this.updateBlockLevel(block, newLevel);
       return true;
     }
-    
+
     return false;
   }
 
@@ -245,12 +249,12 @@ export class ListPlugin implements BlockPlugin {
         meta: {}
       };
     }
-    
+
     // Create new list item
     const listType = block.meta?.listType || 'unordered';
     const level = block.meta?.level || 0;
     const index = listType === 'ordered' ? (block.meta?.index || 1) + 1 : 1;
-    
+
     return {
       id: generateId(),
       type: 'list',
@@ -263,49 +267,6 @@ export class ListPlugin implements BlockPlugin {
     };
   }
 
-  protected handleBackspace(block: EditorBlock): EditorBlock | null {
-    // Get the current cursor position for this block
-    const cursorPosition = listCursorPositions[block.id] || 0;
-    
-    // If list item is empty and at level 0, convert to paragraph
-    if (block.content.trim() === '' && (block.meta?.level || 0) === 0) {
-      return {
-        ...block,
-        type: 'paragraph',
-        meta: {}
-      };
-    }
-    
-    // If list item is empty and indented, decrease indentation
-    if (block.content.trim() === '' && (block.meta?.level || 0) > 0) {
-      const newLevel = Math.max(0, (block.meta?.level || 0) - 1);
-      return {
-        ...block,
-        meta: {
-          ...block.meta,
-          level: newLevel
-        }
-      };
-    }
-    
-    // Convert list back to paragraph with markdown syntax when backspace at beginning
-    if (cursorPosition === 0) {
-      const listType = block.meta?.listType || 'unordered';
-      const level = block.meta?.level || 0;
-      const indent = '  '.repeat(level);
-      const marker = listType === 'ordered' ? '1.' : '-';
-      
-      return {
-        ...block,
-        type: 'paragraph',
-        content: `${indent}${marker} ${block.content}`,
-        meta: {}
-      };
-    }
-    
-    // For normal backspace operations (not at beginning), let default behavior handle it
-    return null;
-  }
 
   protected transformContent(content: string): string {
     // Remove markdown list syntax if present
@@ -314,18 +275,18 @@ export class ListPlugin implements BlockPlugin {
 
   protected onCreate(block: EditorBlock): EditorBlock {
     const newBlock = { ...block };
-    
+
     // Parse markdown syntax if present
     const match = newBlock.content.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
     if (match) {
       const indentation = match[1];
       const marker = match[2];
       const content = match[3];
-      
+
       const level = Math.floor(indentation.length / 2); // 2 spaces per level
       const listType = /\d+\./.test(marker) ? 'ordered' : 'unordered';
       const index = listType === 'ordered' ? parseInt(marker) : 1;
-      
+
       newBlock.content = content;
       newBlock.meta = {
         ...newBlock.meta,
@@ -334,7 +295,7 @@ export class ListPlugin implements BlockPlugin {
         index
       };
     }
-    
+
     // Ensure list properties are set
     if (!newBlock.meta?.listType) {
       newBlock.meta = {
@@ -344,7 +305,7 @@ export class ListPlugin implements BlockPlugin {
         index: 1
       };
     }
-    
+
     return newBlock;
   }
 
@@ -352,7 +313,7 @@ export class ListPlugin implements BlockPlugin {
     const actions: any[] = [];
     const listType = block.meta?.listType || 'unordered';
     const level = block.meta?.level || 0;
-    
+
     // Add list-specific actions
     actions.unshift({
       id: 'toggle-list-type',
@@ -362,7 +323,7 @@ export class ListPlugin implements BlockPlugin {
         console.log('Toggle list type:', block.id);
       }
     });
-    
+
     if (level > 0) {
       actions.unshift({
         id: 'decrease-indent',
@@ -373,7 +334,7 @@ export class ListPlugin implements BlockPlugin {
         }
       });
     }
-    
+
     if (level < 5) {
       actions.unshift({
         id: 'increase-indent',
@@ -384,7 +345,7 @@ export class ListPlugin implements BlockPlugin {
         }
       });
     }
-    
+
     return actions;
   }
 
@@ -422,15 +383,15 @@ export class ListPlugin implements BlockPlugin {
   parseMarkdown(text: string): EditorBlock | null {
     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
-    
+
     const indentation = match[1];
     const marker = match[2];
     const content = match[3];
-    
+
     const level = Math.floor(indentation.length / 2);
     const listType = /\d+\./.test(marker) ? 'ordered' : 'unordered';
     const index = listType === 'ordered' ? parseInt(marker) : 1;
-    
+
     return {
       id: generateId(),
       type: 'list',
@@ -450,10 +411,10 @@ export class ListPlugin implements BlockPlugin {
     const listType = block.meta?.listType || 'unordered';
     const level = block.meta?.level || 0;
     const index = block.meta?.index || 1;
-    
+
     const indentation = '  '.repeat(level);
     const marker = listType === 'ordered' ? `${index}.` : '-';
-    
+
     return `${indentation}${marker} ${block.content}`;
   }
 
@@ -463,7 +424,7 @@ export class ListPlugin implements BlockPlugin {
   reorderList(blocks: EditorBlock[]): EditorBlock[] {
     const listBlocks = blocks.filter(block => block.type === 'list');
     let currentIndex = 1;
-    
+
     return listBlocks.map(block => {
       if (block.meta?.listType === 'ordered') {
         const level = block.meta?.level || 0;
