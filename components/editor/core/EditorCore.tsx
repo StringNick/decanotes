@@ -189,81 +189,94 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     ): Partial<EditorBlock> => {
       const content = updates.content || '';
       
-      // Skip transformation if content is empty or doesn't start with markdown syntax
-      if (!content.trim() || content.includes('\n')) {
+      // Skip transformation if content is empty
+      if (!content.trim()) {
         return updates;
       }
       
-      // Check for heading patterns (# ## ###)
-      const headingMatch = content.match(/^(#{1,6})\s+(.+)$/);
-      if (headingMatch) {
-        const level = headingMatch[1].length;
-        const headingContent = headingMatch[2];
-        return {
-          ...updates,
-          type: 'heading',
-          content: headingContent,
-          meta: { level }
-        };
+      // Allow multiline content for code blocks
+      const isMultiline = content.includes('\n');
+      
+      // Check for heading patterns (# ## ###) - single line only
+      if (!isMultiline) {
+        const headingMatch = content.match(/^(#{1,6})\s+(.+)$/);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          const headingContent = headingMatch[2];
+          return {
+            ...updates,
+            type: 'heading',
+            content: headingContent,
+            meta: { level }
+          };
+        }
       }
       
-      // Check for quote pattern (> text)
-      const quoteMatch = content.match(/^>\s+(.+)$/);
-      if (quoteMatch) {
-        return {
-          ...updates,
-          type: 'quote',
-          content: quoteMatch[1]
-        };
+      // Check for quote pattern (> text) - single line only
+      if (!isMultiline) {
+        const quoteMatch = content.match(/^>\s+(.+)$/);
+        if (quoteMatch) {
+          return {
+            ...updates,
+            type: 'quote',
+            content: quoteMatch[1]
+          };
+        }
       }
       
-      // Check for code block pattern (```)
+      // Check for code block pattern (```) - can be multiline
       if (content.startsWith('```')) {
-        const language = content.substring(3).trim() || 'text';
+        const firstLine = content.split('\n')[0];
+        const language = firstLine.substring(3).trim() || 'text';
+        const codeContent = isMultiline ? content.substring(content.indexOf('\n') + 1).replace(/\n?```$/, '') : '';
         return {
           ...updates,
           type: 'code',
-          content: '',
+          content: codeContent,
           meta: { language }
         };
       }
       
-      // Check for checklist patterns first (- [ ] item or - [x] item)
-       const checklistMatch = content.match(/^(\s*)-\s+\[([ x])\]\s+(.+)$/);
-       if (checklistMatch) {
-         const indentation = checklistMatch[1];
-         const checkState = checklistMatch[2];
-         const checklistContent = checklistMatch[3];
-         const level = Math.floor(indentation.length / 2);
-         const checked = checkState === 'x';
-         
-         return {
-           ...updates,
-           type: 'checklist',
-           content: checklistContent,
-           meta: { checked, level }
-         };
-       }
+      // Check for checklist patterns first (- [ ] item or - [x] item) - single line only
+      if (!isMultiline) {
+        const checklistMatch = content.match(/^(\s*)-\s+\[([ x])\]\s+(.+)$/);
+        if (checklistMatch) {
+          const indentation = checklistMatch[1];
+          const checkState = checklistMatch[2];
+          const checklistContent = checklistMatch[3];
+          const level = Math.floor(indentation.length / 2);
+          const checked = checkState === 'x';
+          
+          return {
+            ...updates,
+            type: 'checklist',
+            content: checklistContent,
+            meta: { checked, level }
+          };
+        }
+      }
        
-       // Check for list patterns (- item or 1. item)
-       const listMatch = content.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
-       if (listMatch) {
-         const indentation = listMatch[1];
-         const marker = listMatch[2];
-         const listContent = listMatch[3];
-         const level = Math.floor(indentation.length / 2);
-         const listType = /\d+\./.test(marker) ? 'ordered' : 'unordered';
-         
-         return {
-           ...updates,
-           type: 'list',
-           content: listContent,
-           meta: { listType, level }
-         };
-       }
+      // Check for list patterns (- item or 1. item) - single line only
+      if (!isMultiline) {
+        const listMatch = content.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
+        if (listMatch) {
+          const indentation = listMatch[1];
+          const marker = listMatch[2];
+          const listContent = listMatch[3];
+          const level = Math.floor(indentation.length / 2);
+          const listType = /\d+\./.test(marker) ? 'ordered' : 'unordered';
+          
+          return {
+            ...updates,
+            type: 'list',
+            content: listContent,
+            meta: { listType, level }
+          };
+        }
+      }
       
-      // Check for divider patterns (--- or *** or ___)
-      if (content.match(/^(---|\*\*\*|___)\s*$/)) {
+      // Check for divider patterns (--- or *** or ___) - single line only
+      if (!isMultiline && content.match(/^(---|\*\*\*|___)\s*$/)) {
         return {
           ...updates,
           type: 'divider',
@@ -272,9 +285,27 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         };
       }
       
+      // Check for image patterns ![alt](url) - single line only
+        if (!isMultiline) {
+          const imageRegex = new RegExp('^!\\[([^\\]]*)\\]\\(([^)]+)(?:\\s+"([^"]*)")?\\)$');
+          const imageMatch = content.match(imageRegex);
+          if (imageMatch) {
+            return {
+              ...updates,
+              type: 'image',
+              content: imageMatch[2], // URL
+              meta: { 
+                alt: imageMatch[1] || 'Image',
+                url: imageMatch[2],
+                caption: imageMatch[3] || ''
+              }
+            };
+          }
+        }
+      
       // Try plugin-based markdown parsing
       for (const plugin of markdownPlugins) {
-        if (plugin.parser.canParse(content)) {
+        if (plugin.parser && plugin.parser.canParse(content)) {
           const block = plugin.parser.parseBlock(content);
           if (block) {
             return {
@@ -286,6 +317,30 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           }
         }
       }
+      
+      // Try block plugin markdown parsing
+       for (const plugin of blockPlugins) {
+         if (plugin.markdownSyntax && plugin.markdownSyntax.patterns.block) {
+           const match = content.match(plugin.markdownSyntax.patterns.block);
+           if (match && plugin.controller && plugin.controller.onCreate) {
+             const tempBlock = {
+               id: 'temp',
+               type: plugin.blockType as any,
+               content: content,
+               meta: {}
+             };
+             const block = plugin.controller.onCreate(tempBlock);
+             if (block && block.type === plugin.blockType) {
+               return {
+                 ...updates,
+                 type: block.type,
+                 content: block.content,
+                 meta: block.meta
+               };
+             }
+           }
+         }
+       }
       
       return updates;
     };

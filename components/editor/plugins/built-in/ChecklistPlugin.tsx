@@ -236,7 +236,18 @@ export class ChecklistPlugin implements BlockPlugin {
       };
     }
     
-    return block;
+    // Convert checklist back to paragraph with markdown syntax when backspace at beginning
+    const checked = block.meta?.checked || false;
+    const level = block.meta?.level || 0;
+    const indent = '  '.repeat(level);
+    const checkState = checked ? 'x' : ' ';
+    
+    return {
+      ...block,
+      type: 'paragraph',
+      content: `${indent}- [${checkState}] ${block.content}`,
+      meta: {}
+    };
   }
 
 

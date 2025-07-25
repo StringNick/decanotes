@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
@@ -6,6 +6,14 @@ import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 
 type ListType = 'ordered' | 'unordered';
+
+// Global cursor position tracking for list blocks
+const listCursorPositions: { [blockId: string]: number } = {};
+
+// Export function to get cursor position for a block
+export const getListCursorPosition = (blockId: string): number => {
+  return listCursorPositions[blockId] || 0;
+};
 
 /**
  * List block component
@@ -23,11 +31,40 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   const level = block.meta?.level || 0;
   const index = block.meta?.index || 1;
 
+  const [cursorPosition, setCursorPosition] = useState(0);
+
   const handleTextChange = (text: string) => {
     onUpdate?.({
       ...block,
       content: text
     });
+  };
+
+  const handleSelectionChange = (event: any) => {
+    const { selection } = event.nativeEvent;
+    const position = selection.start;
+    setCursorPosition(position);
+    // Store cursor position globally so handleBackspace can access it
+    listCursorPositions[block.id] = position;
+  };
+
+  const handleKeyPress = (event: any) => {
+    if (event.nativeEvent.key === 'Backspace' && cursorPosition === 0) {
+      // Convert list back to paragraph with markdown syntax when backspace at beginning
+      const listType = block.meta?.listType || 'unordered';
+      const level = block.meta?.level || 0;
+      const indent = '  '.repeat(level);
+      const marker = listType === 'ordered' ? '1.' : '-';
+      
+      onUpdate?.({
+        ...block,
+        type: 'paragraph',
+        content: `${indent}${marker} ${block.content}`,
+        meta: {}
+      });
+      
+      event.preventDefault();
+    }
   };
 
   const toggleListType = () => {
@@ -77,8 +114,10 @@ const ListComponent: React.FC<BlockComponentProps> = ({
           style={styles.textInput}
           value={block.content}
           onChangeText={handleTextChange}
+          onSelectionChange={handleSelectionChange}
           onFocus={onFocus}
           onBlur={onBlur}
+          onKeyPress={handleKeyPress}
           placeholder="List item"
           placeholderTextColor="#999"
           multiline
@@ -225,6 +264,9 @@ export class ListPlugin implements BlockPlugin {
   }
 
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
+    // Get the current cursor position for this block
+    const cursorPosition = listCursorPositions[block.id] || 0;
+    
     // If list item is empty and at level 0, convert to paragraph
     if (block.content.trim() === '' && (block.meta?.level || 0) === 0) {
       return {
@@ -246,7 +288,23 @@ export class ListPlugin implements BlockPlugin {
       };
     }
     
-    return block;
+    // Convert list back to paragraph with markdown syntax when backspace at beginning
+    if (cursorPosition === 0) {
+      const listType = block.meta?.listType || 'unordered';
+      const level = block.meta?.level || 0;
+      const indent = '  '.repeat(level);
+      const marker = listType === 'ordered' ? '1.' : '-';
+      
+      return {
+        ...block,
+        type: 'paragraph',
+        content: `${indent}${marker} ${block.content}`,
+        meta: {}
+      };
+    }
+    
+    // For normal backspace operations (not at beginning), let default behavior handle it
+    return null;
   }
 
   protected transformContent(content: string): string {

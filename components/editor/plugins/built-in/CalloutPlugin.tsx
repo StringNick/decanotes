@@ -499,7 +499,16 @@ export class CalloutPlugin implements BlockPlugin {
    * Handle backspace
    */
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
-    return null;
+    // Convert callout back to paragraph with markdown syntax when backspace at beginning
+    const calloutType = (block.meta?.calloutType || 'note').toUpperCase();
+    const title = block.meta?.title || CALLOUT_CONFIGS[block.meta?.calloutType || 'note'].label;
+    
+    return {
+      ...block,
+      type: 'paragraph',
+      content: `> [!${calloutType}] ${title}\n> ${block.content}`,
+      meta: {}
+    };
   }
 
   /**

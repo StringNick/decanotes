@@ -137,6 +137,7 @@ export class QuotePlugin implements BlockPlugin {
   readonly controller = {
     transformContent: this.transformContent.bind(this),
     handleEnter: this.handleEnter.bind(this),
+    handleBackspace: this.handleBackspace.bind(this),
     getActions: this.getActions.bind(this)
   };
 
@@ -166,6 +167,16 @@ export class QuotePlugin implements BlockPlugin {
       id: generateId(),
       type: 'paragraph',
       content: '',
+      meta: {}
+    };
+  }
+
+  protected handleBackspace(block: EditorBlock): EditorBlock | null {
+    // Convert quote back to paragraph with markdown syntax when backspace at beginning
+    return {
+      ...block,
+      type: 'paragraph',
+      content: `> ${block.content}`,
       meta: {}
     };
   }
