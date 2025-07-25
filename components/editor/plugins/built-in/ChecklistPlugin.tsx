@@ -1,9 +1,16 @@
-import React from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { BlockPlugin } from '../../types/PluginTypes';
-import { BlockComponentProps } from '../../types/PluginTypes';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
+import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+
+// Global cursor position tracking for checklist blocks
+const checklistCursorPositions: { [blockId: string]: number } = {};
+
+// Export function to get cursor position for a block
+export const getChecklistCursorPosition = (blockId: string): number => {
+  return checklistCursorPositions[blockId] || 0;
+};
 
 /**
  * Checklist block component
@@ -19,9 +26,58 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
 }) => {
   const isChecked = block.meta?.checked || false;
   const level = block.meta?.level || 0;
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   const handleTextChange = (text: string) => {
+    // Check if this is a backspace at position 0 (content deletion at start)
+    // Only trigger when cursor was at position 0 and content is being deleted
+    if (text.length < block.content.length && cursorPosition === 0) {
+      // Convert checklist back to paragraph with markdown syntax
+      const checkedSymbol = isChecked ? 'x' : ' ';
+      const level = block.meta?.level || 0;
+      const indent = '  '.repeat(level);
+      
+      onBlockChange({
+        type: 'paragraph' as EditorBlockType,
+        content: `${indent}- [${checkedSymbol}] ${block.content}`,
+        meta: {}
+      });
+      return;
+    }
+    
     onBlockChange({ content: text });
+  };
+
+  const handleSelectionChange = (event: any) => {
+    const { selection } = event.nativeEvent;
+    const position = selection.start;
+    setCursorPosition(position);
+    // Store cursor position globally so handleBackspace can access it
+    checklistCursorPositions[block.id] = position;
+  };
+
+  const handleKeyPress = (event: any) => {
+    console.log('Key press', event.nativeEvent.key, cursorPosition);
+
+    if (event.nativeEvent.key === 'Backspace' && cursorPosition === 0) {
+      console.log('Key press where we need');
+      // Convert checklist back to paragraph with markdown syntax when backspace at beginning
+      const checkedSymbol = isChecked ? 'x' : ' ';
+      const level = block.meta?.level || 0;
+      const indent = '  '.repeat(level);
+      
+      const newBlockData = {
+         type: 'paragraph' as EditorBlockType,
+         content: `${indent}- [${checkedSymbol}]${block.content}`,
+         meta: {}
+       };
+       
+       console.log('Calling onBlockChange with:', newBlockData);
+       onBlockChange(newBlockData);
+      
+      event.preventDefault();
+      return;
+    }
   };
 
   const toggleChecked = () => {
@@ -63,8 +119,10 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
           ]}
           value={block.content}
           onChangeText={handleTextChange}
+          onSelectionChange={handleSelectionChange}
           onFocus={onFocus}
           onBlur={onBlur}
+          onKeyPress={handleKeyPress}
           placeholder="Checklist item"
           placeholderTextColor="#999"
           multiline
@@ -215,6 +273,9 @@ export class ChecklistPlugin implements BlockPlugin {
   }
 
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
+    // Get the current cursor position for this block
+    const cursorPosition = checklistCursorPositions[block.id] || 0;
+    
     // If checklist item is empty and at level 0, convert to paragraph
     if (block.content.trim() === '' && (block.meta?.level || 0) === 0) {
       return {
@@ -237,17 +298,22 @@ export class ChecklistPlugin implements BlockPlugin {
     }
     
     // Convert checklist back to paragraph with markdown syntax when backspace at beginning
-    const checked = block.meta?.checked || false;
-    const level = block.meta?.level || 0;
-    const indent = '  '.repeat(level);
-    const checkState = checked ? 'x' : ' ';
+    if (cursorPosition === 0) {
+      const checked = block.meta?.checked || false;
+      const level = block.meta?.level || 0;
+      const indent = '  '.repeat(level);
+      const checkState = checked ? 'x' : ' ';
+      
+      return {
+        ...block,
+        type: 'paragraph',
+        content: `${indent}- [${checkState}] ${block.content}`,
+        meta: {}
+      };
+    }
     
-    return {
-      ...block,
-      type: 'paragraph',
-      content: `${indent}- [${checkState}] ${block.content}`,
-      meta: {}
-    };
+    // For normal backspace operations (not at beginning), let default behavior handle it
+    return null;
   }
 
 

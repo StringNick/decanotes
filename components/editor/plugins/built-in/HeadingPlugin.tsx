@@ -1,8 +1,8 @@
-import React, { useRef, useState } from 'react';
-import { View, TextInput, StyleSheet, Text } from 'react-native';
-import { BlockPlugin } from '../BlockPlugin';
-import { BlockComponentProps } from '../../types/PluginTypes';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { BlockComponentProps } from '../../types/PluginTypes';
+import { BlockPlugin } from '../BlockPlugin';
 
 // Global cursor position tracker for heading blocks
 let headingCursorPositions: { [blockId: string]: number } = {};
@@ -27,31 +27,6 @@ const HeadingComponent: React.FC<BlockComponentProps> = ({
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const handleTextChange = (text: string) => {
-    console.log('HeadingPlugin handleTextChange:', {
-      newText: text,
-      oldContent: block.content,
-      cursorPosition,
-      textLengthDiff: text.length - block.content.length,
-      isBackspace: text.length < block.content.length
-    });
-    
-    // Check if this is a backspace at position 0 (content deletion at start)
-    // Only trigger when cursor was at position 0 and content is being deleted
-    if (text.length < block.content.length && cursorPosition === 0) {
-      console.log('Converting heading to paragraph with markdown syntax');
-      
-      // Convert heading back to paragraph with markdown syntax
-      const level = block.meta?.level || 1;
-      const markdownPrefix = '#'.repeat(level);
-      
-      onBlockChange({ 
-        type: 'paragraph',
-        content: `${markdownPrefix}${block.content}`,
-        meta: {}
-      });
-      return;
-    }
-    
     onBlockChange({ content: text });
   };
 
