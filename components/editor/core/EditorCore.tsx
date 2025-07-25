@@ -430,7 +430,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           break;
           
         default:
-          console.warn(`Unknown toolbar action: ${actionId}`);
+          // Unknown toolbar action
       }
     };
 
@@ -505,7 +505,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       getBlocks: () => blocks,
       setBlocks: (newBlocks: EditorBlock[]) => {
         // TODO: Implement setBlocks
-        console.warn('setBlocks not yet implemented');
+        // Not yet implemented
       },
       
       // Editor state
@@ -532,7 +532,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       // Advanced operations
       selectBlocks: (ids: string[]) => {
         // TODO: Implement multi-block selection
-        console.warn('selectBlocks not yet implemented');
+        // Not yet implemented
       },
       validateContent: () => errors,
       
@@ -542,7 +542,6 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           return getMarkdown();
         }
         // TODO: Implement HTML and JSON export
-        console.warn(`Export to ${format} not yet implemented`);
         return '';
       },
       importFromFormat: (content: string, format: 'markdown' | 'html' | 'json') => {
@@ -550,7 +549,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           setMarkdown(content);
         } else {
           // TODO: Implement HTML and JSON import
-          console.warn(`Import from ${format} not yet implemented`);
+          // Not yet implemented
         }
       }
     }), [

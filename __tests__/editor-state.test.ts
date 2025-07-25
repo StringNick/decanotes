@@ -12,21 +12,25 @@ const mockMarkdownPlugin: MarkdownPlugin = {
   type: 'markdown',
   description: 'Test bold plugin',
   syntax: {
-    pattern: /\*\*(.*?)\*\*/g,
-    priority: 100,
-    transform: (match, content) => ({ type: 'bold', content })
+    patterns: {
+      inline: /\*\*(.*?)\*\*/g
+    },
+    priority: 100
   },
   parser: {
     canParse: (line: string) => line.includes('**'),
     parseBlock: (line: string) => ({
+      id: 'test-block-id',
       type: 'paragraph',
       content: line.replace(/\*\*(.*?)\*\*/g, '$1'),
       meta: { bold: true }
-    })
+    }),
+    parseInline: (text: string) => text.replace(/\*\*(.*?)\*\*/g, '$1')
   },
   serializer: {
     canSerialize: (block: EditorBlock) => block.meta?.bold === true,
-    serializeBlock: (block: EditorBlock) => `**${block.content}**`
+    serializeBlock: (block: EditorBlock) => `**${block.content}**`,
+    serializeInline: (text: string) => text.replace(/\*\*(.*?)\*\*/g, '$1')
   }
 };
 

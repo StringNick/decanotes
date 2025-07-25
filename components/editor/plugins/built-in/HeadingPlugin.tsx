@@ -4,12 +4,14 @@ import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 // Global cursor position tracker for heading blocks
 let headingCursorPositions: { [blockId: string]: number } = {};
 
 /**
- * Heading block component
+ * Heading block component with modern dark theme support
  */
 const HeadingComponent: React.FC<BlockComponentProps> = memo(({
   block,
@@ -23,8 +25,11 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
   theme,
   readOnly
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
   const level = block.meta?.level || 1;
-  const headingStyle = getHeadingStyle(level);
+  const headingStyle = getHeadingStyle(level, colorScheme ?? 'light');
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const handleTextChange = (text: string) => {
@@ -74,7 +79,9 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
   return (
     <View style={styles.container}>
       <View style={styles.headingContainer}>
-        <Text style={styles.levelIndicator}>H{level}</Text>
+        <View style={styles.levelIndicator}>
+          <Text style={styles.levelText}>H{level}</Text>
+        </View>
         {isFocused || !readOnly ? (
           <FormattedTextInput
             value={block.content}
@@ -84,13 +91,15 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
             onBlur={onBlur}
             onKeyPress={handleKeyPress}
             placeholder={`Heading ${level}`}
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             isSelected={isSelected}
             isEditing={isFocused}
             multiline={false}
             style={[
               styles.textInput,
-              headingStyle
+              headingStyle,
+              isSelected && styles.selected,
+              isFocused && styles.editing
             ]}
           />
         ) : (
@@ -125,100 +134,92 @@ export const getHeadingCursorPosition = (blockId: string): number => {
   return headingCursorPositions[blockId] || 0;
 };
 
-const getHeadingStyle = (level: number) => {
+const getHeadingStyle = (level: number, colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  const baseStyle = {
+    color: colors.text,
+    fontWeight: '700' as const,
+    letterSpacing: -0.5,
+  };
+  
   switch (level) {
     case 1:
-      return styles.h1;
+      return { ...baseStyle, fontSize: 32, lineHeight: 40 };
     case 2:
-      return styles.h2;
+      return { ...baseStyle, fontSize: 28, lineHeight: 36, letterSpacing: -0.3 };
     case 3:
-      return styles.h3;
+      return { ...baseStyle, fontSize: 24, lineHeight: 32, letterSpacing: -0.2 };
     case 4:
-      return styles.h4;
+      return { ...baseStyle, fontSize: 20, lineHeight: 28, fontWeight: '600' as const };
     case 5:
-      return styles.h5;
+      return { ...baseStyle, fontSize: 18, lineHeight: 26, fontWeight: '600' as const };
     case 6:
-      return styles.h6;
+      return { ...baseStyle, fontSize: 16, lineHeight: 24, fontWeight: '600' as const };
     default:
-      return styles.h1;
+      return { ...baseStyle, fontSize: 32, lineHeight: 40 };
   }
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  headingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  levelIndicator: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#666',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 6,
-    paddingVertical: 8,
-    borderRadius: 4,
-    marginRight: 8,
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  textInput: {
-    flex: 1,
-    color: '#333',
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-    borderRadius: 4,
-    backgroundColor: 'transparent',
-  },
-  textDisplay: {
-    flex: 1,
-    color: '#333',
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-  },
-  selected: {
-    backgroundColor: '#f0f8ff',
-    borderColor: '#007AFF',
-    borderWidth: 1,
-  },
-  editing: {
-    backgroundColor: '#fff',
-    borderColor: '#007AFF',
-    borderWidth: 2,
-  },
-  h1: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    lineHeight: 40,
-  },
-  h2: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    lineHeight: 36,
-  },
-  h3: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    lineHeight: 32,
-  },
-  h4: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    lineHeight: 28,
-  },
-  h5: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    lineHeight: 24,
-  },
-  h6: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    lineHeight: 22,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 12,
+    },
+    headingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    levelIndicator: {
+      backgroundColor: colors.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 6,
+      marginRight: 12,
+      minWidth: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    levelText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    textInput: {
+      flex: 1,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    textDisplay: {
+      flex: 1,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    },
+    selected: {
+      backgroundColor: colors.accentLight,
+      borderColor: colors.borderFocus,
+      borderWidth: 1,
+    },
+    editing: {
+      backgroundColor: colors.surface,
+      borderColor: colors.accent,
+      borderWidth: 2,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+  });
+};
 
 /**
  * Heading block plugin

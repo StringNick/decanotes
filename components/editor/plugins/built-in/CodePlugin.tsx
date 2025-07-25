@@ -4,9 +4,11 @@ import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 /**
- * Code block component
+ * Code block component with modern dark theme support
  */
 const CodeComponent: React.FC<BlockComponentProps> = memo(({
   block,
@@ -20,6 +22,9 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
   theme,
   readOnly
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
   const [isLanguageEditing, setIsLanguageEditing] = useState(false);
   const language = block.meta?.language || 'text';
   const showLineNumbers = block.meta?.showLineNumbers !== false;
@@ -126,7 +131,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
           onBlur={onBlur}
           onKeyPress={onKeyPress}
           placeholder="Enter your code..."
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.textMuted}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
@@ -158,105 +163,135 @@ const COMMON_LANGUAGES = [
   'sql', 'bash', 'shell', 'powershell'
 ];
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#e9ecef',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-  },
-  languageButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#6c757d',
-    borderRadius: 4,
-  },
-  languageText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-  },
-  lineNumbersButton: {
-    padding: 4,
-  },
-  buttonText: {
-    fontSize: 16,
-  },
-  languageSelector: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#dee2e6',
-  },
-  languageOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-    backgroundColor: '#fff',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ced4da',
-  },
-  selectedLanguage: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  languageOptionText: {
-    fontSize: 12,
-    color: '#495057',
-  },
-  codeContainer: {
-    flexDirection: 'row',
-    minHeight: 100,
-  },
-  selected: {
-    borderColor: '#007AFF',
-    borderWidth: 2,
-  },
-  editing: {
-    borderColor: '#007AFF',
-    borderWidth: 3,
-  },
-  lineNumbersContainer: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: '#e9ecef',
-    borderRightWidth: 1,
-    borderRightColor: '#ced4da',
-  },
-  lineNumber: {
-    fontSize: 12,
-    color: '#6c757d',
-    fontFamily: 'Courier New',
-    lineHeight: 18,
-    textAlign: 'right',
-    minWidth: 20,
-  },
-  codeInput: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: 'Courier New',
-    lineHeight: 18,
-    color: '#212529',
-    padding: 12,
-    backgroundColor: 'transparent',
-  },
-  codeInputFullWidth: {
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 12,
+      borderRadius: 12,
+      backgroundColor: colors.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.backgroundTertiary,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    languageButton: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      backgroundColor: colors.accent,
+      borderRadius: 6,
+    },
+    languageText: {
+      color: colors.surface,
+      fontSize: 11,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    languageInput: {
+      fontSize: 11,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      backgroundColor: colors.surface,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.borderFocus,
+    },
+    lineNumbersButton: {
+      padding: 6,
+      borderRadius: 6,
+      backgroundColor: colors.surface,
+    },
+    buttonText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    languageSelector: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.backgroundTertiary,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    languageOption: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginRight: 8,
+      backgroundColor: colors.surface,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    selectedLanguage: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    languageOptionText: {
+      fontSize: 12,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    codeContainer: {
+      flexDirection: 'row',
+      minHeight: 120,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    selected: {
+      borderColor: colors.accent,
+      borderWidth: 2,
+    },
+    editing: {
+      borderColor: colors.accent,
+      borderWidth: 2,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    lineNumbersContainer: {
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+      backgroundColor: colors.backgroundTertiary,
+      borderRightWidth: 1,
+      borderRightColor: colors.border,
+    },
+    lineNumber: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Courier New',
+      lineHeight: 20,
+      textAlign: 'right',
+      minWidth: 24,
+    },
+    codeInput: {
+      flex: 1,
+      fontSize: 14,
+      fontFamily: 'Courier New',
+      lineHeight: 20,
+      color: colors.text,
+      padding: 16,
+      backgroundColor: 'transparent',
+    },
+    codeInputFullWidth: {
+      borderBottomLeftRadius: 12,
+      borderBottomRightRadius: 12,
+    },
+  });
+};
 
 /**
  * Code block plugin
@@ -487,7 +522,7 @@ export class CodePlugin implements BlockPlugin {
    */
   private updateBlockContent(block: EditorBlock, content: string, cursorPosition?: number) {
     // This would be handled by the editor context
-    console.log(`Update block ${block.id} content:`, content);
+    // No-op in this implementation
   }
 
   /**

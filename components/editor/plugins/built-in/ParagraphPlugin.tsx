@@ -5,9 +5,11 @@ import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 /**
- * Paragraph block component
+ * Paragraph block component with modern dark theme support
  */
 const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
   block,
@@ -19,6 +21,10 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
   isEditing,
   style
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
+
   const handleTextChange = (text: string) => {
     if (onBlockChange) {
       onBlockChange({ content: text });
@@ -38,13 +44,17 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
         onFocus={onFocus}
         onBlur={onBlur}
         placeholder="Type something..."
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textMuted}
         isSelected={isSelected}
         isEditing={isEditing}
         multiline
         textAlignVertical="top"
         scrollEnabled={false}
-        style={styles.textInput}
+        style={[
+          styles.textInput,
+          isSelected && styles.selected,
+          isEditing && styles.editing
+        ]}
       />
     </View>
   );
@@ -59,30 +69,42 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
   );
 });
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 4,
-  },
-  textInput: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-    padding: 8,
-    minHeight: 40,
-    borderRadius: 4,
-    backgroundColor: 'transparent',
-  },
-  selected: {
-    backgroundColor: '#f0f8ff',
-    borderColor: '#007AFF',
-    borderWidth: 1,
-  },
-  editing: {
-    backgroundColor: '#fff',
-    borderColor: '#007AFF',
-    borderWidth: 2,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 6,
+    },
+    textInput: {
+      fontSize: 16,
+      lineHeight: 26,
+      color: colors.text,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      minHeight: 48,
+      borderRadius: 8,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    selected: {
+      backgroundColor: colors.accentLight,
+      borderColor: colors.borderFocus,
+      borderWidth: 1,
+    },
+    editing: {
+      backgroundColor: colors.surface,
+      borderColor: colors.accent,
+      borderWidth: 2,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+  });
+};
 
 /**
  * Paragraph block plugin

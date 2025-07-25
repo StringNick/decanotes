@@ -6,8 +6,8 @@ import { Animated, FlatList, Keyboard, StatusBar, StyleSheet, Text, TouchableOpa
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
-import { Colors } from '../constants/Colors';
-import { useColorScheme } from '../hooks/useColorScheme';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
 
 // Import built-in plugins
@@ -22,15 +22,21 @@ export default function EditorScreen() {
 
   // Mock page data - in real app this would come from navigation params
   const pageTitle = "Untitled";
-
-  // Get theme colors
-  const theme = Colors[colorScheme ?? 'light'];
+  const colors = Colors[colorScheme ?? 'light'];
+  const theme = {
+    text: colors.text,
+    background: colors.background,
+    surface: colors.surface,
+    border: colors.border,
+    accent: colors.accent,
+    tint: colors.accent,
+    icon: colors.text,
+  };
   const styles = getStyles(colorScheme ?? 'light');
 
   // Handle adding blocks
   const handleAddBlock = useCallback((blockType: EditorBlockType) => {
     if (editorRef.current) {
-      console.log('insert block');
       editorRef.current.insertBlock(blockType);
       // Focus the newly added block
       setTimeout(() => {
@@ -223,14 +229,14 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       paddingHorizontal: 20,
       paddingVertical: 16,
-      backgroundColor: colors.background,
-      borderBottomWidth: 0.5,
-      borderBottomColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-      shadowColor: colorScheme === 'dark' ? '#000' : '#000',
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      shadowColor: colors.text,
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.1,
-      shadowRadius: 3,
-      elevation: 2,
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
     },
     backButton: {
       width: 40,
@@ -239,7 +245,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 12,
-      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      backgroundColor: colors.backgroundSecondary,
     },
     headerCenter: {
       flex: 1,
@@ -263,19 +269,19 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       justifyContent: 'center',
       marginLeft: 12,
-      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      backgroundColor: colors.backgroundSecondary,
     },
     editorContainer: {
       flex: 1,
       backgroundColor: colors.background,
     },
     bottomContainer: {
-      backgroundColor: colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.95)',
-      borderTopWidth: 0.5,
-      borderTopColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-      shadowColor: '#000',
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      shadowColor: colors.text,
       shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: colorScheme === 'dark' ? 0.4 : 0.1,
+      shadowOpacity: 0.1,
       shadowRadius: 8,
       elevation: 8,
     },
@@ -284,11 +290,11 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 20,
-      paddingVertical: 2,
-      backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#f8f9fa',
+      paddingVertical: 12,
+      backgroundColor: colors.surface,
       borderTopWidth: 1,
-      borderTopColor: colorScheme === 'dark' ? '#333' : '#e1e5e9',
-      shadowColor: '#000',
+      borderTopColor: colors.border,
+      shadowColor: colors.text,
       shadowOffset: { width: 0, height: -2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
@@ -298,25 +304,28 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
     },
     iconButton: {
-      padding: 0,
+      padding: 10,
       minWidth: 44,
       minHeight: 44,
       alignItems: 'center',
       justifyContent: 'center',
+      borderRadius: 8,
+      backgroundColor: colors.backgroundSecondary,
+      marginRight: 8,
     },
 
     blockComponentsPanel: {
-      height: 250,
-      backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#ffffff',
+      height: 320,
+      backgroundColor: colors.surface,
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
-      shadowColor: '#000',
+      shadowColor: colors.text,
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.15,
       shadowRadius: 12,
       elevation: 8,
       borderTopWidth: 1,
-      borderTopColor: colorScheme === 'dark' ? '#333' : '#e1e5e9',
+      borderTopColor: colors.border,
     },
     blockPanelHeader: {
       flexDirection: 'row',
@@ -325,12 +334,12 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: 20,
       paddingVertical: 16,
       borderBottomWidth: 1,
-      borderBottomColor: colorScheme === 'dark' ? '#333' : '#e1e5e9',
+      borderBottomColor: colors.border,
     },
     blockPanelTitle: {
       fontSize: 18,
       fontWeight: '600',
-      color: colorScheme === 'dark' ? '#ffffff' : '#1a1a1a',
+      color: colors.text,
     },
     blockPanelContent: {
       flex: 1,
@@ -348,20 +357,20 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: 12,
       marginBottom: 8,
       backgroundColor: 'transparent',
-      borderRadius: 8,
+      borderRadius: 12,
       borderWidth: 1,
-      borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+      borderColor: colors.border,
       flex: 0.48,
     },
     blockPanelIconContainer: {
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 8,
+      marginRight: 12,
     },
     blockPanelLabel: {
       fontSize: 16,
       fontWeight: '500',
-      color: colorScheme === 'dark' ? '#ffffff' : '#1a1a1a',
+      color: colors.text,
       flex: 1,
     },
   });

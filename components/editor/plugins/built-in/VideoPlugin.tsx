@@ -4,9 +4,11 @@ import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 /**
- * Video block component
+ * Video block component with modern dark theme support
  */
 const VideoComponent: React.FC<BlockComponentProps> = memo(({
   block,
@@ -20,6 +22,9 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
   theme,
   readOnly
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
   const [isUrlEditing, setIsUrlEditing] = useState(false);
   const videoUrl = block.meta?.url || block.content;
   const title = block.meta?.title || 'Video';
@@ -111,7 +116,7 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
             value={videoUrl}
             onChangeText={handleUrlChange}
             placeholder="Enter video URL (YouTube, Vimeo, or direct link)"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             autoFocus
             onSubmitEditing={handleUrlSubmit}
             onBlur={handleUrlSubmit}
@@ -121,7 +126,7 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
             value={title}
             onChangeText={handleTitleChange}
             placeholder="Video title (optional)"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
       )}
@@ -148,111 +153,131 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
   );
 });
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  videoContainer: {
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-    overflow: 'hidden',
-  },
-  selected: {
-    borderColor: '#007AFF',
-    borderStyle: 'solid',
-  },
-  editing: {
-    borderColor: '#007AFF',
-    borderWidth: 3,
-    borderStyle: 'solid',
-  },
-  placeholder: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8f9fa',
-  },
-  placeholderText: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  placeholderLabel: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  videoPreview: {
-    minHeight: 120,
-  },
-  thumbnailContainer: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#000',
-  },
-  thumbnailPlaceholder: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  videoPlaceholder: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  videoIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  videoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  videoUrl: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-  },
-  editContainer: {
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  urlInput: {
-    fontSize: 14,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    marginBottom: 8,
-  },
-  titleInput: {
-    fontSize: 14,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    backgroundColor: '#fff',
-  },
-  infoContainer: {
-    padding: 8,
-    backgroundColor: '#f8f9fa',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 12,
+    },
+    videoContainer: {
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+      overflow: 'hidden',
+      backgroundColor: colors.surface,
+    },
+    selected: {
+      borderColor: colors.accent,
+      borderStyle: 'solid',
+      backgroundColor: colors.accentLight,
+    },
+    editing: {
+      borderColor: colors.accent,
+      borderWidth: 2,
+      borderStyle: 'solid',
+      backgroundColor: colors.surface,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    placeholder: {
+      padding: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.backgroundSecondary,
+    },
+    placeholderText: {
+      fontSize: 48,
+      marginBottom: 12,
+    },
+    placeholderLabel: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+    videoPreview: {
+      minHeight: 140,
+      backgroundColor: colors.surface,
+    },
+    thumbnailContainer: {
+      padding: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.backgroundSecondary,
+    },
+    thumbnailPlaceholder: {
+      fontSize: 48,
+      marginBottom: 12,
+    },
+    videoPlaceholder: {
+      padding: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.backgroundSecondary,
+    },
+    videoIcon: {
+      fontSize: 36,
+      marginBottom: 12,
+    },
+    videoTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    videoUrl: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      fontFamily: 'monospace',
+    },
+    editContainer: {
+      padding: 16,
+      backgroundColor: colors.backgroundSecondary,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    urlInput: {
+      fontSize: 14,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      color: colors.text,
+      marginBottom: 12,
+    },
+    titleInput: {
+      fontSize: 14,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      color: colors.text,
+    },
+    infoContainer: {
+      padding: 12,
+      backgroundColor: colors.backgroundSecondary,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      borderRadius: 8,
+      marginTop: 8,
+    },
+    infoText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 4,
+      fontFamily: 'monospace',
+    },
+  });
+};
 
 /**
  * Video plugin implementation

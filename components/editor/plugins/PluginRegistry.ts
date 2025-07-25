@@ -48,7 +48,7 @@ export class PluginRegistry implements PluginRegistryInterface {
       }
     }
 
-    console.log(`Plugin '${plugin.name}' (${plugin.id}) registered successfully`);
+    // Plugin registered successfully
   }
 
   /**
@@ -76,7 +76,7 @@ export class PluginRegistry implements PluginRegistryInterface {
       }
     }
 
-    console.log(`Plugin '${plugin.name}' (${pluginId}) unregistered`);
+    // Plugin unregistered successfully
   }
 
   /**

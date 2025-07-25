@@ -1,11 +1,13 @@
-import React, { useState, memo } from 'react';
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useRef, memo } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Alert, Dimensions } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 /**
- * Image block component
+ * Image block component with modern dark theme support
  */
 const ImageComponent: React.FC<BlockComponentProps> = memo(({
   block,
@@ -16,6 +18,9 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
   isEditing,
   style
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
   const [isUrlEditing, setIsUrlEditing] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -145,7 +150,7 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
             value={imageUrl}
             onChangeText={handleUrlChange}
             placeholder="Enter image URL (jpg, png, gif, webp, svg)"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             autoFocus
             onSubmitEditing={handleUrlSubmit}
             onBlur={handleUrlSubmit}
@@ -155,14 +160,14 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
             value={alt}
             onChangeText={handleAltChange}
             placeholder="Alt text (for accessibility)"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
           />
           <TextInput
             style={styles.captionInput}
             value={caption || ''}
             onChangeText={handleCaptionChange}
             placeholder="Caption (optional)"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
       )}
@@ -192,123 +197,150 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
   );
 });
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  imageWrapper: {
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-    overflow: 'hidden',
-  },
-  selected: {
-    borderColor: '#007AFF',
-    borderStyle: 'solid',
-  },
-  editing: {
-    borderColor: '#007AFF',
-    borderWidth: 3,
-    borderStyle: 'solid',
-  },
-  placeholder: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8f9fa',
-  },
-  placeholderText: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  placeholderLabel: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  errorContainer: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffe6e6',
-  },
-  errorIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#d32f2f',
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  errorUrl: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-  },
-  imageContainer: {
-    alignItems: 'center',
-  },
-  image: {
-    width: '100%',
-    height: 200,
-    maxHeight: 400,
-    minHeight: 100,
-  },
-  imageCaption: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 8,
-    paddingHorizontal: 16,
-  },
-  editContainer: {
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  urlInput: {
-    fontSize: 14,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    marginBottom: 8,
-  },
-  altInput: {
-    fontSize: 14,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    marginBottom: 8,
-  },
-  captionInput: {
-    fontSize: 14,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    backgroundColor: '#fff',
-  },
-  infoContainer: {
-    padding: 8,
-    backgroundColor: '#f8f9fa',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 12,
+    },
+    imageWrapper: {
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+      overflow: 'hidden',
+      backgroundColor: colors.surface,
+    },
+    selected: {
+      borderColor: colors.accent,
+      borderStyle: 'solid',
+      backgroundColor: colors.accentLight,
+    },
+    editing: {
+      borderColor: colors.accent,
+      borderWidth: 2,
+      borderStyle: 'solid',
+      backgroundColor: colors.surface,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    placeholder: {
+      padding: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.backgroundSecondary,
+    },
+    placeholderText: {
+      fontSize: 48,
+      marginBottom: 12,
+    },
+    placeholderLabel: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+    errorContainer: {
+      padding: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.errorLight,
+    },
+    errorIcon: {
+      fontSize: 32,
+      marginBottom: 12,
+    },
+    errorText: {
+      fontSize: 16,
+      color: colors.error,
+      fontWeight: '600',
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    errorUrl: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      fontFamily: 'monospace',
+    },
+    imageContainer: {
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+    },
+    image: {
+      width: '100%',
+      height: 200,
+      maxHeight: 400,
+      minHeight: 120,
+    },
+    imageCaption: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      marginTop: 12,
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 6,
+      marginHorizontal: 16,
+      marginBottom: 8,
+    },
+    editContainer: {
+      padding: 16,
+      backgroundColor: colors.backgroundSecondary,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    urlInput: {
+      fontSize: 14,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      color: colors.text,
+      marginBottom: 12,
+    },
+    altInput: {
+      fontSize: 14,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      color: colors.text,
+      marginBottom: 12,
+    },
+    captionInput: {
+      fontSize: 14,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      color: colors.text,
+    },
+    infoContainer: {
+      padding: 12,
+      backgroundColor: colors.backgroundSecondary,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      borderRadius: 8,
+      marginTop: 8,
+    },
+    infoText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 4,
+      fontFamily: 'monospace',
+    },
+  });
+};
 
 /**
  * Image block plugin

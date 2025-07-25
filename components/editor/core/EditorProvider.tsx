@@ -42,11 +42,9 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       };
 
     case 'ADD_BLOCK':
-      console.log('add new block', state.blocks)
       const newBlocks = [...state.blocks];
       const insertIndex = action.index ?? newBlocks.length;
       newBlocks.splice(insertIndex, 0, action.block);
-      console.log('add new block ', newBlocks)
       
       return {
         ...state,

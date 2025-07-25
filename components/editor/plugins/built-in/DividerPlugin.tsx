@@ -3,6 +3,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 type DividerStyle = 'solid' | 'dashed' | 'dotted' | 'double' | 'gradient';
 
@@ -12,36 +14,41 @@ interface DividerConfig {
   preview: string;
 }
 
-const DIVIDER_STYLES: Record<DividerStyle, DividerConfig> = {
-  solid: {
-    label: 'Solid',
-    style: { borderBottomWidth: 1, borderBottomColor: '#ddd' },
-    preview: '────────────'
-  },
-  dashed: {
-    label: 'Dashed',
-    style: { borderBottomWidth: 1, borderBottomColor: '#ddd', borderStyle: 'dashed' },
-    preview: '- - - - - - -'
-  },
-  dotted: {
-    label: 'Dotted',
-    style: { borderBottomWidth: 1, borderBottomColor: '#ddd', borderStyle: 'dotted' },
-    preview: '• • • • • • •'
-  },
-  double: {
-    label: 'Double',
-    style: { borderBottomWidth: 3, borderBottomColor: '#ddd' },
-    preview: '════════════'
-  },
-  gradient: {
-    label: 'Gradient',
-    style: { height: 2, backgroundColor: '#ddd' },
-    preview: '▓▓▓▓▓▓▓▓▓▓▓▓'
-  }
+const getDividerStyles = (colorScheme: 'light' | 'dark'): Record<DividerStyle, DividerConfig> => {
+  const colors = Colors[colorScheme];
+  const defaultColor = colors.border;
+  
+  return {
+    solid: {
+      label: 'Solid',
+      style: { borderBottomWidth: 1, borderBottomColor: defaultColor },
+      preview: '────────────'
+    },
+    dashed: {
+      label: 'Dashed',
+      style: { borderBottomWidth: 1, borderBottomColor: defaultColor, borderStyle: 'dashed' },
+      preview: '- - - - - - -'
+    },
+    dotted: {
+      label: 'Dotted',
+      style: { borderBottomWidth: 1, borderBottomColor: defaultColor, borderStyle: 'dotted' },
+      preview: '• • • • • • •'
+    },
+    double: {
+      label: 'Double',
+      style: { borderBottomWidth: 3, borderBottomColor: defaultColor },
+      preview: '════════════'
+    },
+    gradient: {
+      label: 'Gradient',
+      style: { height: 2, backgroundColor: defaultColor },
+      preview: '▓▓▓▓▓▓▓▓▓▓▓▓'
+    }
+  };
 };
 
 /**
- * Divider block component
+ * Divider block component with modern dark theme support
  */
 const DividerComponent: React.FC<BlockComponentProps> = memo(({
   block,
@@ -52,11 +59,15 @@ const DividerComponent: React.FC<BlockComponentProps> = memo(({
   isEditing,
   style
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
+  const DIVIDER_STYLES = getDividerStyles(colorScheme ?? 'light');
   const [isStyleEditing, setIsStyleEditing] = useState(false);
   
   const dividerStyle = (block.meta?.dividerStyle as DividerStyle) || 'solid';
   const thickness = block.meta?.thickness || 1;
-  const color = block.meta?.color || '#ddd';
+  const color = block.meta?.color || colors.border;
   const spacing = block.meta?.spacing || 'medium';
   
   const config = DIVIDER_STYLES[dividerStyle];
@@ -164,7 +175,7 @@ const DividerComponent: React.FC<BlockComponentProps> = memo(({
           <View style={styles.controlGroup}>
             <Text style={styles.controlLabel}>Color</Text>
             <View style={styles.colorControls}>
-              {['#ddd', '#999', '#666', '#333', '#007AFF', '#34C759', '#FF3B30'].map((c) => (
+              {[colors.border, colors.textMuted, colors.textSecondary, colors.text, colors.accent, colors.success, colors.error].map((c) => (
                 <TouchableOpacity
                   key={c}
                   style={[
@@ -217,124 +228,148 @@ const DividerComponent: React.FC<BlockComponentProps> = memo(({
   );
 });
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-  },
-  styleSelector: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    width: '100%',
-    maxWidth: 400,
-  },
-  selectorTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  styleOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 4,
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  selectedStyle: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff',
-  },
-  stylePreview: {
-    fontFamily: 'monospace',
-    fontSize: 12,
-    color: '#666',
-  },
-  styleLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  controlGroup: {
-    marginTop: 16,
-  },
-  controlLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  thicknessControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  thicknessOption: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  selectedThickness: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff',
-  },
-  thicknessText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  colorControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  colorOption: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  selectedColor: {
-    borderColor: '#007AFF',
-  },
-  dividerContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  selected: {
-    backgroundColor: '#f0f8ff',
-    borderRadius: 4,
-    padding: 8,
-  },
-  editing: {
-    backgroundColor: '#fff',
-    borderColor: '#007AFF',
-    borderWidth: 2,
-    borderRadius: 4,
-    padding: 8,
-  },
-  dividerWrapper: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  divider: {
-    width: '80%',
-    minWidth: 100,
-  },
-  dividerInfo: {
-    marginTop: 8,
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      marginVertical: 16,
+    },
+    styleSelector: {
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 12,
+      padding: 20,
+      marginBottom: 16,
+      width: '100%',
+      maxWidth: 400,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    selectorTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 16,
+      textAlign: 'center',
+      color: colors.text,
+    },
+    styleOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      marginBottom: 8,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    selectedStyle: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentLight,
+    },
+    stylePreview: {
+      fontFamily: 'monospace',
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    styleLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    controlGroup: {
+      marginTop: 20,
+    },
+    controlLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      marginBottom: 12,
+      color: colors.text,
+    },
+    thicknessControls: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    thicknessOption: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 6,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    selectedThickness: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentLight,
+    },
+    thicknessText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    colorControls: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    colorOption: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    selectedColor: {
+      borderColor: colors.accent,
+    },
+    dividerContainer: {
+      width: '100%',
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    selected: {
+      backgroundColor: colors.accentLight,
+      borderRadius: 8,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.borderFocus,
+    },
+    editing: {
+      backgroundColor: colors.surface,
+      borderColor: colors.accent,
+      borderWidth: 2,
+      borderRadius: 8,
+      padding: 12,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    dividerWrapper: {
+      width: '100%',
+      alignItems: 'center',
+    },
+    divider: {
+      width: '85%',
+      minWidth: 120,
+    },
+    dividerInfo: {
+      marginTop: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 6,
+    },
+    infoText: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+  });
+};
 
 /**
  * Divider block plugin
@@ -446,9 +481,10 @@ export class DividerPlugin implements BlockPlugin {
   public getActions(block: EditorBlock) {
     const actions: any[] = [];
     const dividerStyle = (block.meta as any)?.dividerStyle || 'solid';
+    const dividerStyles = getDividerStyles('light'); // Default to light theme for actions
     
     // Add divider-specific actions
-    Object.entries(DIVIDER_STYLES).forEach(([styleKey, styleConfig]) => {
+    Object.entries(dividerStyles).forEach(([styleKey, styleConfig]) => {
       if (styleKey !== dividerStyle) {
         actions.unshift({
           id: `divider-${styleKey}`,
@@ -525,13 +561,15 @@ export class DividerPlugin implements BlockPlugin {
    * Get available divider styles
    */
   getDividerStyles(): DividerStyle[] {
-    return Object.keys(DIVIDER_STYLES) as DividerStyle[];
+    const dividerStyles = getDividerStyles('light'); // Default to light theme
+    return Object.keys(dividerStyles) as DividerStyle[];
   }
 
   /**
    * Get divider style configuration
    */
   getDividerConfig(style: DividerStyle): DividerConfig {
-    return DIVIDER_STYLES[style];
+    const dividerStyles = getDividerStyles('light'); // Default to light theme
+    return dividerStyles[style];
   }
 }

@@ -4,6 +4,8 @@ import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 // Global cursor position tracking for checklist blocks
 const checklistCursorPositions: { [blockId: string]: number } = {};
@@ -14,7 +16,7 @@ export const getChecklistCursorPosition = (blockId: string): number => {
 };
 
 /**
- * Checklist block component
+ * Checklist block component with modern dark theme support
  */
 const ChecklistComponent: React.FC<BlockComponentProps> = ({
   block,
@@ -25,6 +27,9 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   isEditing,
   style
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
   const isChecked = block.meta?.checked || false;
   const level = block.meta?.level || 0;
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -121,7 +126,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
           onBlur={onBlur}
           onKeyPress={handleKeyPress}
           placeholder="Checklist item"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textMuted}
           isSelected={isSelected}
           isEditing={isEditing}
           multiline
@@ -137,62 +142,75 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 2,
-  },
-  checklistItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  selected: {
-    backgroundColor: '#f0f8ff',
-    borderRadius: 4,
-  },
-  editing: {
-    backgroundColor: '#fff',
-    borderColor: '#007AFF',
-    borderWidth: 2,
-    borderRadius: 4,
-  },
-  checkboxContainer: {
-    paddingTop: 8,
-    paddingRight: 8,
-    paddingBottom: 8,
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderWidth: 2,
-    borderColor: '#ccc',
-    borderRadius: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
-  checkedBox: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-    minHeight: 32,
-  },
-  checkedText: {
-    textDecorationLine: 'line-through',
-    color: '#999',
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 4,
+    },
+    checklistItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 8,
+    },
+    selected: {
+      backgroundColor: colors.accentLight,
+      borderWidth: 1,
+      borderColor: colors.borderFocus,
+    },
+    editing: {
+      backgroundColor: colors.surface,
+      borderColor: colors.accent,
+      borderWidth: 2,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    checkboxContainer: {
+      paddingTop: 12,
+      paddingRight: 12,
+      paddingBottom: 8,
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderRadius: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+    },
+    checkedBox: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    checkmark: {
+      color: colors.surface,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    textInput: {
+      flex: 1,
+      fontSize: 16,
+      lineHeight: 26,
+      color: colors.text,
+      paddingVertical: 8,
+      paddingHorizontal: 8,
+      minHeight: 40,
+    },
+    checkedText: {
+      textDecorationLine: 'line-through',
+      color: colors.textMuted,
+      opacity: 0.7,
+    },
+  });
+};
 
 /**
  * Checklist block plugin

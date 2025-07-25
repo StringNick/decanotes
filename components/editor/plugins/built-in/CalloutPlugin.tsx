@@ -4,6 +4,8 @@ import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 type CalloutType = 'note' | 'tip' | 'warning' | 'danger' | 'info' | 'success';
 
@@ -15,53 +17,104 @@ interface CalloutConfig {
   label: string;
 }
 
-const CALLOUT_CONFIGS: Record<CalloutType, CalloutConfig> = {
-  note: {
-    icon: '📝',
-    color: '#0969da',
-    backgroundColor: '#ddf4ff',
-    borderColor: '#54aeff',
-    label: 'Note'
-  },
-  tip: {
-    icon: '💡',
-    color: '#1a7f37',
-    backgroundColor: '#dcffe4',
-    borderColor: '#4ac26b',
-    label: 'Tip'
-  },
-  warning: {
-    icon: '⚠️',
-    color: '#9a6700',
-    backgroundColor: '#fff8c5',
-    borderColor: '#ffdf5d',
-    label: 'Warning'
-  },
-  danger: {
-    icon: '🚨',
-    color: '#cf222e',
-    backgroundColor: '#ffebe9',
-    borderColor: '#ff818a',
-    label: 'Danger'
-  },
-  info: {
-    icon: 'ℹ️',
-    color: '#0969da',
-    backgroundColor: '#f6f8fa',
-    borderColor: '#d1d9e0',
-    label: 'Info'
-  },
-  success: {
-    icon: '✅',
-    color: '#1a7f37',
-    backgroundColor: '#dcffe4',
-    borderColor: '#4ac26b',
-    label: 'Success'
+const getCalloutConfigs = (colorScheme: 'light' | 'dark'): Record<CalloutType, CalloutConfig> => {
+  const colors = Colors[colorScheme];
+  
+  if (colorScheme === 'dark') {
+    return {
+      note: {
+        icon: '📝',
+        color: '#60a5fa',
+        backgroundColor: colors.accentLight,
+        borderColor: '#60a5fa',
+        label: 'Note'
+      },
+      tip: {
+        icon: '💡',
+        color: colors.success,
+        backgroundColor: colors.successLight,
+        borderColor: colors.success,
+        label: 'Tip'
+      },
+      warning: {
+        icon: '⚠️',
+        color: colors.warning,
+        backgroundColor: colors.warningLight,
+        borderColor: colors.warning,
+        label: 'Warning'
+      },
+      danger: {
+        icon: '🚨',
+        color: colors.error,
+        backgroundColor: colors.errorLight,
+        borderColor: colors.error,
+        label: 'Danger'
+      },
+      info: {
+        icon: 'ℹ️',
+        color: '#60a5fa',
+        backgroundColor: colors.backgroundSecondary,
+        borderColor: colors.border,
+        label: 'Info'
+      },
+      success: {
+        icon: '✅',
+        color: colors.success,
+        backgroundColor: colors.successLight,
+        borderColor: colors.success,
+        label: 'Success'
+      }
+    };
   }
+  
+  return {
+    note: {
+      icon: '📝',
+      color: '#0969da',
+      backgroundColor: '#ddf4ff',
+      borderColor: '#54aeff',
+      label: 'Note'
+    },
+    tip: {
+      icon: '💡',
+      color: '#1a7f37',
+      backgroundColor: '#dcffe4',
+      borderColor: '#4ac26b',
+      label: 'Tip'
+    },
+    warning: {
+      icon: '⚠️',
+      color: '#9a6700',
+      backgroundColor: '#fff8c5',
+      borderColor: '#ffdf5d',
+      label: 'Warning'
+    },
+    danger: {
+      icon: '🚨',
+      color: '#cf222e',
+      backgroundColor: '#ffebe9',
+      borderColor: '#ff818a',
+      label: 'Danger'
+    },
+    info: {
+      icon: 'ℹ️',
+      color: '#0969da',
+      backgroundColor: '#f6f8fa',
+      borderColor: '#d1d9e0',
+      label: 'Info'
+    },
+    success: {
+      icon: '✅',
+      color: '#1a7f37',
+      backgroundColor: '#dcffe4',
+      borderColor: '#4ac26b',
+      label: 'Success'
+    }
+  };
 };
 
 /**
- * Callout block component
+ * Callout block component with modern dark theme support
  */
 const CalloutComponent: React.FC<BlockComponentProps> = memo(({
   block,
@@ -72,6 +125,10 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
   isEditing,
   style
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
+  const CALLOUT_CONFIGS = getCalloutConfigs(colorScheme ?? 'light');
   const [isTypeEditing, setIsTypeEditing] = useState(false);
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   
@@ -214,7 +271,7 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
           onFocus={onFocus}
           onBlur={onBlur}
           placeholder="Enter your message..."
-          placeholderTextColor={config.color + '80'}
+          placeholderTextColor={colors.textMuted}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
@@ -235,93 +292,126 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
   );
 });
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  typeSelector: {
-    marginBottom: 8,
-    paddingVertical: 8,
-  },
-  typeOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 6,
-    borderWidth: 2,
-    backgroundColor: '#fff',
-  },
-  typeIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  typeLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-  },
-  calloutContainer: {
-    borderLeftWidth: 4,
-    borderRadius: 6,
-    padding: 16,
-  },
-  selected: {
-    borderWidth: 2,
-    borderColor: '#007AFF',
-  },
-  editing: {
-    borderWidth: 3,
-    borderColor: '#007AFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  typeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  icon: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  typeText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-  },
-  titleToggle: {
-    padding: 4,
-  },
-  toggleText: {
-    fontSize: 16,
-  },
-  titleContainer: {
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  titleInput: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    padding: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  contentInput: {
-    fontSize: 14,
-    lineHeight: 20,
-    minHeight: 40,
-    textAlignVertical: 'top',
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 12,
+    },
+    typeSelector: {
+      marginBottom: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    typeOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginRight: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      backgroundColor: colors.surface,
+    },
+    typeIcon: {
+      fontSize: 16,
+      marginRight: 8,
+    },
+    typeLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    calloutContainer: {
+      borderLeftWidth: 4,
+      borderRadius: 12,
+      borderTopLeftRadius: 4,
+      borderBottomLeftRadius: 4,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    selected: {
+      borderWidth: 2,
+      borderColor: colors.borderFocus,
+      backgroundColor: colors.accentLight,
+    },
+    editing: {
+      borderWidth: 2,
+      borderColor: colors.accent,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    typeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    icon: {
+      fontSize: 18,
+      marginRight: 8,
+    },
+    typeText: {
+      fontSize: 12,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    titleToggle: {
+      padding: 6,
+      borderRadius: 6,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    toggleText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    titleContainer: {
+      marginBottom: 12,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 4,
+    },
+    titleInput: {
+      fontSize: 16,
+      fontWeight: '600',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      backgroundColor: colors.surface,
+    },
+    contentInput: {
+      fontSize: 15,
+      lineHeight: 24,
+      minHeight: 48,
+      textAlignVertical: 'top',
+      color: colors.text,
+      paddingVertical: 8,
+    },
+  });
+};
 
 /**
  * Callout block plugin
@@ -397,7 +487,8 @@ export class CalloutPlugin implements BlockPlugin {
     const match = newBlock.content.match(/^>\s*\[!(NOTE|TIP|WARNING|DANGER|INFO|SUCCESS)\]\s*(.*)$/m);
     if (match) {
       const calloutType = match[1].toLowerCase() as CalloutType;
-      const title = match[2] || CALLOUT_CONFIGS[calloutType].label;
+      const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for creation
+      const title = match[2] || calloutConfigs[calloutType].label;
       
       // Extract content after the callout header
       const lines = newBlock.content.split('\n');
@@ -414,10 +505,11 @@ export class CalloutPlugin implements BlockPlugin {
     
     // Ensure callout type is set
     if (!newBlock.meta?.calloutType) {
+      const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for creation
       newBlock.meta = {
         ...newBlock.meta,
         calloutType: 'note',
-        title: CALLOUT_CONFIGS.note.label,
+        title: calloutConfigs.note.label,
         showTitle: true
       };
     }
@@ -428,9 +520,10 @@ export class CalloutPlugin implements BlockPlugin {
   public getActions(block: EditorBlock) {
     const actions: any[] = [];
     const currentType = block.meta?.calloutType || 'note';
+    const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for actions
     
     // Add callout type change actions
-    Object.entries(CALLOUT_CONFIGS).forEach(([type, config]) => {
+    Object.entries(calloutConfigs).forEach(([type, config]) => {
       if (type !== currentType) {
         actions.unshift({
           id: `callout-${type}`,
@@ -512,7 +605,8 @@ export class CalloutPlugin implements BlockPlugin {
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
     // Convert callout back to paragraph with markdown syntax when backspace at beginning
     const calloutType = (block.meta?.calloutType || 'note').toUpperCase();
-    const title = block.meta?.title || CALLOUT_CONFIGS[block.meta?.calloutType || 'note'].label;
+    const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for backspace
+    const title = block.meta?.title || calloutConfigs[block.meta?.calloutType || 'note'].label;
     
     return {
       ...block,
@@ -565,7 +659,8 @@ export class CalloutPlugin implements BlockPlugin {
     calloutType: CalloutType = 'note',
     title?: string
   ): EditorBlock {
-    const config = CALLOUT_CONFIGS[calloutType];
+    const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for creation
+    const config = calloutConfigs[calloutType];
     return this.createBlock(content, {
       calloutType,
       title: title || config.label,
@@ -581,7 +676,8 @@ export class CalloutPlugin implements BlockPlugin {
     if (!match) return null;
     
     const calloutType = match[1].toLowerCase() as CalloutType;
-    const title = match[2] || CALLOUT_CONFIGS[calloutType].label;
+    const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for parsing
+    const title = match[2] || calloutConfigs[calloutType].label;
     
     // Extract content after the callout header
     const lines = text.split('\n');
@@ -596,7 +692,8 @@ export class CalloutPlugin implements BlockPlugin {
    */
   toMarkdown(block: EditorBlock): string {
     const calloutType = (block.meta?.calloutType as CalloutType) || 'note';
-    const title = block.meta?.title || CALLOUT_CONFIGS[calloutType].label;
+    const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for markdown
+    const title = block.meta?.title || calloutConfigs[calloutType].label;
     const content = block.content;
     
     const lines = [`> [!${calloutType.toUpperCase()}] ${title}`];
@@ -613,13 +710,15 @@ export class CalloutPlugin implements BlockPlugin {
    * Get available callout types
    */
   getCalloutTypes(): CalloutType[] {
-    return Object.keys(CALLOUT_CONFIGS) as CalloutType[];
+    const calloutConfigs = getCalloutConfigs('light'); // Default to light theme
+    return Object.keys(calloutConfigs) as CalloutType[];
   }
 
   /**
    * Get callout configuration
    */
   getCalloutConfig(type: CalloutType): CalloutConfig {
-    return CALLOUT_CONFIGS[type];
+    const calloutConfigs = getCalloutConfigs('light'); // Default to light theme
+    return calloutConfigs[type];
   }
 }

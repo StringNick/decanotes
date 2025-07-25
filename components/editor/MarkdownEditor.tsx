@@ -129,12 +129,9 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         actions.setBlocks(blocks);
       },
       insertBlock: (type: any, index?: number) => {
-        console.log('we here')
         // Find the plugin for this block type and use its createBlock method
         const plugin = allPlugins.find(p => p.type === 'block' && (p as any).blockType === type) as any;
         if (plugin && typeof plugin.createBlock === 'function') {
-        console.log('we here2', plugin)
-
           const newBlock = plugin.createBlock('', {});
           // Create the block with the plugin's default meta
           const blockToCreate = {
@@ -146,8 +143,6 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           // Use dispatch directly to add the block with proper meta
           actions.dispatch({ type: 'ADD_BLOCK', block: blockToCreate, index });
         } else {
-        console.log('we here 3')
-
           // Fallback to basic block creation using actions.createBlock
           actions.createBlock(type, '', index);
         }

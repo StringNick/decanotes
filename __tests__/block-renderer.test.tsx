@@ -34,6 +34,10 @@ const mockBlockPlugin: BlockPlugin = {
       <Text testID={`block-text-${block.id}`}>{block.content}</Text>
     </TouchableOpacity>
   ),
+  controller: {
+    handleEnter: (block) => ({ id: 'new-block', type: 'paragraph', content: '' }),
+    handleBackspace: (block) => block.content ? block : null
+  },
   toolbar: {
     icon: 'text',
     label: 'Paragraph',

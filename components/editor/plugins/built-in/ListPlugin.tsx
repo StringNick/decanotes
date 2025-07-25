@@ -4,6 +4,8 @@ import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 type ListType = 'ordered' | 'unordered';
 
@@ -16,7 +18,7 @@ export const getListCursorPosition = (blockId: string): number => {
 };
 
 /**
- * List block component
+ * List block component with modern dark theme support
  */
 const ListComponent: React.FC<BlockComponentProps> = ({
   block,
@@ -27,6 +29,9 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   isEditing,
   style
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
   const listType = (block.meta?.listType as ListType) || 'unordered';
   const level = block.meta?.level || 0;
   const index = block.meta?.index || 1;
@@ -124,7 +129,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
           onBlur={onBlur}
           onKeyPress={handleKeyPress}
           placeholder="List item"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textMuted}
           isSelected={isSelected}
           isEditing={isEditing}
           multiline
@@ -137,47 +142,60 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 2,
-  },
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  selected: {
-    backgroundColor: '#f0f8ff',
-    borderRadius: 4,
-  },
-  editing: {
-    backgroundColor: '#fff',
-    borderColor: '#007AFF',
-    borderWidth: 2,
-    borderRadius: 4,
-  },
-  bulletContainer: {
-    width: 24,
-    alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  bullet: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: 'bold',
-    minWidth: 20,
-    textAlign: 'center',
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-    minHeight: 32,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 4,
+    },
+    listItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 8,
+    },
+    selected: {
+      backgroundColor: colors.accentLight,
+      borderWidth: 1,
+      borderColor: colors.borderFocus,
+    },
+    editing: {
+      backgroundColor: colors.surface,
+      borderColor: colors.accent,
+      borderWidth: 2,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    bulletContainer: {
+      width: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 12,
+      paddingBottom: 8,
+    },
+    bullet: {
+      fontSize: 16,
+      color: colors.accent,
+      fontWeight: '600',
+      minWidth: 20,
+      textAlign: 'center',
+    },
+    textInput: {
+      flex: 1,
+      fontSize: 16,
+      lineHeight: 26,
+      color: colors.text,
+      paddingVertical: 8,
+      paddingHorizontal: 8,
+      minHeight: 40,
+    },
+  });
+};
 
 /**
  * List block plugin

@@ -5,9 +5,11 @@ import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 /**
- * Quote block component
+ * Quote block component with modern dark theme support
  */
 const QuoteComponent: React.FC<BlockComponentProps> = memo(({
   block,
@@ -18,6 +20,10 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
   isEditing,
   style
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
+
   const handleTextChange = (text: string) => {
     onUpdate?.({
       ...block,
@@ -46,7 +52,7 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
             onFocus={onFocus}
             onBlur={onBlur}
             placeholder="Enter quote..."
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textMuted}
             isSelected={isSelected}
             isEditing={isEditing}
             multiline
@@ -82,60 +88,81 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
   );
 });
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  quoteContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#f8f9fa',
-    borderLeftWidth: 4,
-    borderLeftColor: '#6c757d',
-    borderRadius: 4,
-    padding: 16,
-  },
-  selected: {
-    borderColor: '#007AFF',
-    borderWidth: 2,
-  },
-  editing: {
-    borderColor: '#007AFF',
-    borderWidth: 3,
-  },
-  quoteMark: {
-    marginRight: 12,
-    alignItems: 'center',
-  },
-  quoteIcon: {
-    fontSize: 32,
-    color: '#6c757d',
-    fontWeight: 'bold',
-  },
-  content: {
-    flex: 1,
-  },
-  textInput: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#495057',
-    fontStyle: 'italic',
-    minHeight: 40,
-  },
-  attribution: {
-    marginTop: 8,
-    alignItems: 'flex-end',
-  },
-  author: {
-    fontSize: 14,
-    color: '#6c757d',
-    fontWeight: '500',
-  },
-  source: {
-    fontSize: 12,
-    color: '#868e96',
-    marginTop: 2,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      marginVertical: 12,
+    },
+    quoteContainer: {
+      flexDirection: 'row',
+      backgroundColor: colors.backgroundSecondary,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.accent,
+      borderRadius: 12,
+      borderTopLeftRadius: 4,
+      borderBottomLeftRadius: 4,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    selected: {
+      backgroundColor: colors.accentLight,
+      borderColor: colors.borderFocus,
+      borderWidth: 2,
+    },
+    editing: {
+      backgroundColor: colors.surface,
+      borderColor: colors.accent,
+      borderWidth: 2,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    quoteMark: {
+      marginRight: 16,
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      paddingTop: 4,
+    },
+    quoteIcon: {
+      fontSize: 28,
+      color: colors.accent,
+      fontWeight: '300',
+      opacity: 0.7,
+    },
+    content: {
+      flex: 1,
+    },
+    textInput: {
+      fontSize: 16,
+      lineHeight: 26,
+      color: colors.text,
+      fontStyle: 'italic',
+      minHeight: 48,
+      paddingVertical: 8,
+    },
+    attribution: {
+      marginTop: 12,
+      alignItems: 'flex-end',
+    },
+    author: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontWeight: '500',
+      fontStyle: 'normal',
+    },
+    source: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 4,
+      fontStyle: 'normal',
+    },
+  });
+};
 
 /**
  * Quote block plugin

@@ -2,6 +2,7 @@ import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import { EditorCore } from '../components/editor/core/EditorCore';
+import EditorProvider from '../components/editor/core/EditorProvider';
 import { BlockPlugin, MarkdownPlugin } from '../components/editor/types/PluginTypes';
 import { EditorBlock } from '../types/editor';
 
@@ -71,13 +72,23 @@ describe('EditorCore', () => {
     markdownPlugins: [mockMarkdownPlugin]
   };
 
+  // Helper function to render EditorCore with EditorProvider
+  const renderEditorCore = (props = {}) => {
+    const finalProps = { ...defaultProps, ...props };
+    return render(
+      <EditorProvider initialBlocks={finalProps.initialBlocks}>
+        <EditorCore {...finalProps} />
+      </EditorProvider>
+    );
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('Rendering', () => {
     it('should render without crashing', () => {
-      const { getByTestId } = render(<EditorCore {...defaultProps} />);
+      const { getByTestId } = renderEditorCore();
       expect(getByTestId('editor-core')).toBeTruthy();
     });
 
@@ -87,16 +98,14 @@ describe('EditorCore', () => {
         { id: '2', type: 'paragraph', content: 'Second paragraph' }
       ];
 
-      const { getByTestId } = render(
-        <EditorCore {...defaultProps} initialBlocks={initialBlocks} />
-      );
+      const { getByTestId } = renderEditorCore({ initialBlocks });
 
       expect(getByTestId('block-content-1')).toHaveTextContent('Hello World');
       expect(getByTestId('block-content-2')).toHaveTextContent('Second paragraph');
     });
 
     it('should render empty editor when no initial blocks provided', () => {
-      const { getByTestId } = render(<EditorCore {...defaultProps} />);
+      const { getByTestId } = renderEditorCore();
       
       // Should have at least one empty block
       expect(getByTestId('editor-core')).toBeTruthy();
@@ -106,13 +115,10 @@ describe('EditorCore', () => {
   describe('Plugin Registration', () => {
     it('should register block plugins on mount', () => {
       const onError = jest.fn();
-      render(
-        <EditorCore 
-          {...defaultProps} 
-          blockPlugins={[mockBlockPlugin]}
-          onError={onError}
-        />
-      );
+      renderEditorCore({
+        blockPlugins: [mockBlockPlugin],
+        onError
+      });
 
       // Should not have any errors
       expect(onError).not.toHaveBeenCalled();
@@ -120,13 +126,10 @@ describe('EditorCore', () => {
 
     it('should register markdown plugins on mount', () => {
       const onError = jest.fn();
-      render(
-        <EditorCore 
-          {...defaultProps} 
-          markdownPlugins={[mockMarkdownPlugin]}
-          onError={onError}
-        />
-      );
+      renderEditorCore({
+        markdownPlugins: [mockMarkdownPlugin],
+        onError
+      });
 
       // Should not have any errors
       expect(onError).not.toHaveBeenCalled();
@@ -139,13 +142,10 @@ describe('EditorCore', () => {
       } as BlockPlugin;
 
       const onError = jest.fn();
-      render(
-        <EditorCore 
-          {...defaultProps} 
-          blockPlugins={[invalidPlugin]}
-          onError={onError}
-        />
-      );
+      renderEditorCore({
+        blockPlugins: [invalidPlugin],
+        onError
+      });
 
       expect(onError).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -156,9 +156,9 @@ describe('EditorCore', () => {
     });
 
     it('should unregister plugins on unmount', () => {
-      const { unmount } = render(
-        <EditorCore {...defaultProps} blockPlugins={[mockBlockPlugin]} />
-      );
+      const { unmount } = renderEditorCore({
+        blockPlugins: [mockBlockPlugin]
+      });
 
       // Should not throw when unmounting
       expect(() => unmount()).not.toThrow();
@@ -172,14 +172,11 @@ describe('EditorCore', () => {
         { id: '1', type: 'paragraph', content: 'Test content' }
       ];
 
-      const { getByTestId } = render(
-        <EditorCore 
-          {...defaultProps} 
-          blockPlugins={[mockBlockPlugin]}
-          initialBlocks={initialBlocks}
-          onSelectionChange={onSelectionChange}
-        />
-      );
+      const { getByTestId } = renderEditorCore({
+        blockPlugins: [mockBlockPlugin],
+        initialBlocks,
+        onSelectionChange
+      });
 
       fireEvent.press(getByTestId('block-container-1'));
       expect(onSelectionChange).toHaveBeenCalledWith('1');
@@ -191,14 +188,11 @@ describe('EditorCore', () => {
         { id: '1', type: 'paragraph', content: 'Original content' }
       ];
 
-      const { getByTestId } = render(
-        <EditorCore 
-          {...defaultProps} 
-          blockPlugins={[mockBlockPlugin]}
-          initialBlocks={initialBlocks}
-          onBlocksChange={onBlocksChange}
-        />
-      );
+      const { getByTestId } = renderEditorCore({
+        blockPlugins: [mockBlockPlugin],
+        initialBlocks,
+        onBlocksChange
+      });
 
       // Should render the editor without errors
       expect(getByTestId('editor-core')).toBeTruthy();
@@ -211,14 +205,11 @@ describe('EditorCore', () => {
         { id: '1', type: 'paragraph', content: 'Test content' }
       ];
 
-      const { getByTestId } = render(
-        <EditorCore 
-          {...defaultProps} 
-          blockPlugins={[mockBlockPlugin]}
-          initialBlocks={initialBlocks}
-          onEditingChange={onEditingChange}
-        />
-      );
+      const { getByTestId } = renderEditorCore({
+        blockPlugins: [mockBlockPlugin],
+        initialBlocks,
+        onEditingChange
+      });
 
       // Should render the editor without errors
       expect(getByTestId('editor-core')).toBeTruthy();
@@ -237,9 +228,7 @@ describe('EditorCore', () => {
         }
       };
 
-      const { getByTestId } = render(
-        <EditorCore {...defaultProps} config={customConfig} />
-      );
+      const { getByTestId } = renderEditorCore({ config: customConfig });
 
       expect(getByTestId('editor-core')).toBeTruthy();
     });
@@ -252,9 +241,7 @@ describe('EditorCore', () => {
         }
       };
 
-      const { getByTestId } = render(
-        <EditorCore {...defaultProps} config={customConfig} />
-      );
+      const { getByTestId } = renderEditorCore({ config: customConfig });
 
       expect(getByTestId('editor-core')).toBeTruthy();
     });
@@ -266,9 +253,7 @@ describe('EditorCore', () => {
         }
       };
 
-      const { getByTestId } = render(
-        <EditorCore {...defaultProps} config={customConfig} />
-      );
+      const { getByTestId } = renderEditorCore({ config: customConfig });
 
       expect(getByTestId('editor-core')).toBeTruthy();
     });
@@ -278,9 +263,7 @@ describe('EditorCore', () => {
     it('should handle and report errors', () => {
       const onError = jest.fn();
       
-      render(
-        <EditorCore {...defaultProps} onError={onError} />
-      );
+      renderEditorCore({ onError });
 
       // Should not have any errors with valid setup
       expect(onError).not.toHaveBeenCalled();
@@ -291,9 +274,7 @@ describe('EditorCore', () => {
         { id: '1', type: 'invalid-type' as any, content: 'Test content' }
       ];
 
-      const { getByTestId } = render(
-        <EditorCore {...defaultProps} initialBlocks={initialBlocks} />
-      );
+      const { getByTestId } = renderEditorCore({ initialBlocks });
 
       // Should still render without crashing
       expect(getByTestId('editor-core')).toBeTruthy();
@@ -302,7 +283,7 @@ describe('EditorCore', () => {
 
   describe('Accessibility', () => {
     it('should have proper accessibility labels', () => {
-      const { getByTestId } = render(<EditorCore {...defaultProps} />);
+      const { getByTestId } = renderEditorCore();
       
       expect(getByTestId('editor-core')).toBeTruthy();
     });
@@ -312,13 +293,10 @@ describe('EditorCore', () => {
         { id: '1', type: 'paragraph', content: 'Test content' }
       ];
 
-      const { getByTestId } = render(
-        <EditorCore 
-          {...defaultProps} 
-          blockPlugins={[mockBlockPlugin]}
-          initialBlocks={initialBlocks} 
-        />
-      );
+      const { getByTestId } = renderEditorCore({
+        blockPlugins: [mockBlockPlugin],
+        initialBlocks
+      });
 
       // Should render blocks that can receive focus
       expect(getByTestId('block-container-1')).toBeTruthy();
