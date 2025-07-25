@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
-import { Animated, Keyboard, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, FlatList, Keyboard, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
@@ -145,65 +145,62 @@ export default function EditorScreen() {
 
       {/* Minimal Bottom Toolbar */}
       <View style={styles.bottomToolbar}>
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={handleUndo}
-        >
-          <Ionicons name="arrow-undo" size={20} color={theme.text} />
-        </TouchableOpacity>
+        <View style={styles.leftToolbarButtons}>
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={handleUndo}
+          >
+            <Ionicons name="arrow-undo" size={20} color={theme.text} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={handleRedo}
+          >
+            <Ionicons name="arrow-redo" size={20} color={theme.text} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={showBlockComponentsWithAnimation}
+          >
+            <Ionicons name="add" size={20} color={theme.text} />
+          </TouchableOpacity>
+        </View>
         
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={handleRedo}
-        >
-          <Ionicons name="arrow-redo" size={20} color={theme.text} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={showBlockComponentsWithAnimation}
-        >
-          <Ionicons name="add" size={20} color={theme.text} />
-        </TouchableOpacity>
+        {showBlockComponents && (
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={hideBlockComponents}
+          >
+            <Ionicons name="close" size={20} color={theme.text} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Block Components Selection Panel */}
       {showBlockComponents && (
-        <Animated.View 
-          style={[
-            styles.blockComponentsPanel,
-            {
-              transform: [{
-                translateY: blockComponentsAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [300, 0],
-                }),
-              }],
-              opacity: blockComponentsAnim,
-            },
-          ]}
-        >
-          <View style={styles.blockPanelHeader}>
-            <Text style={styles.blockPanelTitle}>Add Block</Text>
-            <TouchableOpacity onPress={hideBlockComponents}>
-              <Ionicons name="close" size={20} color={theme.text} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.blockPanelContent} showsVerticalScrollIndicator={false}>
-            {blockTypes.map((blockType, index) => (
+        <View style={styles.blockComponentsPanel}>
+          <FlatList
+            data={blockTypes}
+            numColumns={2}
+            style={styles.blockPanelContent}
+            showsVerticalScrollIndicator={false}
+            columnWrapperStyle={styles.blockPanelRow}
+            renderItem={({ item, index }) => (
               <TouchableOpacity
-                key={index}
                 style={styles.blockPanelItem}
-                onPress={() => handleAddBlock(blockType.type)}
+                onPress={() => handleAddBlock(item.type)}
               >
                 <View style={styles.blockPanelIconContainer}>
-                  <Text style={styles.blockPanelIcon}>{blockType.icon}</Text>
+                  <Text style={styles.blockPanelIcon}>{item.icon}</Text>
                 </View>
-                <Text style={styles.blockPanelLabel}>{blockType.label}</Text>
+                <Text style={styles.blockPanelLabel}>{item.label}</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
+            )}
+            keyExtractor={(item, index) => index.toString()}
+          />
+        </View>
       )}
     </SafeAreaView>
   );
@@ -281,9 +278,9 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     bottomToolbar: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 20,
-      paddingVertical: 12,
+      paddingVertical: 2,
       backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#f8f9fa',
       borderTopWidth: 1,
       borderTopColor: colorScheme === 'dark' ? '#333' : '#e1e5e9',
@@ -291,8 +288,10 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       shadowOffset: { width: 0, height: -2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
-      elevation: 8,
-      gap: 24,
+    },
+    leftToolbarButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     iconButton: {
       padding: 0,
@@ -303,11 +302,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
 
     blockComponentsPanel: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: '35%',
+      height: 250,
       backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#ffffff',
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
@@ -338,27 +333,26 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: 20,
       paddingTop: 16,
     },
+    blockPanelRow: {
+      justifyContent: 'space-between',
+      paddingHorizontal: 0,
+    },
     blockPanelItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
+      paddingVertical: 16,
+      paddingHorizontal: 12,
       marginBottom: 8,
-      backgroundColor: colorScheme === 'dark' ? '#2a2a2a' : '#f8f9fa',
-      borderRadius: 12,
+      backgroundColor: 'transparent',
+      borderRadius: 8,
       borderWidth: 1,
-      borderColor: colorScheme === 'dark' ? '#404040' : '#e1e5e9',
+      borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+      flex: 0.48,
     },
     blockPanelIconContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: 8,
-      backgroundColor: colorScheme === 'dark' ? '#404040' : '#ffffff',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
-      borderWidth: 1,
-      borderColor: colorScheme === 'dark' ? '#555' : '#e1e5e9',
+      marginRight: 8,
     },
     blockPanelIcon: {
       fontSize: 18,
