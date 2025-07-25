@@ -95,8 +95,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   checkboxContainer: {
-    paddingTop: 2,
+    paddingTop: 8,
     paddingRight: 8,
+    paddingBottom: 8,
   },
   checkbox: {
     width: 18,
@@ -122,7 +123,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
     minHeight: 32,
   },
   checkedText: {

@@ -111,7 +111,8 @@ const styles = StyleSheet.create({
   bulletContainer: {
     width: 24,
     alignItems: 'center',
-    paddingTop: 2,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   bullet: {
     fontSize: 16,
@@ -125,7 +126,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
     minHeight: 32,
   },
 });

@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     color: '#666',
     backgroundColor: '#f0f0f0',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 8,
     borderRadius: 4,
     marginRight: 8,
     minWidth: 24,
@@ -169,7 +169,8 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     color: '#333',
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
     borderRadius: 4,
     backgroundColor: 'transparent',
   },
