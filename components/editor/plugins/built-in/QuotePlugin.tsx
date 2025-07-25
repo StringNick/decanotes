@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, Text } from 'react-native';
-import { BlockPlugin } from '../../types/PluginTypes';
+import { View, StyleSheet, Text } from 'react-native';
+import { BlockPlugin } from '../BlockPlugin';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
+import { FormattedTextInput } from '../../components/FormattedTextInput';
 
 /**
  * Quote block component
@@ -39,17 +40,19 @@ const QuoteComponent: React.FC<BlockComponentProps> = ({
         </View>
         
         <View style={styles.content}>
-          <TextInput
-            style={styles.textInput}
+          <FormattedTextInput
             value={block.content}
             onChangeText={handleTextChange}
             onFocus={onFocus}
             onBlur={onBlur}
             placeholder="Enter quote..."
             placeholderTextColor="#666"
+            isSelected={isSelected}
+            isEditing={isEditing}
             multiline
             textAlignVertical="top"
             scrollEnabled={false}
+            style={styles.textInput}
           />
           
           {(author || source) && (

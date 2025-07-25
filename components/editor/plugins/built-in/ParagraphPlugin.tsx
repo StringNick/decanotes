@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { BlockPlugin } from '../BlockPlugin';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
+import { FormattedTextInput } from '../../components/FormattedTextInput';
 
 /**
  * Paragraph block component
@@ -31,21 +32,19 @@ const ParagraphComponent: React.FC<BlockComponentProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <TextInput
-        style={[
-          styles.textInput,
-          isSelected && styles.selected,
-          isEditing && styles.editing
-        ]}
+      <FormattedTextInput
         value={block.content}
         onChangeText={handleTextChange}
         onFocus={onFocus}
         onBlur={onBlur}
         placeholder="Type something..."
         placeholderTextColor="#999"
+        isSelected={isSelected}
+        isEditing={isEditing}
         multiline
         textAlignVertical="top"
         scrollEnabled={false}
+        style={styles.textInput}
       />
     </View>
   );

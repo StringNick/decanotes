@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+import { FormattedTextInput } from '../../components/FormattedTextInput';
 
 // Global cursor position tracking for checklist blocks
 const checklistCursorPositions: { [blockId: string]: number } = {};
@@ -112,11 +113,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
           </View>
         </TouchableOpacity>
         
-        <TextInput
-          style={[
-            styles.textInput,
-            isChecked && styles.checkedText
-          ]}
+        <FormattedTextInput
           value={block.content}
           onChangeText={handleTextChange}
           onSelectionChange={handleSelectionChange}
@@ -125,9 +122,15 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
           onKeyPress={handleKeyPress}
           placeholder="Checklist item"
           placeholderTextColor="#999"
+          isSelected={isSelected}
+          isEditing={isEditing}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
+          style={[
+            styles.textInput,
+            isChecked && styles.checkedText
+          ]}
         />
       </View>
     </View>

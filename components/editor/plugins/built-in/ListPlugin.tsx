@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+import { FormattedTextInput } from '../../components/FormattedTextInput';
 
 type ListType = 'ordered' | 'unordered';
 
@@ -115,8 +116,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
           {renderBullet()}
         </TouchableOpacity>
 
-        <TextInput
-          style={styles.textInput}
+        <FormattedTextInput
           value={block.content}
           onChangeText={handleTextChange}
           onSelectionChange={handleSelectionChange}
@@ -125,9 +125,12 @@ const ListComponent: React.FC<BlockComponentProps> = ({
           onKeyPress={handleKeyPress}
           placeholder="List item"
           placeholderTextColor="#999"
+          isSelected={isSelected}
+          isEditing={isEditing}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
+          style={styles.textInput}
         />
       </View>
     </View>

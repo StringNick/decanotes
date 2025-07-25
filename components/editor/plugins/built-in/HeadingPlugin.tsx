@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
+import { FormattedTextInput } from '../../components/FormattedTextInput';
 
 // Global cursor position tracker for heading blocks
 let headingCursorPositions: { [blockId: string]: number } = {};
@@ -74,13 +75,7 @@ const HeadingComponent: React.FC<BlockComponentProps> = ({
     <View style={styles.container}>
       <View style={styles.headingContainer}>
         <Text style={styles.levelIndicator}>H{level}</Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            headingStyle,
-            isSelected && styles.selected,
-            isFocused && styles.editing
-          ]}
+        <FormattedTextInput
           value={block.content}
           onChangeText={handleTextChange}
           onSelectionChange={handleSelectionChange}
@@ -89,8 +84,13 @@ const HeadingComponent: React.FC<BlockComponentProps> = ({
           onKeyPress={handleKeyPress}
           placeholder={`Heading ${level}`}
           placeholderTextColor="#999"
+          isSelected={isSelected}
+          isEditing={isFocused}
           multiline={false}
-          editable={!readOnly}
+          style={[
+            styles.textInput,
+            headingStyle
+          ]}
         />
       </View>
     </View>
