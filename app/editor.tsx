@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { CheckSquare, Code, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Type, Undo2, X } from 'lucide-react-native';
 import React, { useCallback, useRef, useState } from 'react';
-import { Animated, FlatList, Keyboard, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, FlatList, Keyboard, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
@@ -85,18 +86,18 @@ export default function EditorScreen() {
   }, []);
 
   // Block types for the menu - Notion-style
-  const blockTypes: Array<{ type: EditorBlockType; icon: string; label: string; meta?: any }> = [
-    { type: 'paragraph', icon: '📝', label: 'Text' },
-    { type: 'heading', icon: 'H₁', label: 'Heading 1', meta: { level: 1 } },
-    { type: 'heading', icon: 'H₂', label: 'Heading 2', meta: { level: 2 } },
-    { type: 'heading', icon: 'H₃', label: 'Heading 3', meta: { level: 3 } },
-    { type: 'list', icon: '•', label: 'Bulleted list' },
-    { type: 'list', icon: '1.', label: 'Numbered list', meta: { ordered: true } },
-    { type: 'checklist', icon: '☐', label: 'To-do list' },
-    { type: 'quote', icon: '❝', label: 'Quote' },
-    { type: 'divider', icon: '—', label: 'Divider' },
-    { type: 'code', icon: '</>', label: 'Code' },
-    { type: 'callout', icon: '💡', label: 'Callout' },
+  const blockTypes: Array<{ type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: any }> = [
+    { type: 'paragraph', icon: Type, label: 'Text' },
+    { type: 'heading', icon: Heading1, label: 'Heading 1', meta: { level: 1 } },
+    { type: 'heading', icon: Heading2, label: 'Heading 2', meta: { level: 2 } },
+    { type: 'heading', icon: Heading3, label: 'Heading 3', meta: { level: 3 } },
+    { type: 'list', icon: List, label: 'Bulleted list' },
+    { type: 'list', icon: ListOrdered, label: 'Numbered list', meta: { ordered: true } },
+    { type: 'checklist', icon: CheckSquare, label: 'To-do list' },
+    { type: 'quote', icon: Quote, label: 'Quote' },
+    { type: 'divider', icon: Minus, label: 'Divider' },
+    { type: 'code', icon: Code, label: 'Code' },
+    { type: 'callout', icon: Lightbulb, label: 'Callout' },
   ];
 
   return (
@@ -147,25 +148,25 @@ export default function EditorScreen() {
       <View style={styles.bottomToolbar}>
         <View style={styles.leftToolbarButtons}>
           <TouchableOpacity 
-            style={styles.iconButton}
-            onPress={handleUndo}
-          >
-            <Ionicons name="arrow-undo" size={20} color={theme.text} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.iconButton}
-            onPress={handleRedo}
-          >
-            <Ionicons name="arrow-redo" size={20} color={theme.text} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.iconButton}
-            onPress={showBlockComponentsWithAnimation}
-          >
-            <Ionicons name="add" size={20} color={theme.text} />
-          </TouchableOpacity>
+          style={styles.iconButton}
+          onPress={handleUndo}
+        >
+          <Undo2 size={20} color={theme.text} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={handleRedo}
+        >
+          <Redo2 size={20} color={theme.text} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={showBlockComponentsWithAnimation}
+        >
+          <Plus size={20} color={theme.text} />
+        </TouchableOpacity>
         </View>
         
         {showBlockComponents && (
@@ -173,7 +174,7 @@ export default function EditorScreen() {
             style={styles.iconButton}
             onPress={hideBlockComponents}
           >
-            <Ionicons name="close" size={20} color={theme.text} />
+            <X size={20} color={theme.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -187,17 +188,20 @@ export default function EditorScreen() {
             style={styles.blockPanelContent}
             showsVerticalScrollIndicator={false}
             columnWrapperStyle={styles.blockPanelRow}
-            renderItem={({ item, index }) => (
-              <TouchableOpacity
-                style={styles.blockPanelItem}
-                onPress={() => handleAddBlock(item.type)}
-              >
-                <View style={styles.blockPanelIconContainer}>
-                  <Text style={styles.blockPanelIcon}>{item.icon}</Text>
-                </View>
-                <Text style={styles.blockPanelLabel}>{item.label}</Text>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item, index }) => {
+               const IconComponent = item.icon;
+               return (
+                 <TouchableOpacity
+                   style={styles.blockPanelItem}
+                   onPress={() => handleAddBlock(item.type)}
+                 >
+                   <View style={styles.blockPanelIconContainer}>
+                     <IconComponent size={18} color={theme.text} />
+                   </View>
+                   <Text style={styles.blockPanelLabel}>{item.label}</Text>
+                 </TouchableOpacity>
+               );
+             }}
             keyExtractor={(item, index) => index.toString()}
           />
         </View>
@@ -353,10 +357,6 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 8,
-    },
-    blockPanelIcon: {
-      fontSize: 18,
-      textAlign: 'center',
     },
     blockPanelLabel: {
       fontSize: 16,
