@@ -79,7 +79,7 @@ export function useEditorState({
   const lastChangeTime = useRef<number>(0);
   const changeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // Update blocks with history tracking
+  // Update blocks with history tracking (debounced)
   const setBlocks = useCallback((newBlocks: EditorBlock[]) => {
     const now = Date.now();
     
@@ -97,11 +97,16 @@ export function useEditorState({
         canRedo: false
       }));
       
-      setBlocksState(newBlocks);
-      onBlocksChange?.(newBlocks);
       lastChangeTime.current = now;
     }, config.historyDebounceMs || 300);
-  }, [onBlocksChange, config.historyDebounceMs]);
+  }, [config.historyDebounceMs]);
+  
+  // Update blocks immediately (for text input)
+  const setBlocksImmediate = useCallback((newBlocks: EditorBlock[]) => {
+    setBlocksState(newBlocks);
+    onBlocksChange?.(newBlocks);
+    setBlocks(newBlocks); // Also trigger debounced history update
+  }, [onBlocksChange, setBlocks]);
   
   // Sync blocks with history present
   useEffect(() => {
@@ -141,8 +146,14 @@ export function useEditorState({
     const newBlocks = blocks.map(block => 
       block.id === blockId ? { ...block, ...updates } : block
     );
-    setBlocks(newBlocks);
-  }, [blocks, setBlocks]);
+    
+    // Use immediate update for content changes to provide instant feedback
+    if (updates.content !== undefined) {
+      setBlocksImmediate(newBlocks);
+    } else {
+      setBlocks(newBlocks);
+    }
+  }, [blocks, setBlocks, setBlocksImmediate]);
   
   const deleteBlock = useCallback((blockId: string) => {
     const blockIndex = blocks.findIndex(b => b.id === blockId);
