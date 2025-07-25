@@ -2,7 +2,7 @@ import React from 'react';
 import { View, TextInput, StyleSheet, Text } from 'react-native';
 import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
-import { Block, EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 
 /**
@@ -203,7 +203,7 @@ export class QuotePlugin implements BlockPlugin {
   /**
    * Create quote block with author and source
    */
-  createQuoteBlock(content: string = '', author?: string, source?: string): Block {
+  createQuoteBlock(content: string = '', author?: string, source?: string): EditorBlock {
     const meta: Record<string, any> = {};
     if (author) meta.author = author;
     if (source) meta.source = source;
@@ -219,7 +219,7 @@ export class QuotePlugin implements BlockPlugin {
   /**
    * Parse markdown quote syntax
    */
-  parseMarkdown(text: string): Block | null {
+  parseMarkdown(text: string): EditorBlock | null {
     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
     
@@ -230,8 +230,8 @@ export class QuotePlugin implements BlockPlugin {
   /**
    * Convert block to markdown
    */
-  toMarkdown(block: Block): string {
-    const lines = block.content.split('\n').map(line => `> ${line}`);
+  toMarkdown(block: EditorBlock): string {
+    const lines = block.content.split('\n').map((line: string) => `> ${line}`);
     return lines.join('\n');
   }
 }

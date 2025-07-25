@@ -1,7 +1,7 @@
 // Test suite for markdown parser core functionality
 // This tests the core parsing logic separately from React Native components
 
-import { Block } from '../components/MarkdownEditor';
+import { EditorBlock } from '../types/editor';
 
 // Mock the generateId function for consistent testing
 const generateId = (): string => {
@@ -11,14 +11,14 @@ const generateId = (): string => {
 // Extract core functions for testing (we'll import these from the component)
 // For now, let's copy the functions to test them independently
 
-const parseMarkdownToBlocks = (markdown: string): Block[] => {
+const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
   if (!markdown.trim()) {
     return [{ id: generateId(), type: 'paragraph', content: '' }];
   }
 
-  const blocks: Block[] = [];
+  const blocks: EditorBlock[] = [];
   const lines = markdown.split('\n');
-  let currentBlock: Block | null = null;
+  let currentBlock: EditorBlock | null = null;
   let codeBlockContent: string[] = [];
   let inCodeBlock = false;
   let codeBlockLanguage = '';
@@ -221,7 +221,7 @@ const parseMarkdownToBlocks = (markdown: string): Block[] => {
   return blocks.length > 0 ? blocks : [{ id: generateId(), type: 'paragraph', content: '' }];
 };
 
-const blocksToMarkdown = (blocks: Block[]): string => {
+const blocksToMarkdown = (blocks: EditorBlock[]): string => {
   const result: string[] = [];
   
   for (let i = 0; i < blocks.length; i++) {
@@ -467,7 +467,7 @@ console.log('code');
 
   describe('blocksToMarkdown', () => {
     test('should convert simple paragraph', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: 'test', type: 'paragraph', content: 'Hello world' }
       ];
       const result = blocksToMarkdown(blocks);
@@ -475,7 +475,7 @@ console.log('code');
     });
 
     test('should convert heading', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: 'test', type: 'heading', content: 'Title', meta: { level: 2 } }
       ];
       const result = blocksToMarkdown(blocks);
@@ -483,7 +483,7 @@ console.log('code');
     });
 
     test('should convert code block', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: 'test', type: 'code', content: 'console.log("hello");', meta: { language: 'javascript' } }
       ];
       const result = blocksToMarkdown(blocks);
@@ -491,7 +491,7 @@ console.log('code');
     });
 
     test('should convert quote', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: 'test', type: 'quote', content: 'This is a quote', meta: { depth: 0 } }
       ];
       const result = blocksToMarkdown(blocks);
@@ -499,7 +499,7 @@ console.log('code');
     });
 
     test('should convert nested quote', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: 'test', type: 'quote', content: 'Nested quote', meta: { depth: 1 } }
       ];
       const result = blocksToMarkdown(blocks);
@@ -507,7 +507,7 @@ console.log('code');
     });
 
     test('should convert unordered list', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: 'test', type: 'list', content: 'Item 1\nItem 2', meta: { ordered: false, depth: 0 } }
       ];
       const result = blocksToMarkdown(blocks);
@@ -515,7 +515,7 @@ console.log('code');
     });
 
     test('should convert ordered list', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: 'test', type: 'list', content: 'Item 1\nItem 2', meta: { ordered: true, depth: 0 } }
       ];
       const result = blocksToMarkdown(blocks);
@@ -523,7 +523,7 @@ console.log('code');
     });
 
     test('should convert checklist', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: 'test', type: 'checklist', content: 'Todo item', meta: { checked: false, depth: 0 } }
       ];
       const result = blocksToMarkdown(blocks);
@@ -531,7 +531,7 @@ console.log('code');
     });
 
     test('should convert multiple blocks with proper spacing', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: '1', type: 'heading', content: 'Title', meta: { level: 1 } },
         { id: '2', type: 'paragraph', content: 'Paragraph text' },
         { id: '3', type: 'list', content: 'Item 1\nItem 2', meta: { ordered: false, depth: 0 } }
@@ -541,7 +541,7 @@ console.log('code');
     });
 
     test('should handle consecutive quotes with double newlines', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: '1', type: 'quote', content: 'First quote', meta: { depth: 0 } },
         { id: '2', type: 'quote', content: 'Second quote', meta: { depth: 0 } }
       ];
@@ -550,7 +550,7 @@ console.log('code');
     });
 
     test('should handle consecutive list items with double newlines', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: '1', type: 'list', content: 'Item 1', meta: { ordered: false, depth: 0 } },
         { id: '2', type: 'list', content: 'Item 2', meta: { ordered: false, depth: 0 } }
       ];
@@ -641,7 +641,7 @@ console.log('hello');
     });
 
     test('should handle empty content in blocks', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: '' },
         { id: '2', type: 'heading', content: '', meta: { level: 1 } },
         { id: '3', type: 'quote', content: '', meta: { depth: 0 } }
@@ -653,7 +653,7 @@ console.log('hello');
     });
 
     test('should handle missing meta information', () => {
-      const blocks: Block[] = [
+      const blocks: EditorBlock[] = [
         { id: '1', type: 'heading', content: 'Title' }, // Missing meta
         { id: '2', type: 'code', content: 'code' }, // Missing meta
         { id: '3', type: 'list', content: 'Item' } // Missing meta
@@ -929,4 +929,4 @@ describe('Inline Formatting', () => {
     ]);
   });
 });
-}); 
+});

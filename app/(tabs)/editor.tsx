@@ -1,11 +1,12 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Button, Platform, StatusBar, StyleSheet, View } from 'react-native';
-import MarkdownEditor from '../../components/MarkdownEditor';
-import { Block, EditorBlock, EditorMode, MarkdownEditorRef } from '../../types/editor';
+import MarkdownEditor from '../../components/editor/MarkdownEditor';
+import { EditorBlock, EditorMode } from '../../types/editor';
+import { ExtendedMarkdownEditorRef } from '../../components/editor/types/EditorTypes';
 
 export default function NewEditorScreen() {
-  const editorRef = useRef<MarkdownEditorRef>(null);
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
+  const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [currentMode, setCurrentMode] = useState<EditorMode>('edit');
 
   // Example initial markdown content
@@ -133,7 +134,7 @@ Enjoy the enhanced editing experience!
   }, []);
 
   // Handle block changes
-  const handleBlockChange = useCallback((blocks: Block[]) => {
+  const handleBlockChange = useCallback((blocks: EditorBlock[]) => {
     setBlocks(blocks);
     console.log('Blocks updated:', blocks.length, 'blocks');
   }, []);

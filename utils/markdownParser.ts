@@ -1,4 +1,4 @@
-import { Block, BlockType, FormattedTextSegment } from '../types/editor';
+import { EditorBlock, EditorBlockType, FormattedTextSegment } from '../types/editor';
 
 // Unique id generator for blocks
 export const generateId = (): string => {
@@ -8,14 +8,14 @@ export const generateId = (): string => {
 /**
  * Convert raw markdown string into editor blocks.
  */
-export const parseMarkdownToBlocks = (markdown: string): Block[] => {
+export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
   if (!markdown.trim()) {
     return [{ id: generateId(), type: 'paragraph', content: '' }];
   }
 
-  const blocks: Block[] = [];
+  const blocks: EditorBlock[] = [];
   const lines = markdown.split('\n');
-  let currentBlock: Block | null = null;
+  let currentBlock: EditorBlock | null = null;
   let codeBlockContent: string[] = [];
   let inCodeBlock = false;
   let codeBlockLanguage = '';
@@ -162,7 +162,7 @@ export const parseMarkdownToBlocks = (markdown: string): Block[] => {
 /**
  * Turn blocks back into markdown.
  */
-export const blocksToMarkdown = (blocks: Block[]): string => {
+export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
   const out: string[] = [];
   blocks.forEach((block, i) => {
     const next = blocks[i + 1];
@@ -231,8 +231,8 @@ export const blocksToMarkdown = (blocks: Block[]): string => {
  */
 export const parseRawText = (
   text: string,
-  currentBlock: Block,
-): { type: BlockType; content: string; meta?: Block['meta'] } => {
+  currentBlock: EditorBlock,
+): { type: EditorBlockType; content: string; meta?: EditorBlock['meta'] } => {
   // empty – keep quote/list/checklist types so user can continue editing
   if (!text.trim()) {
     if (currentBlock.type === 'quote' || currentBlock.type === 'list' || currentBlock.type === 'checklist') {
@@ -389,7 +389,7 @@ export const processInlineFormatting = (text: string): FormattedTextSegment[] =>
 /**
  * Utility used by the editor to compute display value for a block when editing (adds quote/list markers etc.).
  */
-export const getDisplayValue = (block: Block, isActive: boolean): string => {
+export const getDisplayValue = (block: EditorBlock, isActive: boolean): string => {
   if (!isActive) return block.content;
   const indent = (d = 0) => '  '.repeat(d);
   switch (block.type) {
@@ -427,4 +427,4 @@ export const getDisplayValue = (block: Block, isActive: boolean): string => {
     default:
       return block.content;
   }
-}; 
+};

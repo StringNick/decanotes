@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
-import { Block, BlockType, EditorBlock, EditorBlockType, EditorMode } from '../../../types/editor';
+import { EditorBlock, EditorBlockType, EditorMode } from '../../../types/editor';
 import { EditorState, EditorAction, EditorContextInterface, ExtendedBlock, EditorError } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
 import { PluginRegistry } from '../plugins/PluginRegistry';

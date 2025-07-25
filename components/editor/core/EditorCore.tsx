@@ -1,6 +1,6 @@
 import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
-import { Block, EditorBlock, BlockType, EditorMode, EditorBlockType } from '../../../types/editor';
+import { EditorBlock, EditorMode, EditorBlockType } from '../../../types/editor';
 import { ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef, EditorConfig, EditorError } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
 import { PluginRegistry } from '../plugins/PluginRegistry';
@@ -251,7 +251,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         // TODO: Implement focus functionality
         console.warn('focus not yet implemented');
       },
-      insertBlock: (type: BlockType, index?: number) => {
+      insertBlock: (type: EditorBlockType, index?: number) => {
         const newBlock: EditorBlock = {
           id: actions.generateBlockId(),
           type: type as EditorBlockType,

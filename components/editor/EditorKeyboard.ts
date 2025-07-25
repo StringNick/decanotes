@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { Block, EditorBlock } from '../../types/editor';
+import { EditorBlock } from '../../types/editor';
 import { EditorAction } from './types/EditorTypes';
 import { BlockPlugin } from './plugins/BlockPlugin';
 import { PluginRegistry } from './plugins/PluginRegistry';
@@ -17,8 +17,8 @@ export interface KeyboardShortcut {
 
 export interface EditorKeyboardOptions {
   onAction: (action: EditorAction) => void;
-  getCurrentBlock: () => Block | null;
-  getSelectedBlocks: () => Block[];
+  getCurrentBlock: () => EditorBlock | null;
+  getSelectedBlocks: () => EditorBlock[];
   pluginRegistry: PluginRegistry;
   shortcuts?: KeyboardShortcut[];
 }
@@ -241,7 +241,8 @@ export function useEditorKeyboard(options: EditorKeyboardOptions) {
     const { key, ctrlKey, metaKey, shiftKey, altKey } = event;
     
     // Use metaKey on Mac, ctrlKey on other platforms
-    const cmdKey = navigator.platform.includes('Mac') ? metaKey : ctrlKey;
+    // In React Native, we'll default to metaKey for iOS and ctrlKey for others
+    const cmdKey = typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? metaKey : ctrlKey;
     
     // Find matching shortcut
     const shortcut = allShortcuts.find(s => {
@@ -552,13 +553,18 @@ export function useEditorKeyboard(options: EditorKeyboardOptions) {
 
   /**
    * Set up keyboard event listeners
+   * Note: In React Native, keyboard events are handled differently
+   * This effect is kept for web compatibility but won't work in React Native
    */
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    // Check if we're in a web environment
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', handleKeyDown);
+      
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
   }, [handleKeyDown]);
 
   return {

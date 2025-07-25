@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { Block, EditorBlock } from '../../../types/editor';
+import { EditorBlock } from '../../../types/editor';
 import { BlockPlugin, BlockComponentProps } from '../types/PluginTypes';
 import { EditorConfig } from '../types/EditorTypes';
 import { Ionicons } from '@expo/vector-icons';

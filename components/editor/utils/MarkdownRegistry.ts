@@ -1,4 +1,4 @@
-import { Block, EditorBlock } from '../../../types/editor';
+import { EditorBlock } from '../../../types/editor';
 import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
 import { MarkdownSyntax, MarkdownParser, MarkdownSerializer } from '../types/PluginTypes';
 
@@ -358,7 +358,7 @@ export function createSimpleMarkdownPlugin({
       return null; // Simple plugins only handle blocks
     }
 
-    protected parseBlock(text: string): Block | null {
+    protected parseBlock(text: string): EditorBlock | null {
       const match = text.match(pattern);
       if (match) {
         const { content, meta } = parseContent(match);
@@ -380,7 +380,7 @@ export function createSimpleMarkdownPlugin({
       return null;
     }
 
-    protected serializeBlock(block: Block): string | null {
+    protected serializeBlock(block: EditorBlock): string | null {
       if (block.type === blockType) {
         return serializeContent(block);
       }

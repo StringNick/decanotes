@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Block, EditorBlock } from '../../../types/editor';
+import { EditorBlock } from '../../../types/editor';
 import { BlockPlugin } from '../types/PluginTypes';
 import { EditorConfig } from '../types/EditorTypes';
 
@@ -309,7 +309,12 @@ export function useEditorDragDrop({
       files.forEach((file, fileIndex) => {
         if (file.type.startsWith('image/')) {
           // Create image block
-          const imageUrl = URL.createObjectURL(file);
+          // Note: URL.createObjectURL is not available in React Native
+          // In React Native, you would typically use a different approach for file handling
+          const imageUrl = typeof URL !== 'undefined' && URL.createObjectURL ? 
+            URL.createObjectURL(file) : 
+            `file://${file.name}`; // Fallback for React Native
+          
           const imageBlock: EditorBlock = {
             id: `block_${Date.now()}_${fileIndex}`,
             type: 'image',
@@ -324,7 +329,11 @@ export function useEditorDragDrop({
           actions.updateBlock(imageBlock.id, imageBlock);
         } else if (file.type.startsWith('video/')) {
           // Create video block
-          const videoUrl = URL.createObjectURL(file);
+          // Note: URL.createObjectURL is not available in React Native
+          const videoUrl = typeof URL !== 'undefined' && URL.createObjectURL ? 
+            URL.createObjectURL(file) : 
+            `file://${file.name}`; // Fallback for React Native
+          
           const videoBlock: EditorBlock = {
             id: `block_${Date.now()}_${fileIndex}`,
             type: 'video' as any,
@@ -342,7 +351,7 @@ export function useEditorDragDrop({
     
     // Handle text drops
     else if (text) {
-      const textBlock: Block = {
+      const textBlock: EditorBlock = {
         id: `block_${Date.now()}`,
         type: 'paragraph',
         content: text,
@@ -354,11 +363,9 @@ export function useEditorDragDrop({
     
     // Handle HTML drops
     else if (html) {
-      // Basic HTML to block conversion
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      
-      const textContent = tempDiv.textContent || tempDiv.innerText || '';
+      // Basic HTML to block conversion - simplified for React Native
+      // Remove HTML tags using regex since we don't have DOM
+      const textContent = html.replace(/<[^>]*>/g, '').trim();
       const htmlBlock: EditorBlock = {
         id: `block_${Date.now()}`,
         type: 'paragraph',
@@ -403,7 +410,8 @@ export function useEditorDragDrop({
  * Utility function to check if drag and drop is supported
  */
 export function isDragDropSupported(): boolean {
-  return 'draggable' in document.createElement('div');
+  // In React Native, we can simulate drag and drop with touch events
+  return true;
 }
 
 /**

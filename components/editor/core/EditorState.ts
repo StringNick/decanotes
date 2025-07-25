@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Block, EditorBlock, EditorBlockType, EditorMode } from '../../../types/editor';
+import { EditorBlock, EditorBlockType, EditorMode } from '../../../types/editor';
 import { EditorConfig, EditorState, EditorAction } from '../types/EditorTypes';
 import { MarkdownPlugin } from '../types/PluginTypes';
 

@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Block, BlockType, EditorBlock, EditorBlockType } from '../../../types/editor';
+import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import {
   BlockPlugin as IBlockPlugin,
   BlockController,

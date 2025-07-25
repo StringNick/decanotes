@@ -1,29 +1,4 @@
-// Legacy types for old components
-export type BlockType =
-  | 'paragraph'
-  | 'heading'
-  | 'code'
-  | 'quote'
-  | 'list'
-  | 'checklist'
-  | 'divider'
-  | 'image';
-
-export interface Block {
-  id: string;
-  type: BlockType;
-  content: string;
-  meta?: {
-    level?: number; // headings (1-6)
-    language?: string; // code blocks
-    ordered?: boolean; // lists
-    checked?: boolean; // checklists
-    url?: string; // images/links
-    alt?: string; // images
-    title?: string; // images/links
-    depth?: number; // nested lists & quotes
-  };
-}
+// Legacy types removed - use EditorBlockType and EditorBlock instead
 
 // Version 2 Editor Types
 export type EditorBlockType =
@@ -112,7 +87,7 @@ export type EditorMode = 'edit' | 'raw' | 'preview';
 export type MarkdownEditorRef = {
   getMarkdown: () => string;
   focus: () => void;
-  insertBlock: (type: BlockType, index?: number) => void;
+  insertBlock: (type: EditorBlockType, index?: number) => void;
   deleteBlock: (id: string) => void;
   moveBlockUp: (id: string) => boolean;
   moveBlockDown: (id: string) => boolean;
@@ -122,7 +97,7 @@ export type MarkdownEditorRef = {
 
 // Forward declared here to break circular deps. UI components can extend this.
 export interface BlockProps {
-  block: Block;
+  block: EditorBlock;
   index: number;
   isActive: boolean;
   isEditing: boolean;

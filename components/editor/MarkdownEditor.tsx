@@ -1,10 +1,10 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Block, EditorBlock } from '../../types/editor';
+import { EditorBlock } from '../../types/editor';
 import { useEditor } from './core/EditorContext';
 import { EditorCore } from './core/EditorCore';
-import { useEditorKeyboard } from './EditorKeyboard';
 import EditorProvider from './core/EditorProvider';
+import { useEditorKeyboard } from './EditorKeyboard';
 import { PluginRegistry } from './plugins/PluginRegistry';
 import { ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef } from './types/EditorTypes';
 import { parseMarkdownToBlocks, serializeBlocksToMarkdown } from './utils/MarkdownRegistry';
@@ -126,9 +126,9 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     const { handleKeyDown } = useEditorKeyboard({
       onAction: actions.dispatch,
       getCurrentBlock: () => state.focusedBlockId ? 
-        (state.blocks.find((b: EditorBlock) => b.id === state.focusedBlockId) as Block) || null : null,
+        (state.blocks.find((b: EditorBlock) => b.id === state.focusedBlockId) as EditorBlock) || null : null,
       getSelectedBlocks: () => state.selectedBlocks.map((id: string) => 
-        state.blocks.find((b: EditorBlock) => b.id === id)).filter(Boolean) as Block[],
+        state.blocks.find((b: EditorBlock) => b.id === id)).filter(Boolean) as EditorBlock[],
       pluginRegistry,
       shortcuts
     });
@@ -137,7 +137,7 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     useImperativeHandle(ref, () => ({
       // Content methods
       getBlocks: () => state.blocks,
-      setBlocks: (blocks: Block[]) => {
+      setBlocks: (blocks: EditorBlock[]) => {
         actions.setBlocks(blocks);
       },
       getMarkdown: () => serializeBlocksToMarkdown(state.blocks),
@@ -155,7 +155,7 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         };
         actions.createBlock(newBlock.type, newBlock.content, index);
       },
-      updateBlock: (id: string, updates: Partial<Block>) => {
+      updateBlock: (id: string, updates: Partial<EditorBlock>) => {
         actions.updateBlock(id, updates);
       },
       deleteBlock: (id: string) => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity, Image, Alert } from 'react-native';
 import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
-import { Block, EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 
 /**
@@ -352,7 +352,7 @@ export class ImagePlugin implements BlockPlugin {
     return content.trim();
   }
 
-  protected onCreate(block: Block): Block {
+  protected onCreate(block: EditorBlock): EditorBlock {
     const newBlock = block;
     
     // Parse markdown syntax if present
@@ -379,7 +379,7 @@ export class ImagePlugin implements BlockPlugin {
     return newBlock;
   }
 
-  protected handleEnter(block: Block): Block | Block[] | null {
+  protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
     // Create new paragraph after image
     return {
       id: generateId(),
@@ -453,7 +453,7 @@ export class ImagePlugin implements BlockPlugin {
   /**
    * Parse markdown image syntax
    */
-  parseMarkdown(text: string): Block | null {
+  parseMarkdown(text: string): EditorBlock | null {
     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
     

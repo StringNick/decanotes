@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { Block, EditorBlock } from '../../../types/editor';
+import { EditorBlock } from '../../../types/editor';
 import { BlockPlugin } from '../types/PluginTypes';
 import { EditorConfig } from '../types/EditorTypes';
 
@@ -99,18 +99,22 @@ export function useEditorKeyboard({
     }
     
     // Default behavior: merge with previous block if at start
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (range.startOffset === 0 && range.endOffset === 0) {
-        const blockIndex = blocks.findIndex(b => b.id === editingBlock.id);
-        const previousBlock = blocks[blockIndex - 1];
-        
-        if (previousBlock && editingBlock.content === '') {
-          event.preventDefault();
-          actions.deleteBlock(editingBlock.id);
-          actions.startEditing(previousBlock.id);
-          return true;
+    // Note: window.getSelection() is not available in React Native
+    // This logic is kept for web compatibility
+    if (typeof window !== 'undefined' && window.getSelection) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        if (range.startOffset === 0 && range.endOffset === 0) {
+          const blockIndex = blocks.findIndex(b => b.id === editingBlock.id);
+          const previousBlock = blocks[blockIndex - 1];
+          
+          if (previousBlock && editingBlock.content === '') {
+            event.preventDefault();
+            actions.deleteBlock(editingBlock.id);
+            actions.startEditing(previousBlock.id);
+            return true;
+          }
         }
       }
     }
@@ -408,11 +412,16 @@ export function useEditorKeyboard({
     const element = keyboardRef.current;
     if (!element) return;
     
-    element.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      element.removeEventListener('keydown', handleKeyDown);
-    };
+    // Check if we're in a web environment and element has addEventListener
+    if (typeof element.addEventListener === 'function') {
+      element.addEventListener('keydown', handleKeyDown);
+      
+      return () => {
+        if (typeof element.removeEventListener === 'function') {
+          element.removeEventListener('keydown', handleKeyDown);
+        }
+      };
+    }
   }, [handleKeyDown]);
   
   // Focus management

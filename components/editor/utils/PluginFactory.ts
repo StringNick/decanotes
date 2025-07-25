@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Block, BlockType, EditorBlock, EditorBlockType } from '../../../types/editor';
+import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { BlockPlugin } from '../plugins/BlockPlugin';
 import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
 import {
@@ -111,7 +111,7 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
       return super.onUpdate(oldBlock, newBlock);
     }
 
-    protected onDelete(block: Block): void {
+    protected onDelete(block: EditorBlock): void {
       if (controller.onDelete) {
         controller.onDelete(block);
       } else {
@@ -121,7 +121,7 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
 
 
 
-    protected canDrag(block: Block): boolean {
+    protected canDrag(block: EditorBlock): boolean {
       if (controller.canDrag) {
         return controller.canDrag(block);
       }
@@ -135,7 +135,7 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
       return super.canDrop(block, targetIndex, blocks);
     }
 
-    protected onDrop(sourceBlock: Block, targetBlock: Block): void {
+    protected onDrop(sourceBlock: EditorBlock, targetBlock: EditorBlock): void {
       if (controller.onDrop) {
         controller.onDrop(sourceBlock, targetBlock);
       } else {
