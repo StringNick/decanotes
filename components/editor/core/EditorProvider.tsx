@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
-import { EditorBlock, EditorBlockType, EditorMode } from '../../../types/editor';
-import { EditorState, EditorAction, EditorContextInterface, ExtendedBlock, EditorError } from '../types/EditorTypes';
-import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
+import React, { createContext, useCallback, useEffect, useReducer } from 'react';
+import { EditorBlockType, EditorMode } from '../../../types/editor';
 import { PluginRegistry } from '../plugins/PluginRegistry';
+import { EditorAction, EditorContextInterface, EditorError, EditorState, ExtendedBlock } from '../types/EditorTypes';
+import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
 
 // Create the editor context
 const EditorContext = createContext<EditorContextInterface | null>(null);
@@ -42,9 +42,12 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       };
 
     case 'ADD_BLOCK':
+      console.log('add new block', state.blocks)
       const newBlocks = [...state.blocks];
       const insertIndex = action.index ?? newBlocks.length;
       newBlocks.splice(insertIndex, 0, action.block);
+      console.log('add new block ', newBlocks)
+      
       return {
         ...state,
         blocks: newBlocks,

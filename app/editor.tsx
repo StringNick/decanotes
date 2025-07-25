@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
-import { Animated, Keyboard, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Keyboard, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
@@ -29,6 +29,7 @@ export default function EditorScreen() {
   // Handle adding blocks
   const handleAddBlock = useCallback((blockType: EditorBlockType) => {
     if (editorRef.current) {
+      console.log('insert block');
       editorRef.current.insertBlock(blockType);
       // Focus the newly added block
       setTimeout(() => {
@@ -100,6 +101,10 @@ export default function EditorScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar 
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
+        backgroundColor={theme.background} 
+      />
       {/* Notion-style Header */}
       <View style={styles.header}>
         <TouchableOpacity 

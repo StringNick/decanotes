@@ -1,13 +1,13 @@
 import { ComponentType } from 'react';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import {
-  BlockPlugin as IBlockPlugin,
-  BlockController,
+  BlockAction,
   BlockComponentProps,
-  MarkdownSyntax,
-  ToolbarConfig,
+  BlockController,
   BlockSettings,
-  BlockAction
+  BlockPlugin as IBlockPlugin,
+  MarkdownSyntax,
+  ToolbarConfig
 } from '../types/PluginTypes';
 
 /**

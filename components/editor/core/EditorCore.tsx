@@ -1,10 +1,10 @@
-import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { EditorBlock, EditorMode, EditorBlockType } from '../../../types/editor';
 import { ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef, EditorConfig, EditorError } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
 import { PluginRegistry } from '../plugins/PluginRegistry';
-import { useEditorState } from './EditorState';
+import { useEditor } from './EditorContext';
 import { useEditorKeyboard } from './EditorKeyboard';
 import { useEditorDragDrop } from './EditorDragDrop';
 import { SafeBlockRenderer } from './BlockRenderer';
@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
  */
 export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdownEditorProps>(
   ({
-    initialBlocks = [],
     blockPlugins = [],
     markdownPlugins = [],
     config = {},
@@ -77,18 +76,31 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       ...config
     };
 
-    // State management hook
+    // Use editor state from EditorProvider
     const {
-      blocks,
-      selectedBlockId,
-      editingBlockId,
-      editorState,
-      actions
-    } = useEditorState({
-      initialBlocks,
-      onBlocksChange,
-      config: editorConfig
-    });
+      state,
+      createBlock,
+      updateBlock,
+      deleteBlock,
+      moveBlock,
+      duplicateBlock,
+      selectBlock,
+      selectBlocks,
+      clearSelection,
+      focusBlock,
+      focusNext,
+      focusPrevious,
+      setMode,
+      toggleMode,
+      undo,
+      redo,
+      getMarkdown,
+      setMarkdown,
+      validate,
+      reset
+    } = useEditor();
+    
+    const { blocks, focusedBlockId, selectedBlocks, mode, isDirty, isLoading, errors, history } = state;
     
     // Keyboard handling hook
     const {
@@ -98,11 +110,21 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       blurEditor
     } = useEditorKeyboard({
       blocks,
-      selectedBlockId,
-      editingBlockId,
+      selectedBlockId: focusedBlockId,
+      editingBlockId: focusedBlockId, // Using focusedBlockId for editing
       blockPlugins,
       config: editorConfig,
-      actions
+      actions: {
+        addBlock: (block: EditorBlock, index?: number) => createBlock(block.type, block.content, index),
+        updateBlock,
+        deleteBlock,
+        selectBlock: (blockId: string | null) => selectBlock(blockId || ''),
+        startEditing: focusBlock,
+        stopEditing: () => selectBlock(''),
+        undo,
+        redo,
+        generateBlockId: () => `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
     });
     
     // Drag and drop hook
@@ -118,9 +140,9 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       blockPlugins,
       config: editorConfig,
       actions: {
-        moveBlock: actions.moveBlock,
-        updateBlock: actions.updateBlock,
-        selectBlock: actions.selectBlock
+        moveBlock,
+        updateBlock,
+        selectBlock: (blockId: string | null) => selectBlock(blockId || '')
       }
     });
 
@@ -170,14 +192,27 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       return blockPlugins.find((plugin: BlockPlugin) => plugin.blockType === blockType);
     };
 
+    // Handle clicking on empty space to create new paragraph
+    const handleEmptySpacePress = useCallback(() => {
+      // Create a new paragraph block at the end
+      const blockId = `block_${Date.now()}`;
+      createBlock('paragraph', '', blocks.length);
+      
+      // Focus the new block after a short delay
+      setTimeout(() => {
+        selectBlock(blockId);
+        focusBlock(blockId);
+      }, 100);
+    }, [createBlock, selectBlock, focusBlock, blocks.length]);
+
     // Handle block operations with proper callbacks
     const handleBlockChange = (blockId: string, updates: Partial<EditorBlock>) => {
       // Check for real-time markdown transformation when content changes
       if (updates.content !== undefined) {
         const transformedUpdates = detectAndTransformMarkdown(updates, blockPlugins, markdownPlugins);
-        actions.updateBlock(blockId, transformedUpdates);
+        updateBlock(blockId, transformedUpdates);
       } else {
-        actions.updateBlock(blockId, updates);
+        updateBlock(blockId, updates);
       }
     };
     
@@ -346,21 +381,21 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     };
     
     const handleBlockSelect = (blockId: string) => {
-      actions.selectBlock(blockId);
+      selectBlock(blockId);
       onSelectionChange?.(blockId);
     };
     
     const handleBlockEdit = (blockId: string) => {
-      actions.startEditing(blockId);
+      focusBlock(blockId);
       onEditingChange?.(!!blockId);
     };
     
     const handleBlockDelete = (blockId: string) => {
-      actions.deleteBlock(blockId);
+      deleteBlock(blockId);
     };
     
     const handleBlockDuplicate = (blockId: string) => {
-      actions.duplicateBlock(blockId);
+      duplicateBlock(blockId);
     };
     
     const handleBlockMove = (blockId: string, direction: 'up' | 'down') => {
@@ -369,7 +404,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       
       const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       if (newIndex >= 0 && newIndex < blocks.length) {
-        actions.moveBlock(blockId, newIndex);
+        moveBlock(blockId, newIndex);
       }
     };
 
@@ -378,27 +413,20 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       switch (actionId) {
         case 'add-block':
           if (blockType) {
-            const newBlock: EditorBlock = {
-              id: actions.generateBlockId(),
-              type: blockType as any,
-              content: '',
-              meta: {}
-            };
-            
-            const insertIndex = selectedBlockId 
-              ? blocks.findIndex(b => b.id === selectedBlockId) + 1
+            const insertIndex = focusedBlockId 
+              ? blocks.findIndex(b => b.id === focusedBlockId) + 1
               : blocks.length;
             
-            actions.addBlock(newBlock, insertIndex);
+            createBlock(blockType, '', insertIndex);
           }
           break;
           
         case 'undo':
-          actions.undo();
+          undo();
           break;
           
         case 'redo':
-          actions.redo();
+          redo();
           break;
           
         default:
@@ -416,24 +444,18 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // Expose API through ref
     useImperativeHandle(ref, () => ({
       // Base MarkdownEditorRef methods
-      getMarkdown: () => actions.exportToMarkdown(markdownPlugins),
+      getMarkdown: () => getMarkdown(),
       focus: () => {
         // TODO: Implement focus functionality
         console.warn('focus not yet implemented');
       },
       insertBlock: (type: EditorBlockType, index?: number) => {
-        const newBlock: EditorBlock = {
-          id: actions.generateBlockId(),
-          type: type as EditorBlockType,
-          content: '',
-          meta: {}
-        };
-        actions.addBlock(newBlock, index);
+        createBlock(type, '', index);
       },
       moveBlockUp: (id: string) => {
         const blockIndex = blocks.findIndex(b => b.id === id);
         if (blockIndex > 0) {
-          actions.moveBlock(id, blockIndex - 1);
+          moveBlock(id, blockIndex - 1);
           return true;
         }
         return false;
@@ -441,33 +463,32 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       moveBlockDown: (id: string) => {
         const blockIndex = blocks.findIndex(b => b.id === id);
         if (blockIndex < blocks.length - 1) {
-          actions.moveBlock(id, blockIndex + 1);
+          moveBlock(id, blockIndex + 1);
           return true;
         }
         return false;
       },
       toggleMode: () => {
-        // TODO: Implement mode toggling
-        console.warn('toggleMode not yet implemented');
+        toggleMode();
       },
-      getCurrentMode: () => 'edit' as EditorMode,
+      getCurrentMode: () => mode,
       
       // Block operations
-      addBlock: (block: EditorBlock, index?: number) => actions.addBlock(block, index),
-      updateBlock: actions.updateBlock,
-      deleteBlock: actions.deleteBlock,
-      moveBlock: actions.moveBlock,
-      duplicateBlock: actions.duplicateBlock,
+      addBlock: (block: EditorBlock, index?: number) => createBlock(block.type, block.content, index),
+      updateBlock: updateBlock,
+      deleteBlock: deleteBlock,
+      moveBlock: moveBlock,
+      duplicateBlock: duplicateBlock,
       
       // Selection operations
-      selectBlock: actions.selectBlock,
-      clearSelection: actions.clearSelection,
-      getSelectedBlock: () => blocks.find(b => b.id === selectedBlockId) || null,
+      selectBlock: selectBlock,
+      clearSelection: clearSelection,
+      getSelectedBlock: () => blocks.find(b => b.id === focusedBlockId) || null,
       
       // Editing operations
-      startEditing: actions.startEditing,
-      stopEditing: actions.stopEditing,
-      getEditingBlock: () => blocks.find(b => b.id === editingBlockId) || null,
+      startEditing: focusBlock,
+      stopEditing: () => selectBlock(''),
+      getEditingBlock: () => blocks.find(b => b.id === focusedBlockId) || null,
       
       // Plugin operations
       registerBlockPlugin: (plugin: BlockPlugin) => pluginRegistry.register(plugin),
@@ -478,14 +499,17 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       getMarkdownPlugins: () => pluginRegistry.getMarkdownPlugins(),
       
       // Content operations
-      exportToMarkdown: () => actions.exportToMarkdown(markdownPlugins),
-      importFromMarkdown: (markdown: string) => actions.importFromMarkdown(markdown, markdownPlugins),
-      exportToPlainText: actions.exportToPlainText,
+      exportToMarkdown: () => getMarkdown(),
+      importFromMarkdown: (markdown: string) => setMarkdown(markdown),
+      exportToPlainText: () => blocks.map(b => b.content).join('\n'),
       getBlocks: () => blocks,
-      setBlocks: actions.setBlocks,
+      setBlocks: (newBlocks: EditorBlock[]) => {
+        // TODO: Implement setBlocks
+        console.warn('setBlocks not yet implemented');
+      },
       
       // Editor state
-      getEditorState: () => editorState,
+      getEditorState: () => state,
       
       // Focus operations
       // focus is defined above in base methods
@@ -495,10 +519,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       scrollToBlock,
       
       // History operations
-      undo: () => actions.undo(),
-      redo: () => actions.redo(),
-      canUndo: () => editorState.history.canUndo,
-      canRedo: () => editorState.history.canRedo,
+      undo: () => undo(),
+      redo: () => redo(),
+      canUndo: () => history.canUndo,
+      canRedo: () => history.canRedo,
       
       // Plugin methods
       registerPlugin: (plugin: BlockPlugin | MarkdownPlugin) => pluginRegistry.register(plugin),
@@ -510,12 +534,12 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         // TODO: Implement multi-block selection
         console.warn('selectBlocks not yet implemented');
       },
-      validateContent: () => editorState.errors,
+      validateContent: () => errors,
       
       // Export/Import operations
       exportToFormat: (format: 'markdown' | 'html' | 'json') => {
         if (format === 'markdown') {
-          return actions.exportToMarkdown(markdownPlugins);
+          return getMarkdown();
         }
         // TODO: Implement HTML and JSON export
         console.warn(`Export to ${format} not yet implemented`);
@@ -523,18 +547,29 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       },
       importFromFormat: (content: string, format: 'markdown' | 'html' | 'json') => {
         if (format === 'markdown') {
-          actions.importFromMarkdown(content, markdownPlugins);
+          setMarkdown(content);
         } else {
           // TODO: Implement HTML and JSON import
           console.warn(`Import from ${format} not yet implemented`);
         }
       }
     }), [
-      actions,
+      createBlock,
+      updateBlock,
+      deleteBlock,
+      moveBlock,
+      duplicateBlock,
+      selectBlock,
+      clearSelection,
+      focusBlock,
+      getMarkdown,
+      setMarkdown,
+      undo,
+      redo,
+      toggleMode,
       blocks,
-      selectedBlockId,
-      editingBlockId,
-      editorState,
+      focusedBlockId,
+      state,
       pluginRegistry,
       markdownPlugins,
       focusEditor,
@@ -559,30 +594,30 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           <TouchableOpacity
             style={styles.toolbarButton}
             onPress={() => handleToolbarAction('undo')}
-            disabled={!editorState.history.canUndo}
+            disabled={!history.canUndo}
           >
             <Ionicons 
               name="arrow-undo" 
               size={20} 
-              color={editorState.history.canUndo ? (editorConfig.theme?.colors?.primary || '#007AFF') : (editorConfig.theme?.colors?.secondary || '#666')} 
+              color={history.canUndo ? (editorConfig.theme?.colors?.primary || '#007AFF') : (editorConfig.theme?.colors?.secondary || '#666')} 
             />
           </TouchableOpacity>
           
           <TouchableOpacity
             style={styles.toolbarButton}
             onPress={() => handleToolbarAction('redo')}
-            disabled={!editorState.history.canRedo}
+            disabled={!history.canRedo}
           >
             <Ionicons 
               name="arrow-redo" 
               size={20} 
-              color={editorState.history.canRedo ? (editorConfig.theme?.colors?.primary || '#007AFF') : (editorConfig.theme?.colors?.secondary || '#666')} 
+              color={history.canRedo ? (editorConfig.theme?.colors?.primary || '#007AFF') : (editorConfig.theme?.colors?.secondary || '#666')} 
             />
           </TouchableOpacity>
           
           <TouchableOpacity
             style={styles.toolbarButton}
-            onPress={() => console.log('Export:', actions.exportToMarkdown(markdownPlugins))}
+            onPress={() => console.log('Export:', getMarkdown())}
           >
             <Ionicons name="download" size={20} color={editorConfig.theme?.colors?.primary || '#007AFF'} />
             <Text style={styles.toolbarButtonText}>Export</Text>
@@ -593,8 +628,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 
     // Render block
     const renderBlock = (block: EditorBlock, index: number) => {
-      const isSelected = selectedBlockId === block.id;
-      const isEditing = editingBlockId === block.id;
+      const isSelected = focusedBlockId === block.id;
+      const isEditing = focusedBlockId === block.id;
       
       // Find the appropriate plugin for this block type
       const plugin = getBlockPlugin(block.type);
@@ -658,7 +693,15 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           style={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {blocks.map(renderBlock)}
+          <TouchableOpacity
+            style={styles.editorContent}
+            onPress={handleEmptySpacePress}
+            activeOpacity={1}
+          >
+            {blocks.map(renderBlock)}
+            {/* Empty space for clicking */}
+            <View style={styles.emptySpace} />
+          </TouchableOpacity>
         </ScrollView>
         
         {/* Drag overlay */}
@@ -692,10 +735,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         {editorConfig.debug && (
           <View style={styles.debugPanel}>
             <Text style={styles.debugText}>
-              Blocks: {blocks.length} | Selected: {selectedBlockId || 'none'} | Editing: {editingBlockId || 'none'}
+              Blocks: {blocks.length} | Selected: {focusedBlockId || 'none'} | Editing: {focusedBlockId || 'none'}
             </Text>
             <Text style={styles.debugText}>
-              History: {editorState.history.past.length} past, {editorState.history.future.length} future
+              History: {history.past.length} past, {history.future.length} future
             </Text>
             <Text style={styles.debugText}>
               Dragging: {dragState.isDragging ? dragState.draggedBlockId : 'none'}
@@ -795,6 +838,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'monospace',
     marginVertical: 1
+  },
+  editorContent: {
+    flex: 1,
+    minHeight: '100%'
+  },
+  emptySpace: {
+    minHeight: 200,
+    flex: 1
   }
 });
 
