@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { BlockComponentProps } from '../../types/PluginTypes';
@@ -11,7 +11,7 @@ let headingCursorPositions: { [blockId: string]: number } = {};
 /**
  * Heading block component
  */
-const HeadingComponent: React.FC<BlockComponentProps> = ({
+const HeadingComponent: React.FC<BlockComponentProps> = memo(({
   block,
   isSelected,
   isFocused,
@@ -75,27 +75,50 @@ const HeadingComponent: React.FC<BlockComponentProps> = ({
     <View style={styles.container}>
       <View style={styles.headingContainer}>
         <Text style={styles.levelIndicator}>H{level}</Text>
-        <FormattedTextInput
-          value={block.content}
-          onChangeText={handleTextChange}
-          onSelectionChange={handleSelectionChange}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          onKeyPress={handleKeyPress}
-          placeholder={`Heading ${level}`}
-          placeholderTextColor="#999"
-          isSelected={isSelected}
-          isEditing={isFocused}
-          multiline={false}
-          style={[
-            styles.textInput,
-            headingStyle
-          ]}
-        />
+        {isFocused || readOnly === false ? (
+          <FormattedTextInput
+            value={block.content}
+            onChangeText={handleTextChange}
+            onSelectionChange={handleSelectionChange}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            onKeyPress={handleKeyPress}
+            placeholder={`Heading ${level}`}
+            placeholderTextColor="#999"
+            isSelected={isSelected}
+            isEditing={isFocused}
+            multiline={false}
+            style={[
+              styles.textInput,
+              headingStyle
+            ]}
+          />
+        ) : (
+          <Text
+            style={[
+              styles.textDisplay,
+              headingStyle,
+              isSelected && styles.selected
+            ]}
+            onPress={onFocus}
+          >
+            {block.content || `Heading ${level}`}
+          </Text>
+        )}
       </View>
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.block.id === nextProps.block.id &&
+    prevProps.block.content === nextProps.block.content &&
+    prevProps.block.meta?.level === nextProps.block.meta?.level &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isFocused === nextProps.isFocused &&
+    prevProps.readOnly === nextProps.readOnly
+  );
+});
 
 // Export function to get cursor position for a block
 export const getHeadingCursorPosition = (blockId: string): number => {
@@ -148,6 +171,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     borderRadius: 4,
     backgroundColor: 'transparent',
+  },
+  textDisplay: {
+    flex: 1,
+    color: '#333',
+    paddingVertical: 8,
+    paddingHorizontal: 0,
   },
   selected: {
     backgroundColor: '#f0f8ff',
