@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { View, TextInput, StyleSheet, Text } from 'react-native';
 import { BlockPlugin } from '../BlockPlugin';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+
+// Global cursor position tracker for heading blocks
+let headingCursorPositions: { [blockId: string]: number } = {};
 
 /**
  * Heading block component
@@ -21,9 +24,75 @@ const HeadingComponent: React.FC<BlockComponentProps> = ({
 }) => {
   const level = block.meta?.level || 1;
   const headingStyle = getHeadingStyle(level);
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   const handleTextChange = (text: string) => {
+    console.log('HeadingPlugin handleTextChange:', {
+      newText: text,
+      oldContent: block.content,
+      cursorPosition,
+      textLengthDiff: text.length - block.content.length,
+      isBackspace: text.length < block.content.length
+    });
+    
+    // Check if this is a backspace at position 0 (content deletion at start)
+    // Only trigger when cursor was at position 0 and content is being deleted
+    if (text.length < block.content.length && cursorPosition === 0) {
+      console.log('Converting heading to paragraph with markdown syntax');
+      
+      // Convert heading back to paragraph with markdown syntax
+      const level = block.meta?.level || 1;
+      const markdownPrefix = '#'.repeat(level);
+      
+      onBlockChange({ 
+        type: 'paragraph',
+        content: `${markdownPrefix}${block.content}`,
+        meta: {}
+      });
+      return;
+    }
+    
     onBlockChange({ content: text });
+  };
+
+  const handleKeyPress = (event: any) => {
+    console.log('HeadingPlugin handleKeyPress:', {
+      key: event.nativeEvent.key,
+      cursorPosition,
+      content: block.content
+    });
+    
+    // Check if backspace is pressed at position 0
+    if (event.nativeEvent.key === 'Backspace' && cursorPosition === 0) {
+      console.log('Backspace at position 0 detected, converting to paragraph');
+      
+      // Convert heading back to paragraph with markdown syntax
+      const level = block.meta?.level || 1;
+      const markdownPrefix = '#'.repeat(level);
+      
+      onBlockChange({ 
+        type: 'paragraph',
+        content: `${markdownPrefix}${block.content}`,
+        meta: {}
+      });
+      
+      // Prevent default backspace behavior
+      event.preventDefault();
+      return;
+    }
+    
+    // Call the original onKeyPress if provided
+    if (onKeyPress) {
+      onKeyPress(event);
+    }
+  };
+
+  const handleSelectionChange = (event: any) => {
+    const { selection } = event.nativeEvent;
+    const position = selection.start;
+    setCursorPosition(position);
+    // Store cursor position globally so handleBackspace can access it
+    headingCursorPositions[block.id] = position;
   };
 
   return (
@@ -39,9 +108,10 @@ const HeadingComponent: React.FC<BlockComponentProps> = ({
           ]}
           value={block.content}
           onChangeText={handleTextChange}
+          onSelectionChange={handleSelectionChange}
           onFocus={onFocus}
           onBlur={onBlur}
-          onKeyPress={onKeyPress}
+          onKeyPress={handleKeyPress}
           placeholder={`Heading ${level}`}
           placeholderTextColor="#999"
           multiline={false}
@@ -50,6 +120,11 @@ const HeadingComponent: React.FC<BlockComponentProps> = ({
       </View>
     </View>
   );
+};
+
+// Export function to get cursor position for a block
+export const getHeadingCursorPosition = (blockId: string): number => {
+  return headingCursorPositions[blockId] || 0;
 };
 
 const getHeadingStyle = (level: number) => {
@@ -184,5 +259,29 @@ export class HeadingPlugin extends BlockPlugin {
     }
   };
 
-
+  /**
+   * Handle backspace key - convert heading back to paragraph with markdown syntax
+   * when cursor is at the beginning of the heading
+   */
+  protected handleBackspace(block: EditorBlock): EditorBlock | null {
+    // Get the current cursor position for this block
+    const cursorPosition = headingCursorPositions[block.id] || 0;
+    
+    // Only convert to paragraph with markdown syntax if cursor is at position 0
+    if (cursorPosition === 0) {
+      const level = block.meta?.level || 1;
+      const markdownPrefix = '#'.repeat(level);
+      
+      // Convert heading back to paragraph with markdown syntax (no space to prevent auto-conversion)
+       return {
+         ...block,
+         type: 'paragraph',
+         content: `${markdownPrefix}${block.content}`,
+         meta: {}
+       };
+    }
+    
+    // If cursor is not at position 0, let default backspace behavior handle it
+    return null;
+  }
 };
