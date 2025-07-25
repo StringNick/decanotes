@@ -172,7 +172,122 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 
     // Handle block operations with proper callbacks
     const handleBlockChange = (blockId: string, updates: Partial<EditorBlock>) => {
-      actions.updateBlock(blockId, updates);
+      // Check for real-time markdown transformation when content changes
+      if (updates.content !== undefined) {
+        const transformedUpdates = detectAndTransformMarkdown(updates, blockPlugins, markdownPlugins);
+        actions.updateBlock(blockId, transformedUpdates);
+      } else {
+        actions.updateBlock(blockId, updates);
+      }
+    };
+    
+    // Detect markdown patterns and transform block type
+    const detectAndTransformMarkdown = (
+      updates: Partial<EditorBlock>, 
+      blockPlugins: BlockPlugin[], 
+      markdownPlugins: MarkdownPlugin[]
+    ): Partial<EditorBlock> => {
+      const content = updates.content || '';
+      
+      // Skip transformation if content is empty or doesn't start with markdown syntax
+      if (!content.trim() || content.includes('\n')) {
+        return updates;
+      }
+      
+      // Check for heading patterns (# ## ###)
+      const headingMatch = content.match(/^(#{1,6})\s+(.+)$/);
+      if (headingMatch) {
+        const level = headingMatch[1].length;
+        const headingContent = headingMatch[2];
+        return {
+          ...updates,
+          type: 'heading',
+          content: headingContent,
+          meta: { level }
+        };
+      }
+      
+      // Check for quote pattern (> text)
+      const quoteMatch = content.match(/^>\s+(.+)$/);
+      if (quoteMatch) {
+        return {
+          ...updates,
+          type: 'quote',
+          content: quoteMatch[1]
+        };
+      }
+      
+      // Check for code block pattern (```)
+      if (content.startsWith('```')) {
+        const language = content.substring(3).trim() || 'text';
+        return {
+          ...updates,
+          type: 'code',
+          content: '',
+          meta: { language }
+        };
+      }
+      
+      // Check for checklist patterns first (- [ ] item or - [x] item)
+       const checklistMatch = content.match(/^(\s*)-\s+\[([ x])\]\s+(.+)$/);
+       if (checklistMatch) {
+         const indentation = checklistMatch[1];
+         const checkState = checklistMatch[2];
+         const checklistContent = checklistMatch[3];
+         const level = Math.floor(indentation.length / 2);
+         const checked = checkState === 'x';
+         
+         return {
+           ...updates,
+           type: 'checklist',
+           content: checklistContent,
+           meta: { checked, level }
+         };
+       }
+       
+       // Check for list patterns (- item or 1. item)
+       const listMatch = content.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
+       if (listMatch) {
+         const indentation = listMatch[1];
+         const marker = listMatch[2];
+         const listContent = listMatch[3];
+         const level = Math.floor(indentation.length / 2);
+         const listType = /\d+\./.test(marker) ? 'ordered' : 'unordered';
+         
+         return {
+           ...updates,
+           type: 'list',
+           content: listContent,
+           meta: { listType, level }
+         };
+       }
+      
+      // Check for divider patterns (--- or *** or ___)
+      if (content.match(/^(---|\*\*\*|___)\s*$/)) {
+        return {
+          ...updates,
+          type: 'divider',
+          content: '',
+          meta: { dividerStyle: 'solid' }
+        };
+      }
+      
+      // Try plugin-based markdown parsing
+      for (const plugin of markdownPlugins) {
+        if (plugin.parser.canParse(content)) {
+          const block = plugin.parser.parseBlock(content);
+          if (block) {
+            return {
+              ...updates,
+              type: block.type,
+              content: block.content,
+              meta: block.meta
+            };
+          }
+        }
+      }
+      
+      return updates;
     };
     
     const handleBlockSelect = (blockId: string) => {
