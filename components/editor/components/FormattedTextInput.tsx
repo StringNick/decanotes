@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { Colors } from '../../../constants/Colors';
+import { useColorScheme } from '../../../hooks/useColorScheme';
 import { FormattedText } from './FormattedText';
 
 interface FormattedTextInputProps {
@@ -31,7 +33,7 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
   onSelectionChange,
   onKeyPress,
   placeholder,
-  placeholderTextColor = '#999',
+  placeholderTextColor,
   style,
   isSelected = false,
   isEditing = false,
@@ -40,9 +42,15 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
   scrollEnabled = false
 }) => {
   const [internalEditing, setInternalEditing] = useState(false);
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
   
   // Use isEditing prop if provided, otherwise use internal state
   const showEditor = isEditing || internalEditing;
+  
+  // Use theme-aware placeholder color if not provided
+  const effectivePlaceholderTextColor = placeholderTextColor || colors.textMuted;
 
   const handleFocus = () => {
     setInternalEditing(true);
@@ -75,7 +83,7 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
         onSelectionChange={onSelectionChange}
         onKeyPress={onKeyPress}
         placeholder={placeholder}
-        placeholderTextColor={placeholderTextColor}
+        placeholderTextColor={effectivePlaceholderTextColor}
         multiline={multiline}
         textAlignVertical={textAlignVertical}
         scrollEnabled={scrollEnabled}
@@ -97,13 +105,13 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
       {value ? (
         <FormattedText 
           text={value} 
-          style={styles.formattedText}
+          style={[styles.formattedText, style]}
           isEditing={false}
         />
       ) : (
         <FormattedText 
           text={placeholder || ''} 
-          style={[styles.formattedText, styles.placeholder]}
+          style={[styles.formattedText, styles.placeholder, style]}
           isEditing={false}
         />
       )}
@@ -111,39 +119,44 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  textInput: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-    padding: 8,
-    minHeight: 40,
-    borderRadius: 4,
-    backgroundColor: 'transparent',
-  },
-  formattedContainer: {
-    padding: 8,
-    minHeight: 40,
-    borderRadius: 4,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-  },
-  formattedText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-  },
-  placeholder: {
-    color: '#999',
-  },
-  selected: {
-    backgroundColor: '#f0f8ff',
-    borderColor: '#007AFF',
-    borderWidth: 1,
-  },
-  editing: {
-    backgroundColor: '#fff',
-    borderColor: '#007AFF',
-    borderWidth: 2,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    textInput: {
+      fontSize: 16,
+      lineHeight: 24,
+      color: colors.text,
+      // padding: 8,
+      minHeight: 40,
+      borderRadius: 4,
+      backgroundColor: 'transparent',
+    },
+    formattedContainer: {
+      paddingHorizontal: 0,
+      paddingVertical: 8,
+      minHeight: 40,
+      borderRadius: 4,
+      backgroundColor: 'transparent',
+      justifyContent: 'center',
+    },
+    formattedText: {
+      fontSize: 16,
+      lineHeight: 24,
+      color: colors.text,
+    },
+    placeholder: {
+      color: colors.textMuted,
+    },
+    selected: {
+      backgroundColor: colors.accentLight,
+      borderColor: colors.accent,
+      borderWidth: 1,
+    },
+    editing: {
+      backgroundColor: colors.background,
+      borderColor: colors.accent,
+      borderWidth: 2,
+    },
+  });
+};

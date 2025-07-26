@@ -1,14 +1,14 @@
-import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
-import { EditorBlock, EditorMode, EditorBlockType } from '../../../types/editor';
-import { ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef, EditorConfig, EditorError } from '../types/EditorTypes';
-import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
-import { PluginRegistry } from '../plugins/PluginRegistry';
-import { useEditor } from './EditorContext';
-import { useEditorKeyboard } from './EditorKeyboard';
-import { useEditorDragDrop } from './EditorDragDrop';
-import { SafeBlockRenderer } from './BlockRenderer';
 import { Ionicons } from '@expo/vector-icons';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { EditorBlock, EditorBlockType } from '../../../types/editor';
+import { PluginRegistry } from '../plugins/PluginRegistry';
+import { EditorConfig, EditorError, ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef } from '../types/EditorTypes';
+import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
+import { SafeBlockRenderer } from './BlockRenderer';
+import { useEditor } from './EditorContext';
+import { useEditorDragDrop } from './EditorDragDrop';
+import { useEditorKeyboard } from './EditorKeyboard';
 
 /**
  * Core editor component that orchestrates all editor functionality
@@ -18,6 +18,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     blockPlugins = [],
     markdownPlugins = [],
     config = {},
+    theme,
     onBlocksChange,
     onSelectionChange,
     onEditingChange,
@@ -36,12 +37,12 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     const editorConfig: EditorConfig = {
       theme: {
         colors: {
-          primary: '#007AFF',
+          primary: theme?.input?.color || '#007AFF',
           primaryLight: '#E3F2FD',
-          secondary: '#666',
-          background: '#fff',
-          text: '#000',
-          border: '#E5E5E7',
+          secondary: theme?.placeholder?.color || '#666',
+          background: theme?.container?.backgroundColor || '#fff',
+          text: theme?.input?.color || '#000',
+          border: theme?.focusedBlock?.backgroundColor || '#E5E5E7',
           ...config.theme?.colors
         },
         spacing: {
@@ -51,8 +52,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           ...config.theme?.spacing
         },
         typography: {
-          fontSize: 16,
-          lineHeight: 24,
+          fontSize: theme?.input?.fontSize || 16,
+          lineHeight: theme?.input?.lineHeight || 24,
           fontFamily: 'System',
           ...config.theme?.typography
         }

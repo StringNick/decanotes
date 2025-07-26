@@ -1,5 +1,7 @@
 import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import { Colors } from '../../../constants/Colors';
+import { useColorScheme } from '../../../hooks/useColorScheme';
 import { processInlineFormatting } from '../../../utils/markdownParser';
 
 export interface FormattedTextSegment {
@@ -22,6 +24,10 @@ export const FormattedText: React.FC<FormattedTextProps> = ({
   style, 
   isEditing = false 
 }) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
+  
   // If editing, show raw text
   if (isEditing) {
     return (
@@ -37,7 +43,7 @@ export const FormattedText: React.FC<FormattedTextProps> = ({
   return (
     <Text style={[styles.text, style]}>
       {segments.map((segment, index) => {
-        const segmentStyle = getSegmentStyle(segment.type);
+        const segmentStyle = getSegmentStyle(segment.type, styles);
         return (
           <Text key={index} style={segmentStyle}>
             {segment.text}
@@ -48,7 +54,7 @@ export const FormattedText: React.FC<FormattedTextProps> = ({
   );
 };
 
-const getSegmentStyle = (type: FormattedTextSegment['type']) => {
+const getSegmentStyle = (type: FormattedTextSegment['type'], styles: any) => {
   switch (type) {
     case 'bold':
       return styles.bold;
@@ -63,32 +69,37 @@ const getSegmentStyle = (type: FormattedTextSegment['type']) => {
   }
 };
 
-const styles = StyleSheet.create({
-  text: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-  },
-  normal: {
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-  },
-  bold: {
-    fontWeight: 'bold',
-  },
-  italic: {
-    fontStyle: 'italic',
-  },
-  boldItalic: {
-    fontWeight: 'bold',
-    fontStyle: 'italic',
-  },
-  code: {
-    fontFamily: 'Courier New',
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 3,
-    fontSize: 14,
-  },
-});
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    text: {
+      fontSize: 16,
+      lineHeight: 24,
+      color: colors.text,
+    },
+    normal: {
+      // fontWeight: 'normal',
+      // fontStyle: 'normal',
+    },
+    bold: {
+      fontWeight: 'bold',
+    },
+    italic: {
+      fontStyle: 'italic',
+    },
+    boldItalic: {
+      fontWeight: 'bold',
+      fontStyle: 'italic',
+    },
+    code: {
+      fontFamily: 'Courier New',
+      backgroundColor: colorScheme === 'dark' ? colors.backgroundTertiary : colors.backgroundSecondary,
+      color: colors.text,
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+      borderRadius: 3,
+      fontSize: 14,
+    },
+  });
+};

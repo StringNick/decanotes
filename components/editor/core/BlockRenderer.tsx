@@ -1,9 +1,11 @@
-import React, { useCallback, useRef, useEffect, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { EditorBlock } from '../../../types/editor';
-import { BlockPlugin, BlockComponentProps } from '../types/PluginTypes';
-import { EditorConfig } from '../types/EditorTypes';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '../../../constants/Colors';
+import { useColorScheme } from '../../../hooks/useColorScheme';
+import { EditorBlock } from '../../../types/editor';
+import { EditorConfig } from '../types/EditorTypes';
+import { BlockComponentProps, BlockPlugin } from '../types/PluginTypes';
 
 interface BlockRendererProps {
   block: EditorBlock;
@@ -45,6 +47,9 @@ export function BlockRenderer({
   const [isHovered, setIsHovered] = useState(false);
   const animatedValue = useRef(new Animated.Value(0)).current;
   const blockRef = useRef<View>(null);
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const styles = getStyles(colorScheme ?? 'light');
   
   // Animation for selection
   useEffect(() => {
@@ -150,7 +155,7 @@ export function BlockRenderer({
       
       {/* Block Actions */}
       {isSelected && (showActions || isHovered) && blockActions.length > 0 && (
-        <View style={styles.actionsContainer}>
+        <View style={[styles.actionsContainer, { backgroundColor: colors.surface }]}>
           {blockActions.map((action: any) => (
             <TouchableOpacity
               key={action.id}
@@ -245,6 +250,9 @@ export class BlockErrorBoundary extends React.Component<
   
   render() {
     if (this.state.hasError) {
+      // Use light theme as fallback for error boundary
+      const styles = getStyles('light');
+      
       return (
         <View style={styles.errorBoundary}>
           <Ionicons name="warning" size={24} color="#FF3B30" />
@@ -285,142 +293,148 @@ export function SafeBlockRenderer(props: BlockRendererProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  blockContainer: {
-    marginVertical: 4,
-    borderWidth: 2,
-    borderRadius: 8,
-    position: 'relative',
-    minHeight: 40
-  },
+const getStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
   
-  dragHandle: {
-    position: 'absolute',
-    left: -30,
-    top: '50%',
-    transform: [{ translateY: -8 }],
-    width: 20,
-    height: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10
-  },
-  
-  blockContent: {
-    flex: 1,
-    padding: 8
-  },
-  
-  actionsContainer: {
-    position: 'absolute',
-    top: -40,
-    right: 0,
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    zIndex: 20
-  },
-  
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 4
-  },
-  
-  destructiveAction: {
-    backgroundColor: '#FFF5F5'
-  },
-  
-  actionText: {
-    fontSize: 12,
-    marginLeft: 4,
-    color: '#007AFF'
-  },
-  
-  destructiveActionText: {
-    color: '#FF3B30'
-  },
-  
-  debugInfo: {
-    position: 'absolute',
-    bottom: -60,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    padding: 8,
-    borderRadius: 4,
-    zIndex: 15
-  },
-  
-  debugText: {
-    fontSize: 10,
-    color: 'white',
-    fontFamily: 'monospace'
-  },
-  
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    backgroundColor: '#FFF5F5',
-    borderRadius: 4,
-    margin: 4
-  },
-  
-  errorText: {
-    fontSize: 12,
-    color: '#FF3B30',
-    marginLeft: 8,
-    flex: 1
-  },
-  
-  errorBoundary: {
-    padding: 16,
-    backgroundColor: '#FFF5F5',
-    borderRadius: 8,
-    alignItems: 'center',
-    margin: 8
-  },
-  
-  errorBoundaryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF3B30',
-    marginTop: 8
-  },
-  
-  errorBoundaryMessage: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4
-  },
-  
-  errorBoundaryDetails: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 8,
-    fontFamily: 'monospace'
-  },
-  
-  errorBoundaryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginTop: 12
-  },
-  
-  errorBoundaryButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600'
-  }
-});
+  return StyleSheet.create({
+    blockContainer: {
+      marginVertical: 2, // Reduced from 4 to 2
+      borderWidth: 2,
+      borderRadius: 8,
+      position: 'relative',
+      // minHeight: 40,
+      backgroundColor: colors.surface
+    },
+    
+    dragHandle: {
+      position: 'absolute',
+      left: -30,
+      top: '50%',
+      transform: [{ translateY: -8 }],
+      width: 20,
+      height: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10
+    },
+    
+    blockContent: {
+      flex: 1,
+    },
+    
+    actionsContainer: {
+      position: 'absolute',
+      top: -40,
+      right: 0,
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: 6,
+      shadowColor: colors.text,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      zIndex: 20,
+      borderWidth: 1,
+      borderColor: colors.border
+    },
+    
+    actionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 4
+    },
+    
+    destructiveAction: {
+      backgroundColor: colors.error + '10' // 10% opacity
+    },
+    
+    actionText: {
+      fontSize: 12,
+      marginLeft: 4,
+      color: colors.accent
+    },
+    
+    destructiveActionText: {
+      color: colors.error
+    },
+    
+    debugInfo: {
+      position: 'absolute',
+      bottom: -60,
+      left: 0,
+      right: 0,
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+      padding: 8,
+      borderRadius: 4,
+      zIndex: 15
+    },
+    
+    debugText: {
+      fontSize: 10,
+      color: colorScheme === 'dark' ? colors.text : 'white',
+      fontFamily: 'monospace'
+    },
+    
+    errorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 8,
+      backgroundColor: colors.error + '10',
+      borderRadius: 4,
+      margin: 4
+    },
+    
+    errorText: {
+      fontSize: 12,
+      color: colors.error,
+      marginLeft: 8,
+      flex: 1
+    },
+    
+    errorBoundary: {
+      padding: 16,
+      backgroundColor: colors.error + '10',
+      borderRadius: 8,
+      alignItems: 'center',
+      margin: 8
+    },
+    
+    errorBoundaryTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.error,
+      marginTop: 8
+    },
+    
+    errorBoundaryMessage: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 4
+    },
+    
+    errorBoundaryDetails: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 8,
+      fontFamily: 'monospace'
+    },
+    
+    errorBoundaryButton: {
+      backgroundColor: colors.accent,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 6,
+      marginTop: 12
+    },
+    
+    errorBoundaryButtonText: {
+      color: 'white',
+      fontSize: 14,
+      fontWeight: '600'
+    }
+  });
+};

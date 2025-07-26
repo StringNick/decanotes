@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { EditorBlock } from '../../../types/editor';
-import { BlockPlugin } from '../types/PluginTypes';
 import { EditorConfig } from '../types/EditorTypes';
+import { BlockPlugin } from '../types/PluginTypes';
 
 interface UseEditorDragDropProps {
   blocks: EditorBlock[];

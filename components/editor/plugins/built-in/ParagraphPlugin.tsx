@@ -1,12 +1,12 @@
 import React, { memo } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { BlockPlugin } from '../BlockPlugin';
-import { BlockComponentProps } from '../../types/PluginTypes';
+import { StyleSheet, View } from 'react-native';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
-import { Colors } from '../../../../constants/Colors';
-import { useColorScheme } from '../../../../hooks/useColorScheme';
+import { BlockComponentProps } from '../../types/PluginTypes';
+import { BlockPlugin } from '../BlockPlugin';
 
 /**
  * Paragraph block component with modern dark theme support
@@ -74,19 +74,12 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
   
   return StyleSheet.create({
     container: {
-      marginVertical: 6,
     },
     textInput: {
       fontSize: 16,
-      lineHeight: 26,
       color: colors.text,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      minHeight: 48,
-      borderRadius: 8,
+      // dont hide text, height should be dynamic based on the text
       backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: 'transparent',
     },
     selected: {
       backgroundColor: colors.accentLight,

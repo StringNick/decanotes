@@ -1,3 +1,5 @@
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CheckSquare, Code, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Type, Undo2, X } from 'lucide-react-native';
@@ -6,9 +8,156 @@ import { Animated, FlatList, Keyboard, StatusBar, StyleSheet, Text, TouchableOpa
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
+
+
+const initialMarkdown = `# Welcome to DecanNotes Editor
+
+## All Supported Markdown Components
+
+This editor supports a comprehensive set of markdown components for rich content creation.
+
+### Text Formatting
+
+This is a regular paragraph with **bold text** and *italic text* for emphasis.
+
+Another paragraph demonstrating the text formatting capabilities.
+
+### Headings
+
+# Heading Level 1
+## Heading Level 2  
+### Heading Level 3
+#### Heading Level 4
+##### Heading Level 5
+###### Heading Level 6
+
+### Lists
+
+#### Unordered Lists
+- First item
+- Second item
+- Third item
+  - Nested item
+  - Another nested item
+
+#### Ordered Lists
+1. First numbered item
+2. Second numbered item
+3. Third numbered item
+   1. Nested numbered item
+   2. Another nested numbered item
+
+### Checklists
+
+- [ ] Unchecked task item
+- [x] Completed task item
+- [ ] Another pending task
+- [x] Another completed task
+  - [ ] Nested unchecked item
+  - [x] Nested completed item
+
+### Blockquotes
+
+> This is a blockquote with enhanced typography
+> and improved visual hierarchy for better readability.
+
+> Another blockquote example
+> demonstrating multi-line support.
+
+### Code Blocks
+
+\`\`\`javascript
+// JavaScript code example
+const editor = new MarkdownEditor({
+  plugins: [...builtInPlugins],
+  theme: 'modern',
+  features: {
+    dragAndDrop: true,
+    toolbar: true,
+    shortcuts: true
+  }
+});
+\`\`\`
+
+\`\`\`python
+# Python code example
+def hello_world():
+    print("Hello, World!")
+    return "Success"
+\`\`\`
+
+\`\`\`json
+{
+  "name": "DecanNotes",
+  "version": "1.0.0",
+  "features": [
+    "markdown",
+    "real-time editing",
+    "plugin system"
+  ]
+}
+\`\`\`
+
+### Images
+
+![Sample Image](https://via.placeholder.com/400x200 "Sample image with caption")
+
+### Dividers
+
+---
+
+### Callouts
+
+> [!NOTE] Information Callout
+> This is an informational callout block for important notes.
+
+> [!TIP] Helpful Tip
+> This is a tip callout for providing helpful suggestions.
+
+> [!WARNING] Warning Notice
+> This is a warning callout for important warnings.
+
+> [!DANGER] Danger Alert
+> This is a danger callout for critical alerts.
+
+---
+
+## Advanced Features
+
+### Real-time Markdown Transformation
+
+The editor supports real-time transformation of markdown syntax:
+- Type \`# Heading\` → Converts to heading
+- Type \`> Quote\` → Converts to blockquote
+- Type \`- List item\` → Converts to list
+- Type \`- [ ] Task\` → Converts to checklist
+- Type \`\`\`\` → Converts to code block
+- Type \`---\` → Converts to divider
+
+### Drag and Drop
+Blocks can be reordered by dragging and dropping for better organization.
+
+### Keyboard Shortcuts
+- **Ctrl/Cmd + B**: Bold text
+- **Ctrl/Cmd + I**: Italic text
+- **Ctrl/Cmd + K**: Inline code
+- **Ctrl/Cmd + Shift + L**: Create list
+- **Enter**: Create new block
+- **Backspace**: Delete/merge blocks
+
+---
+
+## Getting Started
+
+1. **Start typing** to create content
+2. **Use markdown syntax** for formatting
+3. **Try the toolbar** for quick actions
+4. **Experiment with drag and drop** for reordering
+5. **Use keyboard shortcuts** for efficiency
+
+Enjoy creating with DecanNotes! 🚀`;
 
 // Import built-in plugins
 
@@ -132,9 +281,10 @@ export default function EditorScreen() {
       <View style={styles.editorContainer}>
         <MarkdownEditor
           ref={editorRef}
+          initialMarkdown={initialMarkdown}
           placeholder="Start writing..."
           onBlocksChange={handleBlockChange}
-          theme={colorScheme || 'light'}
+          theme={getEditorTheme(colorScheme || 'light')}
           config={{
             toolbar: { enabled: false },
             theme: {
@@ -229,7 +379,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       paddingHorizontal: 20,
       paddingVertical: 16,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background, // Changed from colors.surface to match status bar
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       shadowColor: colors.text,
@@ -276,7 +426,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: colors.background,
     },
     bottomContainer: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background, // Changed from colors.surface to match status bar
       borderTopWidth: 1,
       borderTopColor: colors.border,
       shadowColor: colors.text,
@@ -291,7 +441,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       justifyContent: 'space-between',
       paddingHorizontal: 20,
       paddingVertical: 12,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background, // Changed from colors.surface to match status bar
       borderTopWidth: 1,
       borderTopColor: colors.border,
       shadowColor: colors.text,
@@ -316,7 +466,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
 
     blockComponentsPanel: {
       height: 320,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background, // Changed from colors.surface to match status bar
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
       shadowColor: colors.text,

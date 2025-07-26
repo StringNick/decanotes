@@ -1,11 +1,11 @@
-import React, { useState, memo } from 'react';
+import React, { memo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { EditorBlock, EditorBlockType } from '../../../../types/editor';
-import { BlockComponentProps } from '../../types/PluginTypes';
-import { BlockPlugin } from '../BlockPlugin';
-import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { BlockComponentProps } from '../../types/PluginTypes';
+import { BlockPlugin } from '../BlockPlugin';
 
 // Global cursor position tracker for heading blocks
 let headingCursorPositions: { [blockId: string]: number } = {};
@@ -99,15 +99,15 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
               styles.textInput,
               headingStyle,
               isSelected && styles.selected,
-              isFocused && styles.editing
+              isFocused && styles.editing,
             ]}
           />
         ) : (
           <Text
             style={[
-              styles.textDisplay,
               headingStyle,
-              isSelected && styles.selected
+              styles.textDisplay,
+              isSelected && styles.selected,
             ]}
             onPress={onFocus}
           >
@@ -165,7 +165,6 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
   
   return StyleSheet.create({
     container: {
-      marginVertical: 12,
     },
     headingContainer: {
       flexDirection: 'row',
@@ -176,7 +175,6 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderWidth: 1,
       borderColor: colors.border,
       paddingHorizontal: 8,
-      paddingVertical: 6,
       borderRadius: 6,
       marginRight: 12,
       minWidth: 32,
@@ -191,8 +189,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     textInput: {
       flex: 1,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
+      // paddingHorizontal: 16,
       borderRadius: 8,
       backgroundColor: 'transparent',
       borderWidth: 1,
@@ -200,8 +197,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     textDisplay: {
       flex: 1,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
+      // paddingHorizontal: 16,
     },
     selected: {
       backgroundColor: colors.accentLight,
