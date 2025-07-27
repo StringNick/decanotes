@@ -312,6 +312,8 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // Separate block and markdown plugins
     const blockPlugins = allPlugins.filter(plugin => plugin.type === 'block');
     const markdownPlugins = allPlugins.filter(plugin => plugin.type === 'markdown');
+    
+    // console.log('🔧 Block plugins being passed to EditorCore:', blockPlugins.map(p => ({ id: p.id, blockType: p.blockType })));
 
     return (
       <View 
@@ -381,6 +383,8 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       new ChecklistPlugin(),
       ...plugins
     ];
+    
+    console.log('🔧 All plugins created:', allPlugins.map(p => ({ id: p.id, type: p.type, blockType: p.type === 'block' ? (p as any).blockType : 'N/A' })));
 
     // Convert initialMarkdown to initialBlocks if provided
     const processedInitialBlocks = initialMarkdown 

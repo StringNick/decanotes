@@ -5,6 +5,7 @@ import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { KeyboardHandler } from '../../core/KeyboardHandler';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
 
@@ -25,6 +26,10 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
 
+  // Get the plugin instance and controller
+  const pluginInstance = new ParagraphPlugin();
+  const controller = pluginInstance.controller;
+
   const handleTextChange = (text: string) => {
     if (onBlockChange) {
       onBlockChange({ content: text });
@@ -37,26 +42,36 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
   };
 
   return (
-    <View style={[styles.container, style]}>
-      <FormattedTextInput
-        value={block.content}
-        onChangeText={handleTextChange}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        placeholder="Type something..."
-        placeholderTextColor={colors.textMuted}
-        isSelected={isSelected}
-        isEditing={isEditing}
-        multiline
-        textAlignVertical="top"
-        scrollEnabled={false}
-        style={[
-          styles.textInput,
-          isSelected && styles.selected,
-          isEditing && styles.editing
-        ]}
-      />
-    </View>
+    <KeyboardHandler
+      block={block}
+      controller={controller}
+      cursorPosition={0}
+    >
+      {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
+        <View style={[styles.container, style]}>
+          <FormattedTextInput
+            value={block.content}
+            onChangeText={handleTextChange}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            onKeyPress={onKeyPress}
+            placeholder="Type something..."
+            placeholderTextColor={colors.textMuted}
+            isSelected={isSelected}
+            isEditing={isEditing}
+            multiline
+            textAlignVertical="top"
+            scrollEnabled={false}
+            preventNewlines={preventNewlines}
+            style={[
+              styles.textInput,
+              isSelected && styles.selected,
+              isEditing && styles.editing
+            ]}
+          />
+        </View>
+      )}
+    </KeyboardHandler>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
@@ -148,12 +163,15 @@ export class ParagraphPlugin extends BlockPlugin {
       return null;
     }
     
-    return {
+    const newParagraph: EditorBlock = {
       id: generateId(),
       type: 'paragraph',
       content: '',
       meta: { textAlign: block.meta?.textAlign || 'left' }
     };
+    
+    // Return both blocks - the current one stays, and we add a new one after it
+    return [block, newParagraph];
   }
 
   protected handleBackspace(block: EditorBlock): EditorBlock | null {

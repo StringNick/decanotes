@@ -628,7 +628,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 
     // Render block
     const renderBlock = (block: EditorBlock, index: number) => {
-      const isSelected = focusedBlockId === block.id;
+      const isSelected = selectedBlocks.includes(block.id);
       const isEditing = focusedBlockId === block.id;
       
       // Find the appropriate plugin for this block type

@@ -1,7 +1,7 @@
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { EditorBlock } from '../../../types/editor';
-import { BlockPlugin } from '../types/PluginTypes';
 import { EditorConfig } from '../types/EditorTypes';
+import { BlockPlugin } from '../types/PluginTypes';
 
 interface UseEditorKeyboardProps {
   blocks: EditorBlock[];
@@ -65,6 +65,18 @@ export function useEditorKeyboard({
       const result = plugin.controller.handleEnter(editingBlock);
       if (result) {
         event.preventDefault();
+        // Apply the changes returned by the plugin
+        if (Array.isArray(result)) {
+          // Handle array of blocks (e.g., split into multiple blocks)
+          const blockIndex = blocks.findIndex(b => b.id === editingBlock.id);
+          actions.deleteBlock(editingBlock.id);
+          result.forEach((block, index) => {
+            actions.addBlock(block, blockIndex + index);
+          });
+        } else if (typeof result === 'object') {
+          // Handle single block update
+          actions.updateBlock(editingBlock.id, result);
+        }
         return true;
       }
     }
@@ -94,6 +106,10 @@ export function useEditorKeyboard({
       const result = plugin.controller.handleBackspace(editingBlock);
       if (result) {
         event.preventDefault();
+        // Apply the changes returned by the plugin
+        if (typeof result === 'object') {
+          actions.updateBlock(editingBlock.id, result);
+        }
         return true;
       }
     }
@@ -131,6 +147,10 @@ export function useEditorKeyboard({
       const result = plugin.controller.handleTab(editingBlock, event, actions);
       if (result) {
         event.preventDefault();
+        // Apply the changes returned by the plugin
+        if (typeof result === 'object') {
+          actions.updateBlock(editingBlock.id, result);
+        }
         return true;
       }
     }

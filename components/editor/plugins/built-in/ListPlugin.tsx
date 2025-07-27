@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { EditorBlock, EditorBlockType } from '../../../../types/editor';
-import { generateId } from '../../../../utils/markdownParser';
-import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
-import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { generateId } from '../../../../utils/markdownParser';
+import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { KeyboardHandler } from '../../core/KeyboardHandler';
+import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
 type ListType = 'ordered' | 'unordered';
 
@@ -38,17 +39,12 @@ const ListComponent: React.FC<BlockComponentProps> = ({
 
   const [cursorPosition, setCursorPosition] = useState(0);
 
-  const handleTextChange = (text: string) => {
-    // so we can use to convert to checklist
-    const listType = block.meta?.listType || 'unordered';
-    const level = block.meta?.level || 0;
-    const indent = '  '.repeat(level);
-    const marker = listType === 'ordered' ? '1.' : '-';
-    const content = `${indent}${marker} ${text}`;
+  // Get the plugin instance and controller
+  const pluginInstance = new ListPlugin();
+  const controller = pluginInstance.controller;
 
-    onBlockChange({
-      content: content,
-    });
+  const handleTextChange = (text: string) => {
+    onBlockChange({ content: text });
   };
 
   const handleSelectionChange = (event: any) => {
@@ -57,26 +53,6 @@ const ListComponent: React.FC<BlockComponentProps> = ({
     setCursorPosition(position);
     // Store cursor position globally so handleBackspace can access it
     listCursorPositions[block.id] = position;
-  };
-
-  const handleKeyPress = (event: any) => {
-    if (event.nativeEvent.key === 'Backspace' && cursorPosition === 0) {
-      // Convert list back to paragraph with markdown syntax when backspace at beginning
-      const listType = block.meta?.listType || 'unordered';
-      const level = block.meta?.level || 0;
-      const indent = '  '.repeat(level);
-      const marker = listType === 'ordered' ? '1.' : '-';
-      const content = `${indent}${marker}${block.content}`;
-
-      onBlockChange({
-        type: 'paragraph' as EditorBlockType,
-        content: content,
-        meta: {}
-      });
-
-      event.preventDefault();
-      return;
-    }
   };
 
   const toggleListType = () => {
@@ -107,38 +83,47 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   };
 
   return (
-    <View style={[styles.container, style]}>
-      <View style={[
-        styles.listItem,
-        { marginLeft: level * 20 },
-        isSelected && styles.selected,
-        isEditing && styles.editing
-      ]}>
-        <TouchableOpacity
-          style={styles.bulletContainer}
-          onPress={toggleListType}
-        >
-          {renderBullet()}
-        </TouchableOpacity>
+    <KeyboardHandler
+      block={block}
+      controller={controller}
+      cursorPosition={cursorPosition}
+    >
+      {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
+        <View style={[styles.container, style]}>
+          <View style={[
+            styles.listItem,
+            { marginLeft: level * 20 },
+            isSelected && styles.selected,
+            isEditing && styles.editing
+          ]}>
+            <TouchableOpacity
+              style={styles.bulletContainer}
+              onPress={toggleListType}
+            >
+              {renderBullet()}
+            </TouchableOpacity>
 
-        <FormattedTextInput
-          value={block.content}
-          onChangeText={handleTextChange}
-          onSelectionChange={handleSelectionChange}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          onKeyPress={handleKeyPress}
-          placeholder="List item"
-          placeholderTextColor={colors.textMuted}
-          isSelected={isSelected}
-          isEditing={isEditing}
-          multiline
-          textAlignVertical="top"
-          scrollEnabled={false}
-          style={styles.textInput}
-        />
-      </View>
-    </View>
+            <FormattedTextInput
+              value={block.content}
+              onChangeText={handleTextChange}
+              onSelectionChange={handleSelectionChange}
+              onFocus={onFocus}
+              onBlur={onBlur}
+              onKeyPress={onKeyPress}
+              placeholder="List item"
+              placeholderTextColor={colors.textMuted}
+              isSelected={isSelected}
+              isEditing={isEditing}
+              multiline
+              textAlignVertical="top"
+              scrollEnabled={false}
+              preventNewlines={preventNewlines}
+              style={styles.textInput}
+            />
+          </View>
+        </View>
+      )}
+    </KeyboardHandler>
   );
 };
 
@@ -264,7 +249,7 @@ export class ListPlugin implements BlockPlugin {
     // If content is empty, convert to paragraph
     if (block.content.trim() === '') {
       return {
-        id: generateId(),
+        ...block,
         type: 'paragraph',
         content: '',
         meta: {}
@@ -276,7 +261,7 @@ export class ListPlugin implements BlockPlugin {
     const level = block.meta?.level || 0;
     const index = listType === 'ordered' ? (block.meta?.index || 1) + 1 : 1;
 
-    return {
+    const newListItem: EditorBlock = {
       id: generateId(),
       type: 'list',
       content: '',
@@ -286,6 +271,9 @@ export class ListPlugin implements BlockPlugin {
         index
       }
     };
+    
+    // Return both blocks - the current one stays, and we add a new one after it
+    return [block, newListItem];
   }
 
 

@@ -19,6 +19,7 @@ interface FormattedTextInputProps {
   multiline?: boolean;
   textAlignVertical?: 'auto' | 'top' | 'bottom' | 'center';
   scrollEnabled?: boolean;
+  preventNewlines?: boolean; // New prop to prevent newline characters
 }
 
 /**
@@ -39,7 +40,8 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
   isEditing = false,
   multiline = true,
   textAlignVertical = 'top',
-  scrollEnabled = false
+  scrollEnabled = false,
+  preventNewlines = false
 }) => {
   const [internalEditing, setInternalEditing] = useState(false);
   const colorScheme = useColorScheme();
@@ -67,6 +69,16 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
     onFocus?.();
   };
 
+  const handleTextChange = (text: string) => {
+    // If preventNewlines is true, filter out newline characters
+    if (preventNewlines) {
+      const filteredText = text.replace(/\n/g, '');
+      onChangeText(filteredText);
+    } else {
+      onChangeText(text);
+    }
+  };
+
   if (showEditor) {
     return (
       <TextInput
@@ -77,7 +89,7 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
           style
         ]}
         value={value}
-        onChangeText={onChangeText}
+        onChangeText={handleTextChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onSelectionChange={onSelectionChange}

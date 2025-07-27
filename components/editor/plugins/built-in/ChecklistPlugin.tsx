@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { EditorBlock, EditorBlockType } from '../../../../types/editor';
-import { generateId } from '../../../../utils/markdownParser';
-import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
-import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { generateId } from '../../../../utils/markdownParser';
+import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { KeyboardHandler } from '../../core/KeyboardHandler';
+import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
 // Global cursor position tracking for checklist blocks
 const checklistCursorPositions: { [blockId: string]: number } = {};
@@ -34,6 +35,11 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   const level = block.meta?.level || 0;
   const [cursorPosition, setCursorPosition] = useState(0);
 
+  // Get the plugin instance and controller
+  // Note: In a real implementation, this would be passed from BlockRenderer
+  const pluginInstance = ChecklistPlugin.getInstance();
+  const controller = pluginInstance.controller;
+
   const handleTextChange = (text: string) => {
     // Check if this is a backspace at position 0 (content deletion at start)
     // Only trigger when cursor was at position 0 and content is being deleted
@@ -42,7 +48,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
       const checkedSymbol = isChecked ? 'x' : ' ';
       const level = block.meta?.level || 0;
       const indent = '  '.repeat(level);
-      
+
       onBlockChange({
         type: 'paragraph' as EditorBlockType,
         content: `${indent}- [${checkedSymbol}] ${block.content}`,
@@ -50,7 +56,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
       });
       return;
     }
-    
+
     onBlockChange({ content: text });
   };
 
@@ -60,30 +66,6 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
     setCursorPosition(position);
     // Store cursor position globally so handleBackspace can access it
     checklistCursorPositions[block.id] = position;
-  };
-
-  const handleKeyPress = (event: any) => {
-    console.log('Key press', event.nativeEvent.key, cursorPosition);
-
-    if (event.nativeEvent.key === 'Backspace' && cursorPosition === 0) {
-      console.log('Key press where we need');
-      // Convert checklist back to paragraph with markdown syntax when backspace at beginning
-      const checkedSymbol = isChecked ? 'x' : ' ';
-      const level = block.meta?.level || 0;
-      const indent = '  '.repeat(level);
-      
-      const newBlockData = {
-         type: 'paragraph' as EditorBlockType,
-         content: `${indent}- [${checkedSymbol}]${block.content}`,
-         meta: {}
-       };
-       
-       console.log('Calling onBlockChange with:', newBlockData);
-       onBlockChange(newBlockData);
-      
-      event.preventDefault();
-      return;
-    }
   };
 
   const toggleChecked = () => {
@@ -97,54 +79,63 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   };
 
   return (
-    <View style={[styles.container, style]}>
-      <View style={[
-        styles.checklistItem,
-        { marginLeft: level * 20 },
-        isSelected && styles.selected,
-        isEditing && styles.editing
-      ]}>
-        <TouchableOpacity
-          style={styles.checkboxContainer}
-          onPress={toggleChecked}
-        >
+    <KeyboardHandler
+      block={block}
+      controller={controller}
+      cursorPosition={cursorPosition}
+    >
+      {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
+        <View style={[styles.container, style]}>
           <View style={[
-            styles.checkbox,
-            isChecked && styles.checkedBox
+            styles.checklistItem,
+            { marginLeft: level * 20 },
+            isSelected && styles.selected,
+            isEditing && styles.editing
           ]}>
-            {isChecked && (
-              <Text style={styles.checkmark}>✓</Text>
-            )}
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={toggleChecked}
+            >
+              <View style={[
+                styles.checkbox,
+                isChecked && styles.checkedBox
+              ]}>
+                {isChecked && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </View>
+            </TouchableOpacity>
+
+            <FormattedTextInput
+              value={block.content}
+              onChangeText={handleTextChange}
+              onSelectionChange={handleSelectionChange}
+              onFocus={onFocus}
+              onBlur={onBlur}
+              onKeyPress={onKeyPress}
+              placeholder="Checklist item"
+              placeholderTextColor={colors.textMuted}
+              isSelected={isSelected}
+              isEditing={isEditing}
+              multiline
+              textAlignVertical="top"
+              scrollEnabled={false}
+              preventNewlines={preventNewlines}
+              style={[
+                styles.textInput,
+                isChecked && styles.checkedText
+              ]}
+            />
           </View>
-        </TouchableOpacity>
-        
-        <FormattedTextInput
-          value={block.content}
-          onChangeText={handleTextChange}
-          onSelectionChange={handleSelectionChange}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          onKeyPress={handleKeyPress}
-          placeholder="Checklist item"
-          placeholderTextColor={colors.textMuted}
-          isSelected={isSelected}
-          isEditing={isEditing}
-          multiline
-          textAlignVertical="top"
-          scrollEnabled={false}
-          style={[
-            styles.textInput,
-            isChecked && styles.checkedText
-          ]}
-        />
-      </View>
-    </View>
+        </View>
+      )}
+    </KeyboardHandler>
   );
 };
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     container: {
       marginVertical: 4,
@@ -225,8 +216,17 @@ export class ChecklistPlugin implements BlockPlugin {
   readonly component = ChecklistComponent;
   readonly controller: any;
 
+  private static instance: ChecklistPlugin;
+
   constructor() {
     this.controller = this.createController();
+  }
+
+  static getInstance(): ChecklistPlugin {
+    if (!ChecklistPlugin.instance) {
+      ChecklistPlugin.instance = new ChecklistPlugin();
+    }
+    return ChecklistPlugin.instance;
   }
 
   readonly markdownSyntax = {
@@ -259,44 +259,59 @@ export class ChecklistPlugin implements BlockPlugin {
     if (event.key === 'Tab') {
       event.preventDefault();
       const currentLevel = block.meta?.level || 0;
-      const newLevel = event.shiftKey 
+      const newLevel = event.shiftKey
         ? Math.max(0, currentLevel - 1)
         : Math.min(5, currentLevel + 1);
-      
+
       this.updateBlockLevel(block, newLevel);
       return true;
     }
-    
+
     // Handle Ctrl+Enter to toggle checked state
     if (event.ctrlKey && event.key === 'Enter') {
       event.preventDefault();
       this.toggleChecked(block);
       return true;
     }
-    
+
     return false;
   }
 
+  /**
+   * Handle Enter key
+   */
   protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
     // If content is empty, convert to paragraph
     if (block.content.trim() === '') {
       return {
-        id: this.generateId(),
+        ...block,
         type: 'paragraph',
         content: '',
         meta: {}
       };
     }
     
-    // Create new checklist item
+    // Create a new checklist item with the same indentation level
     const level = block.meta?.level || 0;
-    return this.createChecklistItem('', false, level);
+    
+    const newItem: EditorBlock = {
+      id: this.generateId(),
+      type: 'checklist',
+      content: '',
+      meta: {
+        checked: false,
+        level: level
+      }
+    };
+
+    // Return both blocks - the current one stays, and we add a new one after it
+    return [block, newItem];
   }
 
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
     // Get the current cursor position for this block
     const cursorPosition = checklistCursorPositions[block.id] || 0;
-    
+
     // If checklist item is empty and at level 0, convert to paragraph
     if (block.content.trim() === '' && (block.meta?.level || 0) === 0) {
       return {
@@ -305,7 +320,7 @@ export class ChecklistPlugin implements BlockPlugin {
         meta: {}
       };
     }
-    
+
     // If checklist item is empty and indented, decrease indentation
     if (block.content.trim() === '' && (block.meta?.level || 0) > 0) {
       const newLevel = Math.max(0, (block.meta?.level || 0) - 1);
@@ -317,14 +332,14 @@ export class ChecklistPlugin implements BlockPlugin {
         }
       };
     }
-    
+
     // Convert checklist back to paragraph with markdown syntax when backspace at beginning
     if (cursorPosition === 0) {
       const checked = block.meta?.checked || false;
       const level = block.meta?.level || 0;
       const indent = '  '.repeat(level);
       const checkState = checked ? 'x' : ' ';
-      
+
       return {
         ...block,
         type: 'paragraph',
@@ -332,7 +347,7 @@ export class ChecklistPlugin implements BlockPlugin {
         meta: {}
       };
     }
-    
+
     // For normal backspace operations (not at beginning), let default behavior handle it
     return null;
   }
@@ -341,17 +356,17 @@ export class ChecklistPlugin implements BlockPlugin {
 
   protected onCreate(block: EditorBlock): EditorBlock {
     const newBlock = { ...block };
-    
+
     // Parse markdown syntax if present
     const match = newBlock.content.match(/^(\s*)- \[([ x])\]\s+(.+)$/);
     if (match) {
       const indentation = match[1];
       const checkState = match[2];
       const content = match[3];
-      
+
       const level = Math.floor(indentation.length / 2); // 2 spaces per level
       const checked = checkState === 'x';
-      
+
       newBlock.content = content;
       newBlock.meta = {
         ...newBlock.meta,
@@ -359,7 +374,7 @@ export class ChecklistPlugin implements BlockPlugin {
         level
       };
     }
-    
+
     // Ensure checklist properties are set
     if (newBlock.meta?.checked === undefined) {
       newBlock.meta = {
@@ -368,7 +383,7 @@ export class ChecklistPlugin implements BlockPlugin {
         level: newBlock.meta?.level || 0
       };
     }
-    
+
     return newBlock;
   }
 
@@ -376,48 +391,44 @@ export class ChecklistPlugin implements BlockPlugin {
     const actions: any[] = [];
     const isChecked = block.meta?.checked || false;
     const level = block.meta?.level || 0;
-    
+
     // Add checklist-specific actions
     actions.unshift({
       id: 'toggle-checked',
       label: isChecked ? 'Uncheck Item' : 'Check Item',
       icon: isChecked ? 'square' : 'check-square',
       handler: (block: EditorBlock) => {
-        console.log('Toggle checked:', block.id);
       }
     });
-    
+
     if (level > 0) {
       actions.unshift({
         id: 'decrease-indent',
         label: 'Decrease Indent',
         icon: 'outdent',
         handler: (block: EditorBlock) => {
-          console.log('Decrease indent:', block.id);
         }
       });
     }
-    
+
     if (level < 5) {
       actions.unshift({
         id: 'increase-indent',
         label: 'Increase Indent',
         icon: 'indent',
         handler: (block: EditorBlock) => {
-          console.log('Increase indent:', block.id);
         }
       });
     }
-    
+
     actions.unshift({
       id: 'convert-to-list',
       label: 'Convert to List',
       icon: 'list',
       handler: (block: EditorBlock) => {
-        console.log('Convert to paragraph:', block.id);
       }
     });
-    
+
     return actions;
   }
 
@@ -425,14 +436,12 @@ export class ChecklistPlugin implements BlockPlugin {
    * Update checklist item level
    */
   private updateBlockLevel(block: EditorBlock, level: number) {
-    console.log(`Update block ${block.id} to level ${level}`);
   }
 
   /**
    * Toggle checked state
    */
   private toggleChecked(block: EditorBlock) {
-    console.log(`Toggle checked state for block ${block.id}`);
   }
 
   /**
@@ -447,15 +456,15 @@ export class ChecklistPlugin implements BlockPlugin {
    */
   protected createController(): any {
     return {
-      validate: this.validateContent.bind(this),
-      transform: this.transformContent.bind(this),
-      keyPress: this.handleKeyPress.bind(this),
-      enter: this.handleEnter.bind(this),
-      backspace: this.handleBackspace.bind(this),
-      create: this.onCreate.bind(this),
-      update: this.onUpdate.bind(this),
-      delete: this.onDelete.bind(this),
-      actions: this.getActions.bind(this)
+      validateContent: this.validateContent.bind(this),
+      transformContent: this.transformContent.bind(this),
+      handleKeyPress: this.handleKeyPress.bind(this),
+      handleEnter: this.handleEnter.bind(this),
+      handleBackspace: this.handleBackspace.bind(this),
+      onCreate: this.onCreate.bind(this),
+      onUpdate: this.onUpdate.bind(this),
+      onDelete: this.onDelete.bind(this),
+      getActions: this.getActions.bind(this)
     };
   }
 
@@ -541,14 +550,14 @@ export class ChecklistPlugin implements BlockPlugin {
   parseMarkdown(text: string): EditorBlock | null {
     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
-    
+
     const indentation = match[1];
     const checkState = match[2];
     const content = match[3];
-    
+
     const level = Math.floor(indentation.length / 2);
     const checked = checkState === 'x';
-    
+
     return this.createChecklistItem(content, checked, level);
   }
 
@@ -558,10 +567,10 @@ export class ChecklistPlugin implements BlockPlugin {
   toMarkdown(block: EditorBlock): string {
     const checked = block.meta?.checked || false;
     const level = block.meta?.level || 0;
-    
+
     const indentation = '  '.repeat(level);
     const checkState = checked ? 'x' : ' ';
-    
+
     return `${indentation}- [${checkState}] ${block.content}`;
   }
 
@@ -573,7 +582,7 @@ export class ChecklistPlugin implements BlockPlugin {
     const total = checklistBlocks.length;
     const checked = checklistBlocks.filter(block => block.meta?.checked).length;
     const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
-    
+
     return { total, checked, percentage };
   }
 

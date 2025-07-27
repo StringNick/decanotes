@@ -94,9 +94,13 @@ export function BlockRenderer({
     onBlockChange: (updates) => onBlockChange(block.id, updates),
     onAction: handleAction,
     config,
-    onFocus: () => onBlockSelect(block.id),
+    onFocus: () => {
+      // Call both select and edit to synchronize the focus systems
+      onBlockSelect(block.id);
+      onBlockEdit(block.id);
+    },
     onBlur: () => {},
-  }), [block, isSelected, isEditing, handleAction, config, onBlockChange, onBlockSelect]);
+  }), [block, isSelected, isEditing, handleAction, config, onBlockChange, onBlockSelect, onBlockEdit]);
   
   // Render the block component
   const BlockComponent = blockPlugin.component;
