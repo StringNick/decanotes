@@ -56,7 +56,7 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
             onBlur={onBlur}
             onKeyPress={onKeyPress}
             placeholder="Type something..."
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.textSecondary}
             isSelected={isSelected}
             isEditing={isEditing}
             multiline
@@ -89,16 +89,19 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
   
   return StyleSheet.create({
     container: {
+      paddingHorizontal: 4,
+      paddingVertical: 2,
     },
     textInput: {
       fontSize: 16,
+      fontFamily: 'AlbertSans_400Regular',
       color: colors.text,
-      // dont hide text, height should be dynamic based on the text
+      lineHeight: 24,
       backgroundColor: 'transparent',
     },
     selected: {
-      backgroundColor: colors.accentLight,
-      borderColor: colors.borderFocus,
+      backgroundColor: colors.blue + '20',
+      borderColor: colors.teal,
       borderWidth: 1,
     },
     editing: {

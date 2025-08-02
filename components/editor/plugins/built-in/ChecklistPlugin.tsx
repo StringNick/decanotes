@@ -113,8 +113,8 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
               onFocus={onFocus}
               onBlur={onBlur}
               onKeyPress={onKeyPress}
-              placeholder="Checklist item"
-              placeholderTextColor={colors.textMuted}
+                          placeholder="Checklist item"
+            placeholderTextColor={colors.textSecondary}
               isSelected={isSelected}
               isEditing={isEditing}
               multiline
@@ -148,19 +148,21 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 8,
     },
     selected: {
-      backgroundColor: colors.accentLight,
+      backgroundColor: colors.blue + '20',
       borderWidth: 1,
-      borderColor: colors.borderFocus,
+      borderColor: colors.teal,
+      borderRadius: 8,
     },
     editing: {
       backgroundColor: colors.surface,
-      borderColor: colors.accent,
+      borderColor: colors.teal,
       borderWidth: 2,
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 1,
+      shadowColor: colors.teal,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 3,
+      borderRadius: 8,
     },
     checkboxContainer: {
       paddingTop: 12,
@@ -168,28 +170,29 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingBottom: 8,
     },
     checkbox: {
-      width: 20,
-      height: 20,
+      width: 18,
+      height: 18,
       borderWidth: 2,
       borderColor: colors.border,
       borderRadius: 4,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
     },
     checkedBox: {
-      backgroundColor: colors.accent,
-      borderColor: colors.accent,
+      backgroundColor: colors.teal,
+      borderColor: colors.teal,
     },
     checkmark: {
-      color: colors.surface,
+      color: colors.background,
       fontSize: 12,
-      fontWeight: '700',
+      fontFamily: 'AlbertSans_700Bold',
     },
     textInput: {
       flex: 1,
       fontSize: 16,
-      lineHeight: 26,
+      fontFamily: 'AlbertSans_400Regular',
+      lineHeight: 24,
       color: colors.text,
       paddingVertical: 8,
       paddingHorizontal: 8,
@@ -197,7 +200,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     checkedText: {
       textDecorationLine: 'line-through',
-      color: colors.textMuted,
+      color: colors.textSecondary,
       opacity: 0.7,
     },
   });

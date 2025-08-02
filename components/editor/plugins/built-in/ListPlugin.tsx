@@ -111,7 +111,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
               onBlur={onBlur}
               onKeyPress={onKeyPress}
               placeholder="List item"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={colors.textSecondary}
               isSelected={isSelected}
               isEditing={isEditing}
               multiline
@@ -142,9 +142,9 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 8,
     },
     selected: {
-      backgroundColor: colors.accentLight,
+      backgroundColor: colors.blue + '20',
       borderWidth: 1,
-      borderColor: colors.borderFocus,
+      borderColor: colors.teal,
     },
     editing: {
       backgroundColor: colors.surface,

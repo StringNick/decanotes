@@ -56,7 +56,8 @@
             "./assets/editor-js/**/*"
           ]
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

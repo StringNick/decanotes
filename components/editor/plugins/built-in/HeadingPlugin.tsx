@@ -91,7 +91,7 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
             onBlur={onBlur}
             onKeyPress={handleKeyPress}
             placeholder={`Heading ${level}`}
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.textSecondary}
             isSelected={isSelected}
             isEditing={isFocused}
             multiline={false}
@@ -138,25 +138,26 @@ const getHeadingStyle = (level: number, colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
   const baseStyle = {
     color: colors.text,
-    fontWeight: '700' as const,
-    letterSpacing: -0.5,
+    fontFamily: 'AlbertSans_700Bold',
+    marginVertical: 0,
+    padding: 0,
   };
-  
+
   switch (level) {
     case 1:
-      return { ...baseStyle, fontSize: 32, lineHeight: 40 };
+      return { ...baseStyle, fontSize: 28, lineHeight: 36, letterSpacing: -0.4 }; // appTitle
     case 2:
-      return { ...baseStyle, fontSize: 28, lineHeight: 36, letterSpacing: -0.3 };
+      return { ...baseStyle, fontSize: 20, lineHeight: 28, letterSpacing: -0.3, fontFamily: 'AlbertSans_600SemiBold' }; // sectionHeaders
     case 3:
-      return { ...baseStyle, fontSize: 24, lineHeight: 32, letterSpacing: -0.2 };
+      return { ...baseStyle, fontSize: 18, lineHeight: 26, letterSpacing: -0.2, fontFamily: 'AlbertSans_600SemiBold' };
     case 4:
-      return { ...baseStyle, fontSize: 20, lineHeight: 28, fontWeight: '600' as const };
+      return { ...baseStyle, fontSize: 16, lineHeight: 24, fontFamily: 'AlbertSans_600SemiBold' }; // bodyText weight
     case 5:
-      return { ...baseStyle, fontSize: 18, lineHeight: 26, fontWeight: '600' as const };
+      return { ...baseStyle, fontSize: 14, lineHeight: 20, fontFamily: 'AlbertSans_500Medium' }; // metadata
     case 6:
-      return { ...baseStyle, fontSize: 16, lineHeight: 24, fontWeight: '600' as const };
+      return { ...baseStyle, fontSize: 12, lineHeight: 18, fontFamily: 'AlbertSans_500Medium' }; // labels
     default:
-      return { ...baseStyle, fontSize: 32, lineHeight: 40 };
+      return { ...baseStyle, fontSize: 28, lineHeight: 36 };
   }
 };
 
@@ -171,20 +172,19 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
     },
     levelIndicator: {
-      backgroundColor: colors.backgroundSecondary,
-      borderWidth: 1,
-      borderColor: colors.border,
+      backgroundColor: colors.dark,
       paddingHorizontal: 8,
-      borderRadius: 6,
+      paddingVertical: 4,
+      borderRadius: 8,
       marginRight: 12,
       minWidth: 32,
       alignItems: 'center',
       justifyContent: 'center',
     },
     levelText: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: colors.textSecondary,
+      fontSize: 10,
+      fontFamily: 'AlbertSans_600SemiBold',
+      color: colors.background,
       textAlign: 'center',
     },
     textInput: {
@@ -200,19 +200,21 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       // paddingHorizontal: 16,
     },
     selected: {
-      backgroundColor: colors.accentLight,
-      borderColor: colors.borderFocus,
+      backgroundColor: colors.blue + '20',
+      borderColor: colors.teal,
       borderWidth: 1,
+      borderRadius: 8,
     },
     editing: {
       backgroundColor: colors.surface,
-      borderColor: colors.accent,
+      borderColor: colors.teal,
       borderWidth: 2,
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.1,
+      shadowColor: colors.teal,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
       shadowRadius: 8,
-      elevation: 2,
+      elevation: 3,
+      borderRadius: 8,
     },
   });
 };

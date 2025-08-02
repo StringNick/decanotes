@@ -302,12 +302,12 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
   
   return StyleSheet.create({
     blockContainer: {
-      marginVertical: 2, // Reduced from 4 to 2
-      borderWidth: 2,
-      borderRadius: 8,
+      marginVertical: 4,
+      borderWidth: 1,
+      borderRadius: 12,
       position: 'relative',
-      // minHeight: 40,
-      backgroundColor: colors.surface
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
     },
     
     dragHandle: {
@@ -328,27 +328,29 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     
     actionsContainer: {
       position: 'absolute',
-      top: -40,
+      top: -50,
       right: 0,
       flexDirection: 'row',
-      backgroundColor: colors.surface,
-      borderRadius: 6,
+      backgroundColor: colors.dark,
+      borderRadius: 12,
       shadowColor: colors.text,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 8,
       zIndex: 20,
-      borderWidth: 1,
-      borderColor: colors.border
+      paddingHorizontal: 4,
+      paddingVertical: 4,
     },
     
     actionButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-      borderRadius: 4
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      marginHorizontal: 2,
     },
     
     destructiveAction: {
@@ -358,7 +360,8 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     actionText: {
       fontSize: 12,
       marginLeft: 4,
-      color: colors.accent
+      color: colors.background,
+      fontFamily: 'AlbertSans_500Medium',
     },
     
     destructiveActionText: {

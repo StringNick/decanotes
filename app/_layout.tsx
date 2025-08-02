@@ -1,4 +1,10 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
+import {
+    AlbertSans_400Regular,
+    AlbertSans_500Medium,
+    AlbertSans_600SemiBold,
+    AlbertSans_700Bold,
+} from '@expo-google-fonts/albert-sans';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -8,6 +14,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
+    AlbertSans_400Regular,
+    AlbertSans_500Medium,
+    AlbertSans_600SemiBold,
+    AlbertSans_700Bold,
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 

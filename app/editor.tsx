@@ -7,6 +7,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { Animated, FlatList, Keyboard, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
+import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
 import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
@@ -167,20 +168,12 @@ export default function EditorScreen() {
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [showBlockComponents, setShowBlockComponents] = useState(false);
+  const [showFormattingToolbar, setShowFormattingToolbar] = useState(false);
   const blockComponentsAnim = useRef(new Animated.Value(0)).current;
 
   // Mock page data - in real app this would come from navigation params
   const pageTitle = "Untitled";
   const colors = Colors[colorScheme ?? 'light'];
-  const theme = {
-    text: colors.text,
-    background: colors.background,
-    surface: colors.surface,
-    border: colors.border,
-    accent: colors.accent,
-    tint: colors.accent,
-    icon: colors.text,
-  };
   const styles = getStyles(colorScheme ?? 'light');
 
   // Handle adding blocks
@@ -240,6 +233,12 @@ export default function EditorScreen() {
     }
   }, []);
 
+  // Handle formatting actions
+  const handleFormattingAction = useCallback((actionId: string) => {
+    console.log('Formatting action:', actionId);
+    // TODO: Implement formatting actions
+  }, []);
+
   // Block types for the menu - Notion-style
   const blockTypes: Array<{ type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: any }> = [
     { type: 'paragraph', icon: Type, label: 'Text' },
@@ -259,21 +258,21 @@ export default function EditorScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar 
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
-        backgroundColor={theme.background} 
+        backgroundColor={colors.background} 
       />
-      {/* Notion-style Header */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.pageTitle}>{pageTitle}</Text>
         </View>
         <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-horizontal" size={24} color={theme.text} />
+          <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -289,11 +288,11 @@ export default function EditorScreen() {
             toolbar: { enabled: false },
             theme: {
               colors: {
-                background: theme.background,
-                text: theme.text,
+                background: colors.background,
+                text: colors.text,
                 border: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                primary: theme.tint,
-                secondary: theme.icon
+                primary: colors.tint,
+                secondary: colors.icon
               }
             }
           }}
@@ -307,21 +306,28 @@ export default function EditorScreen() {
           style={styles.iconButton}
           onPress={handleUndo}
         >
-          <Undo2 size={20} color={theme.text} />
+          <Undo2 size={20} color={colors.background} />
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.iconButton}
           onPress={handleRedo}
         >
-          <Redo2 size={20} color={theme.text} />
+          <Redo2 size={20} color={colors.background} />
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.iconButton}
           onPress={showBlockComponentsWithAnimation}
         >
-          <Plus size={20} color={theme.text} />
+          <Plus size={20} color={colors.background} />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={() => setShowFormattingToolbar(!showFormattingToolbar)}
+        >
+          <Ionicons name="text" size={20} color={colors.background} />
         </TouchableOpacity>
         </View>
         
@@ -330,10 +336,25 @@ export default function EditorScreen() {
             style={styles.iconButton}
             onPress={hideBlockComponents}
           >
-            <X size={20} color={theme.text} />
+            <X size={20} color={colors.background} />
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Formatting Toolbar */}
+      {showFormattingToolbar && (
+        <View style={styles.formattingToolbarContainer}>
+          <FormattingToolbar
+            actions={[
+              { id: 'bold', icon: 'text', label: 'Bold', isActive: false },
+              { id: 'italic', icon: 'text', label: 'Italic', isActive: false },
+              { id: 'underline', icon: 'text', label: 'Underline', isActive: false },
+              { id: 'code', icon: 'code', label: 'Code', isActive: false },
+            ]}
+            onActionPress={handleFormattingAction}
+          />
+        </View>
+      )}
 
       {/* Block Components Selection Panel */}
       {showBlockComponents && (
@@ -352,7 +373,7 @@ export default function EditorScreen() {
                    onPress={() => handleAddBlock(item.type)}
                  >
                    <View style={styles.blockPanelIconContainer}>
-                     <IconComponent size={18} color={theme.text} />
+                     <IconComponent size={18} color={colors.text} />
                    </View>
                    <Text style={styles.blockPanelLabel}>{item.label}</Text>
                  </TouchableOpacity>
@@ -395,7 +416,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 12,
-      backgroundColor: colors.backgroundSecondary,
+      backgroundColor: colors.surface,
     },
     headerCenter: {
       flex: 1,
@@ -403,7 +424,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     pageTitle: {
       fontSize: 18,
-      fontWeight: '700',
+      fontFamily: 'AlbertSans_700Bold',
       color: colors.text,
       letterSpacing: -0.3,
     },
@@ -419,7 +440,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       justifyContent: 'center',
       marginLeft: 12,
-      backgroundColor: colors.backgroundSecondary,
+      backgroundColor: colors.surface,
     },
     editorContainer: {
       flex: 1,
@@ -441,13 +462,14 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       justifyContent: 'space-between',
       paddingHorizontal: 20,
       paddingVertical: 12,
-      backgroundColor: colors.background, // Changed from colors.surface to match status bar
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+      backgroundColor: colors.dark,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
       shadowColor: colors.text,
       shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 8,
     },
     leftToolbarButtons: {
       flexDirection: 'row',
@@ -459,8 +481,8 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       minHeight: 44,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 8,
-      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 12,
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
       marginRight: 8,
     },
 
@@ -488,7 +510,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     blockPanelTitle: {
       fontSize: 18,
-      fontWeight: '600',
+      fontFamily: 'AlbertSans_600SemiBold',
       color: colors.text,
     },
     blockPanelContent: {
@@ -519,9 +541,13 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     blockPanelLabel: {
       fontSize: 16,
-      fontWeight: '500',
+      fontFamily: 'AlbertSans_500Medium',
       color: colors.text,
       flex: 1,
+    },
+    formattingToolbarContainer: {
+      paddingHorizontal: 20,
+      paddingBottom: 12,
     },
   });
 };

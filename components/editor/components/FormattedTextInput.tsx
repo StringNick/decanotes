@@ -52,7 +52,7 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
   const showEditor = isEditing || internalEditing;
   
   // Use theme-aware placeholder color if not provided
-  const effectivePlaceholderTextColor = placeholderTextColor || colors.textMuted;
+  const effectivePlaceholderTextColor = placeholderTextColor || colors.textSecondary;
 
   const handleFocus = () => {
     setInternalEditing(true);
@@ -137,38 +137,46 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
   return StyleSheet.create({
     textInput: {
       fontSize: 16,
+      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       color: colors.text,
-      // padding: 8,
       minHeight: 40,
-      borderRadius: 4,
+      borderRadius: 8,
       backgroundColor: 'transparent',
+      paddingHorizontal: 4,
+      paddingVertical: 4,
     },
     formattedContainer: {
-      paddingHorizontal: 0,
+      paddingHorizontal: 4,
       paddingVertical: 8,
       minHeight: 40,
-      borderRadius: 4,
+      borderRadius: 8,
       backgroundColor: 'transparent',
       justifyContent: 'center',
     },
     formattedText: {
       fontSize: 16,
+      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       color: colors.text,
     },
     placeholder: {
-      color: colors.textMuted,
+      color: colors.textSecondary,
     },
     selected: {
-      backgroundColor: colors.accentLight,
-      borderColor: colors.accent,
+      backgroundColor: colors.blue + '20',
+      borderColor: colors.teal,
       borderWidth: 1,
     },
     editing: {
-      backgroundColor: colors.background,
-      borderColor: colors.accent,
+      backgroundColor: colors.surface,
+      borderColor: colors.teal,
       borderWidth: 2,
+      shadowColor: colors.teal,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 2,
     },
   });
 };

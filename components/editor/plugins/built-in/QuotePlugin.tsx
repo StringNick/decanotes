@@ -1,12 +1,12 @@
 import React, { memo } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { BlockPlugin } from '../BlockPlugin';
-import { BlockComponentProps } from '../../types/PluginTypes';
+import { StyleSheet, Text, View } from 'react-native';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
-import { Colors } from '../../../../constants/Colors';
-import { useColorScheme } from '../../../../hooks/useColorScheme';
+import { BlockComponentProps } from '../../types/PluginTypes';
+import { BlockPlugin } from '../BlockPlugin';
 
 /**
  * Quote block component with modern dark theme support
@@ -52,7 +52,7 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
             onFocus={onFocus}
             onBlur={onBlur}
             placeholder="Enter quote..."
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.textSecondary}
             isSelected={isSelected}
             isEditing={isEditing}
             multiline
@@ -97,7 +97,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     quoteContainer: {
       flexDirection: 'row',
-      backgroundColor: colors.backgroundSecondary,
+      backgroundColor: colors.surface,
       borderLeftWidth: 4,
       borderLeftColor: colors.accent,
       borderRadius: 12,
@@ -139,7 +139,8 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     textInput: {
       fontSize: 16,
-      lineHeight: 26,
+      fontFamily: 'AlbertSans_400Regular',
+      lineHeight: 24,
       color: colors.text,
       fontStyle: 'italic',
       minHeight: 48,
