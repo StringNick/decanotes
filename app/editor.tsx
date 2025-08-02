@@ -260,20 +260,32 @@ export default function EditorScreen() {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
         backgroundColor={colors.background} 
       />
-      {/* Header */}
+      {/* Compact Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.pageTitle}>{pageTitle}</Text>
+        <View style={styles.headerRow}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={16} color={colors.text} />
+          </TouchableOpacity>
+          
+          <View style={styles.titleContainer}>
+            <Text style={styles.pageTitle}>{pageTitle}</Text>
+            <TouchableOpacity style={styles.statusDotContainer}>
+              <View style={styles.statusDot} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="share-outline" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
-        </TouchableOpacity>
       </View>
 
       {/* Editor */}
@@ -396,11 +408,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: colors.background,
     },
     header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-      backgroundColor: colors.background, // Changed from colors.surface to match status bar
+      backgroundColor: colors.background,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       shadowColor: colors.text,
@@ -409,37 +417,53 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       shadowRadius: 2,
       elevation: 1,
     },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
     backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
       backgroundColor: colors.surface,
+      marginRight: 12,
     },
-    headerCenter: {
+    titleContainer: {
       flex: 1,
+      flexDirection: 'row',
       alignItems: 'center',
+      gap: 8,
     },
     pageTitle: {
       fontSize: 18,
-      fontFamily: 'AlbertSans_700Bold',
+      fontFamily: 'AlbertSans_600SemiBold',
       color: colors.text,
       letterSpacing: -0.3,
     },
-    lastModified: {
-      fontSize: 13,
-      color: colors.icon,
-      marginTop: 2,
+    statusDotContainer: {
+      padding: 4,
     },
-    moreButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+    statusDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.success,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    actionButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
-      marginLeft: 12,
       backgroundColor: colors.surface,
     },
     editorContainer: {
