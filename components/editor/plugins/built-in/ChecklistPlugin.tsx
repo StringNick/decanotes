@@ -280,7 +280,7 @@ export class ChecklistPlugin implements BlockPlugin {
   /**
    * Handle Enter key
    */
-  protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
+  protected handleEnter(block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number): EditorBlock | EditorBlock[] | null {
     // If content is empty, convert to paragraph
     if (block.content.trim() === '') {
       return {

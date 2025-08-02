@@ -156,20 +156,21 @@ export class ParagraphPlugin extends BlockPlugin {
     }
   };
 
-  protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
+  /**
+   * Handle Enter key press
+   */
+  protected handleEnter(block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number): EditorBlock | EditorBlock[] | null {
     // Create new paragraph on Enter
     if (block.content.trim() === '') {
       // If current paragraph is empty, don't create new one
-      return null;
+      return null; // Or convert to previous block type, depending on desired behavior
     }
-    
     const newParagraph: EditorBlock = {
       id: generateId(),
       type: 'paragraph',
       content: '',
       meta: { textAlign: block.meta?.textAlign || 'left' }
     };
-    
     // Return both blocks - the current one stays, and we add a new one after it
     return [block, newParagraph];
   }

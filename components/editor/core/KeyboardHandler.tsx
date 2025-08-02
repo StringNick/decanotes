@@ -1,8 +1,8 @@
 import React, { useCallback } from 'react';
 import { Platform } from 'react-native';
 import { EditorBlock } from '../../../types/editor';
-import { BlockController } from '../types/PluginTypes';
-import { useEditor, useEditorState } from './EditorContext';
+import { BlockController, EnhancedKeyboardResult } from '../types/PluginTypes';
+import { useEditor } from './EditorContext';
 
 interface KeyboardHandlerProps {
   block: EditorBlock;
@@ -27,7 +27,7 @@ export const KeyboardHandler: React.FC<KeyboardHandlerProps> = ({
   children
 }) => {
   const editor = useEditor();
-  const { blocks } = useEditorState();
+  const { blocks } = editor.state;
   
   const currentBlockIndex = blockIndex ?? blocks.findIndex(b => b.id === block.id);
 
@@ -42,7 +42,7 @@ export const KeyboardHandler: React.FC<KeyboardHandlerProps> = ({
     // Handle Enter key
     if (key === 'Enter') {
       if (controller?.handleEnter) {
-        const result = controller.handleEnter(block);
+        const result = controller.handleEnter(block, blocks, currentBlockIndex);
         
         if (result) {
           // Prevent default behavior
@@ -72,9 +72,42 @@ export const KeyboardHandler: React.FC<KeyboardHandlerProps> = ({
                 editor.focusBlock(newBlock.id);
               }, 0);
             }
-          } else {
+          } else if (typeof result === 'object' && 'newBlocks' in result) {
+            // Handle enhanced result format
+            const enhancedResult = result as EnhancedKeyboardResult;
+            
+            // Delete current block
+            editor.deleteBlock(block.id);
+            
+            // Add new blocks
+            if (enhancedResult.newBlocks) {
+              enhancedResult.newBlocks.forEach((newBlock, index) => {
+                editor.dispatch({ 
+                  type: 'ADD_BLOCK', 
+                  block: newBlock, 
+                  index: currentBlockIndex + index 
+                });
+              });
+            }
+            
+            // Apply updates to existing blocks
+            if (enhancedResult.updates) {
+              enhancedResult.updates.forEach(({ blockId, updates }) => {
+                editor.updateBlock(blockId, updates);
+              });
+            }
+            
+            // Focus on specified block or default to new block
+            setTimeout(() => {
+              if (enhancedResult.focusBlockId) {
+                editor.focusBlock(enhancedResult.focusBlockId);
+              } else if (enhancedResult.newBlocks && enhancedResult.newBlocks.length > 1) {
+                editor.focusBlock(enhancedResult.newBlocks[1].id);
+              }
+            }, 0);
+          } else if (typeof result === 'object' && result !== null) {
             // Handle single block update
-            editor.updateBlock(block.id, result);
+            editor.updateBlock(block.id, result as Partial<EditorBlock>);
           }
           
           return;

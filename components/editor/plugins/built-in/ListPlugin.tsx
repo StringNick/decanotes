@@ -6,7 +6,7 @@ import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { KeyboardHandler } from '../../core/KeyboardHandler';
-import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+import { BlockComponentProps, BlockPlugin, EnhancedKeyboardResult } from '../../types/PluginTypes';
 
 type ListType = 'ordered' | 'unordered';
 
@@ -245,7 +245,7 @@ export class ListPlugin implements BlockPlugin {
     return false;
   }
 
-  protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
+  protected handleEnter(block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number): EditorBlock | EditorBlock[] | EnhancedKeyboardResult | null {
     // If content is empty, convert to paragraph
     if (block.content.trim() === '') {
       return {
@@ -259,7 +259,7 @@ export class ListPlugin implements BlockPlugin {
     // Create new list item
     const listType = block.meta?.listType || 'unordered';
     const level = block.meta?.level || 0;
-    const index = listType === 'ordered' ? (block.meta?.index || 1) + 1 : 1;
+    const currentIndexValue = listType === 'ordered' ? (block.meta?.index || 1) : 1;
 
     const newListItem: EditorBlock = {
       id: generateId(),
@@ -268,11 +268,49 @@ export class ListPlugin implements BlockPlugin {
       meta: {
         listType,
         level,
-        index
+        index: currentIndexValue + 1
       }
     };
+
+    // For ordered lists, we need to update the numbering of subsequent items
+    if (listType === 'ordered' && allBlocks && currentIndex !== undefined) {
+      const updates: Array<{ blockId: string; updates: Partial<EditorBlock> }> = [];
+      
+      // Find all subsequent list items at the same level and update their indices
+      for (let i = currentIndex + 2; i < allBlocks.length; i++) {
+        const subsequentBlock = allBlocks[i];
+        
+        // Check if it's a list item at the same level
+        if (subsequentBlock.type === 'list' && 
+            subsequentBlock.meta?.listType === 'ordered' && 
+            subsequentBlock.meta?.level === level) {
+          
+          // Update the index by incrementing it
+          const newIndex = (subsequentBlock.meta?.index || 1) + 1;
+          updates.push({
+            blockId: subsequentBlock.id,
+            updates: {
+              meta: {
+                ...subsequentBlock.meta,
+                index: newIndex
+              }
+            }
+          });
+        } else if (subsequentBlock.type !== 'list' || 
+                   subsequentBlock.meta?.level !== level) {
+          // Stop when we encounter a different block type or level
+          break;
+        }
+      }
+      
+      return {
+        newBlocks: [block, newListItem],
+        updates,
+        focusBlockId: newListItem.id
+      };
+    }
     
-    // Return both blocks - the current one stays, and we add a new one after it
+    // For unordered lists, just return the blocks
     return [block, newListItem];
   }
 

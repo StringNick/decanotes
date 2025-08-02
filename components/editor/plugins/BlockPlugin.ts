@@ -1,13 +1,13 @@
 import { ComponentType } from 'react';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import {
-  BlockAction,
-  BlockComponentProps,
-  BlockController,
-  BlockSettings,
-  BlockPlugin as IBlockPlugin,
-  MarkdownSyntax,
-  ToolbarConfig
+    BlockAction,
+    BlockComponentProps,
+    BlockController,
+    BlockSettings,
+    BlockPlugin as IBlockPlugin,
+    MarkdownSyntax,
+    ToolbarConfig
 } from '../types/PluginTypes';
 
 /**
@@ -120,8 +120,8 @@ export abstract class BlockPlugin implements IBlockPlugin {
   /**
    * Handle Enter key press
    */
-  protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
-    // Return new block(s) to create, or null for default behavior
+  protected handleEnter(block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number): EditorBlock | EditorBlock[] | null {
+    // Default behavior: create new paragraph
     return null;
   }
 

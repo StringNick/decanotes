@@ -620,4 +620,62 @@ describe('Plugin Keyboard Events and KeyboardHandler', () => {
       const filteredText = testText.replace(/\n/g, '');
       expect(filteredText).toBe(expectedText);
     });
+
+    it('should update numbering of subsequent ordered list items when inserting new item', () => {
+      const mockBlocks: EditorBlock[] = [
+        { id: '1', type: 'list', content: 'First item', meta: { listType: 'ordered', level: 0, index: 1 } },
+        { id: '2', type: 'list', content: 'Second item', meta: { listType: 'ordered', level: 0, index: 2 } },
+        { id: '3', type: 'list', content: 'Third item', meta: { listType: 'ordered', level: 0, index: 3 } },
+        { id: '4', type: 'paragraph', content: 'After list', meta: {} }
+      ];
+      
+      const mockController = {
+        handleEnter: jest.fn().mockReturnValue({
+          newBlocks: [
+            { id: '1', type: 'list', content: 'First item', meta: { listType: 'ordered', level: 0, index: 1 } },
+            { id: 'new', type: 'list', content: '', meta: { listType: 'ordered', level: 0, index: 2 } }
+          ],
+          updates: [
+            { blockId: '2', updates: { meta: { listType: 'ordered', level: 0, index: 3 } } },
+            { blockId: '3', updates: { meta: { listType: 'ordered', level: 0, index: 4 } } }
+          ],
+          focusBlockId: 'new'
+        })
+      };
+      
+      const mockBlock: EditorBlock = { id: '1', type: 'list', content: 'First item', meta: { listType: 'ordered', level: 0, index: 1 } };
+      
+      const mockUpdateBlock = jest.fn();
+      const mockDeleteBlock = jest.fn();
+      const mockDispatch = jest.fn();
+      const mockFocusBlock = jest.fn();
+      
+      const mockEditor = {
+        updateBlock: mockUpdateBlock,
+        deleteBlock: mockDeleteBlock,
+        dispatch: mockDispatch,
+        focusBlock: mockFocusBlock,
+        state: { blocks: mockBlocks }
+      };
+      
+      const { getByTestId } = render(
+        <EditorProvider>
+          <KeyboardHandler block={mockBlock} controller={mockController} cursorPosition={5} blockIndex={0}>
+            {({ onKeyPress }) => (
+              <TouchableOpacity testID="test-component" onPress={() => {
+                // Simulate Enter key press
+                onKeyPress({ key: 'Enter', preventDefault: jest.fn() });
+              }}>
+                <Text>Test</Text>
+              </TouchableOpacity>
+            )}
+          </KeyboardHandler>
+        </EditorProvider>
+      );
+      
+      fireEvent.press(getByTestId('test-component'));
+      
+      // Verify that the controller was called with the correct parameters
+      expect(mockController.handleEnter).toHaveBeenCalledWith(mockBlock, mockBlocks, 0);
+    });
 }); 

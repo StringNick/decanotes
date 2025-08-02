@@ -86,6 +86,13 @@ export interface BlockComponentProps {
   style?: any;
 }
 
+// Enhanced result type for keyboard handlers that need to update multiple blocks
+export interface EnhancedKeyboardResult {
+  newBlocks?: EditorBlock[];
+  updates?: Array<{ blockId: string; updates: Partial<EditorBlock> }>;
+  focusBlockId?: string;
+}
+
 // Block controller for handling business logic
 export interface BlockController {
   // Content validation and transformation
@@ -94,7 +101,7 @@ export interface BlockController {
   
   // Keyboard event handling
   handleKeyPress?: (event: any, block: EditorBlock) => boolean | void;
-  handleEnter?: (block: EditorBlock) => EditorBlock | EditorBlock[] | null;
+  handleEnter?: (block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number) => EditorBlock | EditorBlock[] | EnhancedKeyboardResult | null;
   handleBackspace?: (block: EditorBlock) => EditorBlock | null;
   handleTab?: (block: EditorBlock, event: any, actions: any) => boolean | void;
   
