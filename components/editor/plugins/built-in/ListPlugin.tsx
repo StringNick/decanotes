@@ -115,7 +115,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
               isSelected={isSelected}
               isEditing={isEditing}
               multiline
-              textAlignVertical="top"
+              textAlignVertical="center"
               scrollEnabled={false}
               preventNewlines={preventNewlines}
               style={styles.textInput}
@@ -132,25 +132,26 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
   
   return StyleSheet.create({
     container: {
-      marginVertical: 4,
+      marginVertical: 0,
+      paddingVertical: 2,
     },
     listItem: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
-      paddingVertical: 4,
+      alignItems: 'center',
+      paddingVertical: 6,
       paddingHorizontal: 8,
       borderRadius: 8,
     },
     selected: {
-      backgroundColor: colors.blue + '20',
-      borderWidth: 1,
-      borderColor: colors.teal,
+      // backgroundColor: colors.blue + '20',
+      // borderWidth: 2,
+      // borderColor: colors.teal,
     },
     editing: {
       backgroundColor: colors.surface,
-      borderColor: colors.accent,
-      borderWidth: 2,
-      shadowColor: colors.accent,
+      borderColor: colors.teal,
+      borderWidth: 1,
+      shadowColor: colors.teal,
       shadowOffset: { width: 0, height: 0 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
@@ -160,24 +161,24 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       width: 28,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingTop: 12,
-      paddingBottom: 8,
+      paddingVertical: 0,
     },
     bullet: {
       fontSize: 16,
       color: colors.accent,
-      fontWeight: '600',
+      fontFamily: 'AlbertSans_600SemiBold',
       minWidth: 20,
       textAlign: 'center',
     },
     textInput: {
       flex: 1,
       fontSize: 16,
-      lineHeight: 26,
+      fontFamily: 'AlbertSans_400Regular',
+      lineHeight: 24,
       color: colors.text,
-      paddingVertical: 8,
-      paddingHorizontal: 8,
-      minHeight: 40,
+      paddingVertical: 0,
+      paddingHorizontal: 0,
+      minHeight: 24,
     },
   });
 };
