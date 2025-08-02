@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { DesignSystem } from '@/constants/DesignSystem';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { DesignSystem, getThemeColors } from '@/constants/DesignSystem';
+import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -20,6 +20,7 @@ interface SettingItemProps {
   onPress?: () => void;
   rightElement?: React.ReactNode;
   showChevron?: boolean;
+  colors: ReturnType<typeof getThemeColors>;
 }
 
 function SettingItem({
@@ -29,15 +30,24 @@ function SettingItem({
   onPress,
   rightElement,
   showChevron = true,
+  colors,
 }: SettingItemProps) {
   return (
     <TouchableOpacity
-      style={styles.settingItem}
+      style={[
+        styles.settingItem,
+        {
+          borderBottomColor: colors.neutral.gray200,
+        }
+      ]}
       onPress={onPress}
       disabled={!onPress}
     >
       <View style={styles.settingLeft}>
-        <View style={styles.iconContainer}>
+        <View style={[
+          styles.iconContainer,
+          { backgroundColor: DesignSystem.Colors.primary.teal + '20' }
+        ]}>
           <IconSymbol
             name={icon}
             size={20}
@@ -45,8 +55,8 @@ function SettingItem({
           />
         </View>
         <View style={styles.textContainer}>
-          <Text style={styles.settingTitle}>{title}</Text>
-          {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
+          <Text style={[styles.settingTitle, { color: colors.text.primary }]}>{title}</Text>
+          {subtitle && <Text style={[styles.settingSubtitle, { color: colors.text.secondary }]}>{subtitle}</Text>}
         </View>
       </View>
       <View style={styles.settingRight}>
@@ -55,7 +65,7 @@ function SettingItem({
           <IconSymbol
             name="chevron.right"
             size={16}
-            color={DesignSystem.Colors.text.tertiary}
+            color={colors.text.tertiary}
           />
         )}
       </View>
@@ -64,10 +74,16 @@ function SettingItem({
 }
 
 export default function SettingsScreen() {
-  const colorScheme = useColorScheme();
-  const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
+  const { theme, effectiveTheme, setTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
+  const colors = getThemeColors(isDark);
+  
   const [syncEnabled, setSyncEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  const handleThemeChange = (value: boolean) => {
+    setTheme(value ? 'dark' : 'light');
+  };
 
   const handleSignOut = () => {
     Alert.alert(
@@ -101,8 +117,13 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+      <View style={[
+        styles.header,
+        {
+          borderBottomColor: colors.neutral.gray200,
+        }
+      ]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
@@ -110,30 +131,37 @@ export default function SettingsScreen() {
           <IconSymbol
             name="chevron.left"
             size={24}
-            color={DesignSystem.Colors.text.primary}
+            color={colors.text.primary}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Settings</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Appearance</Text>
+          <View style={[
+            styles.sectionContent,
+            {
+              backgroundColor: colors.background.primary,
+              borderColor: colors.neutral.gray200,
+            }
+          ]}>
             <SettingItem
               icon="moon.fill"
               title="Dark Mode"
               subtitle="Toggle dark theme"
+              colors={colors}
               rightElement={
                 <Switch
-                  value={darkMode}
-                  onValueChange={setDarkMode}
+                  value={isDark}
+                  onValueChange={handleThemeChange}
                   trackColor={{
-                    false: DesignSystem.Colors.neutral.gray300,
+                    false: colors.neutral.gray300,
                     true: DesignSystem.Colors.primary.teal,
                   }}
-                  thumbColor={DesignSystem.Colors.background.primary}
+                  thumbColor={colors.background.primary}
                 />
               }
               showChevron={false}
@@ -142,21 +170,28 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sync & Storage</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Sync & Storage</Text>
+          <View style={[
+            styles.sectionContent,
+            {
+              backgroundColor: colors.background.primary,
+              borderColor: colors.neutral.gray200,
+            }
+          ]}>
             <SettingItem
               icon="icloud.fill"
               title="Auto Sync"
               subtitle="Automatically sync notes to IPFS"
+              colors={colors}
               rightElement={
                 <Switch
                   value={syncEnabled}
                   onValueChange={setSyncEnabled}
                   trackColor={{
-                    false: DesignSystem.Colors.neutral.gray300,
+                    false: colors.neutral.gray300,
                     true: DesignSystem.Colors.primary.teal,
                   }}
-                  thumbColor={DesignSystem.Colors.background.primary}
+                  thumbColor={colors.background.primary}
                 />
               }
               showChevron={false}
@@ -165,33 +200,42 @@ export default function SettingsScreen() {
               icon="square.and.arrow.up"
               title="Export Data"
               subtitle="Export all notes to IPFS"
+              colors={colors}
               onPress={handleExportData}
             />
             <SettingItem
               icon="shield.fill"
               title="Backup Notes"
               subtitle="Backup to connected wallet"
+              colors={colors}
               onPress={handleBackup}
             />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Notifications</Text>
+          <View style={[
+            styles.sectionContent,
+            {
+              backgroundColor: colors.background.primary,
+              borderColor: colors.neutral.gray200,
+            }
+          ]}>
             <SettingItem
               icon="bell.fill"
               title="Push Notifications"
               subtitle="Get notified about sync status"
+              colors={colors}
               rightElement={
                 <Switch
                   value={notificationsEnabled}
                   onValueChange={setNotificationsEnabled}
                   trackColor={{
-                    false: DesignSystem.Colors.neutral.gray300,
+                    false: colors.neutral.gray300,
                     true: DesignSystem.Colors.primary.teal,
                   }}
-                  thumbColor={DesignSystem.Colors.background.primary}
+                  thumbColor={colors.background.primary}
                 />
               }
               showChevron={false}
@@ -200,36 +244,51 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>About</Text>
+          <View style={[
+            styles.sectionContent,
+            {
+              backgroundColor: colors.background.primary,
+              borderColor: colors.neutral.gray200,
+            }
+          ]}>
             <SettingItem
               icon="info.circle.fill"
               title="App Version"
               subtitle="1.0.0"
+              colors={colors}
               showChevron={false}
             />
             <SettingItem
               icon="questionmark.circle.fill"
               title="Help & Support"
+              colors={colors}
               onPress={() => Alert.alert('Help', 'Visit our documentation for help.')}
             />
             <SettingItem
               icon="doc.text.fill"
               title="Privacy Policy"
+              colors={colors}
               onPress={() => Alert.alert('Privacy', 'Your data is stored locally and on IPFS.')}
             />
           </View>
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionContent}>
+          <View style={[
+            styles.sectionContent,
+            {
+              backgroundColor: colors.background.primary,
+              borderColor: colors.neutral.gray200,
+            }
+          ]}>
             <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
               <IconSymbol
                 name="power"
                 size={20}
                 color={DesignSystem.Colors.semantic.error}
               />
-              <Text style={styles.signOutText}>Sign Out</Text>
+              <Text style={[styles.signOutText, { color: DesignSystem.Colors.semantic.error }]}>Sign Out</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -243,7 +302,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: DesignSystem.Colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -253,13 +311,14 @@ const styles = StyleSheet.create({
     paddingTop: DesignSystem.Spacing.xl,
     paddingBottom: DesignSystem.Spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: DesignSystem.Colors.neutral.gray100,
   },
   backButton: {
     padding: DesignSystem.Spacing.sm,
   },
   headerTitle: {
-    ...DesignSystem.createTextStyle('xl', 'semibold'),
+    fontSize: DesignSystem.Typography.sizes.xl,
+    fontFamily: DesignSystem.Typography.fonts.semibold,
+    lineHeight: DesignSystem.Typography.sizes.xl * DesignSystem.Typography.lineHeights.normal,
   },
   placeholder: {
     width: 40, // Same as back button for centering
@@ -271,19 +330,18 @@ const styles = StyleSheet.create({
     marginTop: DesignSystem.Spacing.xl,
   },
   sectionTitle: {
-    ...DesignSystem.createTextStyle('md', 'semibold', DesignSystem.Colors.text.secondary),
+    fontSize: DesignSystem.Typography.sizes.md,
+    fontFamily: DesignSystem.Typography.fonts.semibold,
     paddingHorizontal: DesignSystem.Spacing.base,
     marginBottom: DesignSystem.Spacing.sm,
     textTransform: 'uppercase',
     letterSpacing: DesignSystem.Typography.letterSpacing.wide,
   },
   sectionContent: {
-    backgroundColor: DesignSystem.Colors.background.primary,
     marginHorizontal: DesignSystem.Spacing.base,
     borderRadius: DesignSystem.BorderRadius.xl,
     ...DesignSystem.Shadows.sm,
     borderWidth: 1,
-    borderColor: DesignSystem.Colors.neutral.gray100,
   },
   settingItem: {
     flexDirection: 'row',
@@ -292,7 +350,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: DesignSystem.Spacing.base,
     paddingVertical: DesignSystem.Spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: DesignSystem.Colors.neutral.gray100,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -303,7 +360,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: DesignSystem.BorderRadius.md,
-    backgroundColor: DesignSystem.Colors.primary.teal + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: DesignSystem.Spacing.md,
@@ -312,10 +368,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    ...DesignSystem.createTextStyle('md', 'medium'),
+    fontSize: DesignSystem.Typography.sizes.md,
+    fontFamily: DesignSystem.Typography.fonts.medium,
+    lineHeight: DesignSystem.Typography.sizes.md * DesignSystem.Typography.lineHeights.normal,
   },
   settingSubtitle: {
-    ...DesignSystem.createTextStyle('sm', 'primary', DesignSystem.Colors.text.secondary),
+    fontSize: DesignSystem.Typography.sizes.sm,
+    fontFamily: DesignSystem.Typography.fonts.primary,
+    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.normal,
     marginTop: 2,
   },
   settingRight: {
@@ -331,7 +391,8 @@ const styles = StyleSheet.create({
     gap: DesignSystem.Spacing.sm,
   },
   signOutText: {
-    ...DesignSystem.createTextStyle('md', 'semibold', DesignSystem.Colors.semantic.error),
+    fontSize: DesignSystem.Typography.sizes.md,
+    fontFamily: DesignSystem.Typography.fonts.semibold,
   },
   bottomSpacing: {
     height: DesignSystem.Spacing['6xl'],
