@@ -24,42 +24,42 @@ const getCalloutConfigs = (colorScheme: 'light' | 'dark'): Record<CalloutType, C
       note: {
         icon: '📝',
         color: '#60a5fa',
-        backgroundColor: colors.accentLight,
+        backgroundColor: colors.blue + '20',
         borderColor: '#60a5fa',
         label: 'Note'
       },
       tip: {
         icon: '💡',
         color: colors.success,
-        backgroundColor: colors.successLight,
+        backgroundColor: colors.success + '20',
         borderColor: colors.success,
         label: 'Tip'
       },
       warning: {
         icon: '⚠️',
-        color: colors.warning,
-        backgroundColor: colors.warningLight,
-        borderColor: colors.warning,
+        color: '#fbbf24',
+        backgroundColor: '#451a03',
+        borderColor: '#f59e0b',
         label: 'Warning'
       },
       danger: {
         icon: '🚨',
         color: colors.error,
-        backgroundColor: colors.errorLight,
+        backgroundColor: colors.error + '20',
         borderColor: colors.error,
         label: 'Danger'
       },
       info: {
         icon: 'ℹ️',
-        color: '#60a5fa',
-        backgroundColor: colors.backgroundSecondary,
-        borderColor: colors.border,
+        color: '#93c5fd',
+        backgroundColor: '#1e3a8a',
+        borderColor: '#3b82f6',
         label: 'Info'
       },
       success: {
         icon: '✅',
         color: colors.success,
-        backgroundColor: colors.successLight,
+        backgroundColor: colors.success + '20',
         borderColor: colors.success,
         label: 'Success'
       }
@@ -193,7 +193,7 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
                 onPress={() => handleTypeChange(type as CalloutType)}
               >
                 <Text style={styles.typeIcon}>{typeConfig.icon}</Text>
-                <Text style={[styles.typeLabel, { color: typeConfig.color }]}>
+                <Text style={[styles.typeLabel, { color: typeConfig.color, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }]}>
                   {typeConfig.label}
                 </Text>
               </TouchableOpacity>
@@ -219,7 +219,7 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
             onPress={() => setIsTypeEditing(!isTypeEditing)}
           >
             <Text style={styles.icon}>{config.icon}</Text>
-            <Text style={[styles.typeText, { color: config.color }]}>
+                                        <Text style={[styles.typeText, { color: config.color, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }]}>
               {config.label}
             </Text>
           </TouchableOpacity>
@@ -270,7 +270,7 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
           onFocus={onFocus}
           onBlur={onBlur}
           placeholder="Enter your message..."
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.textSecondary}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
@@ -302,10 +302,15 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       marginBottom: 12,
       paddingVertical: 12,
       paddingHorizontal: 16,
-      backgroundColor: colors.backgroundSecondary,
-      borderRadius: 8,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: colors.border,
+      shadowColor: colors.text,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
     },
     typeOption: {
       flexDirection: 'row',
@@ -316,6 +321,11 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 8,
       borderWidth: 1,
       backgroundColor: colors.surface,
+      shadowColor: colors.text,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 1,
     },
     typeIcon: {
       fontSize: 16,
@@ -323,7 +333,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     typeLabel: {
       fontSize: 12,
-      fontWeight: '600',
+      fontFamily: 'AlbertSans_600SemiBold',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
@@ -338,17 +348,17 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     selected: {
       borderWidth: 2,
-      borderColor: colors.borderFocus,
-      backgroundColor: colors.accentLight,
+      borderColor: colors.teal,
+      backgroundColor: colors.blue + '20',
     },
     editing: {
       borderWidth: 2,
-      borderColor: colors.accent,
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.1,
+      borderColor: colors.teal,
+      shadowColor: colors.teal,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
       shadowRadius: 8,
-      elevation: 2,
+      elevation: 3,
     },
     header: {
       flexDirection: 'row',
@@ -359,10 +369,12 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     typeButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 6,
-      backgroundColor: colors.backgroundSecondary,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     icon: {
       fontSize: 18,
@@ -370,7 +382,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     typeText: {
       fontSize: 12,
-      fontWeight: '600',
+      fontFamily: 'AlbertSans_600SemiBold',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
@@ -381,6 +393,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     toggleText: {
       fontSize: 14,
+      fontFamily: 'AlbertSans_500Medium',
       color: colors.textSecondary,
     },
     titleContainer: {
@@ -388,21 +401,22 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     title: {
       fontSize: 16,
-      fontWeight: '600',
+      fontFamily: 'AlbertSans_600SemiBold',
       marginBottom: 4,
     },
     titleInput: {
       fontSize: 16,
-      fontWeight: '600',
+      fontFamily: 'AlbertSans_600SemiBold',
       paddingVertical: 8,
       paddingHorizontal: 12,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 6,
+      borderRadius: 8,
       backgroundColor: colors.surface,
     },
     contentInput: {
       fontSize: 15,
+      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       minHeight: 48,
       textAlignVertical: 'top',
