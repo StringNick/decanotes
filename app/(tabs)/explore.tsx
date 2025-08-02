@@ -1,310 +1,328 @@
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { DesignSystem, getThemeColors } from '@/constants/DesignSystem';
+import { useTheme } from '@/contexts/ThemeContext';
+import React, { useState } from 'react';
+import {
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const features = [
+interface DiscoveryCardProps {
+  title: string;
+  description: string;
+  icon: string;
+  category: string;
+  onPress: () => void;
+  isDark: boolean;
+}
+
+function DiscoveryCard({ title, description, icon, category, onPress, isDark }: DiscoveryCardProps) {
+  const colors = getThemeColors(isDark);
+  
+  return (
+    <TouchableOpacity
+      style={[
+        styles.discoveryCard,
+        {
+          backgroundColor: colors.background.primary,
+          borderColor: isDark ? colors.neutral.gray800 : colors.neutral.gray200,
+        }
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[
+        styles.cardIcon,
+        { backgroundColor: DesignSystem.Colors.primary.teal + '20' }
+      ]}>
+        <IconSymbol
+          name={icon}
+          size={24}
+          color={DesignSystem.Colors.primary.teal}
+        />
+      </View>
+      <View style={styles.cardContent}>
+        <Text style={[styles.cardCategory, { color: colors.text.tertiary }]}>
+          {category}
+        </Text>
+        <Text style={[styles.cardTitle, { color: colors.text.primary }]}>
+          {title}
+        </Text>
+        <Text style={[styles.cardDescription, { color: colors.text.secondary }]}>
+          {description}
+        </Text>
+      </View>
+      <IconSymbol
+        name="chevron.right"
+        size={16}
+        color={colors.text.tertiary}
+      />
+    </TouchableOpacity>
+  );
+}
+
+const discoveryData = [
   {
     id: '1',
-    title: 'Rich Text Editing',
-    description: 'Create beautiful documents with markdown support, formatting tools, and real-time preview.',
-    icon: 'document-text',
-    color: '#bd44ff',
-    comingSoon: false,
+    title: 'Note Templates',
+    description: 'Pre-made templates for meetings, projects, and daily notes',
+    icon: 'doc.text.fill',
+    category: 'Templates',
   },
   {
     id: '2',
-    title: 'Smart Organization',
-    description: 'Organize your notes with tags, folders, and intelligent search across all your content.',
-    icon: 'folder',
-    color: '#0bcdb6',
-    comingSoon: false,
+    title: 'Collaboration',
+    description: 'Share notes securely through IPFS and collaborate in real-time',
+    icon: 'person.2.fill',
+    category: 'Sharing',
   },
   {
     id: '3',
-    title: 'Real-time Sync',
-    description: 'Access your notes anywhere with cloud sync across all your devices seamlessly.',
-    icon: 'cloud',
-    color: '#67d4fc',
-    comingSoon: true,
+    title: 'Backup & Sync',
+    description: 'Keep your notes safe with decentralized backup solutions',
+    icon: 'icloud.fill',
+    category: 'Storage',
   },
   {
     id: '4',
-    title: 'Collaboration',
-    description: 'Share and collaborate on documents with team members in real-time.',
-    icon: 'people',
-    color: '#bd44ff',
-    comingSoon: true,
+    title: 'Markdown Support',
+    description: 'Rich formatting with full markdown syntax support',
+    icon: 'textformat',
+    category: 'Formatting',
   },
   {
     id: '5',
-    title: 'Templates',
-    description: 'Get started quickly with pre-built templates for meetings, projects, and more.',
-    icon: 'duplicate',
-    color: '#0bcdb6',
-    comingSoon: true,
+    title: 'Privacy First',
+    description: 'End-to-end encryption with your wallet as the key',
+    icon: 'lock.shield.fill',
+    category: 'Security',
   },
   {
     id: '6',
-    title: 'Export & Share',
-    description: 'Export your notes to PDF, markdown, or share them with anyone easily.',
-    icon: 'share',
-    color: '#67d4fc',
-    comingSoon: false,
+    title: 'Cross-Platform',
+    description: 'Access your notes from any device, anywhere',
+    icon: 'laptopcomputer.and.iphone',
+    category: 'Accessibility',
   },
 ];
 
 export default function ExploreScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
+  const colors = getThemeColors(isDark);
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const renderFeatureCard = (feature: typeof features[0], index: number) => {
-    const isLocked = feature.comingSoon;
-    
-    return (
-      <TouchableOpacity 
-        key={feature.id}
-        style={[styles.featureCard, isLocked && styles.featureCardLocked]}
-        activeOpacity={isLocked ? 1 : 0.8}
-      >
-        {isLocked ? (
-          <View style={styles.lockedCard}>
-            <View style={styles.featureIcon}>
-              <Ionicons name="lock-closed" size={24} color={colors.textTertiary} />
-            </View>
-            <Text style={styles.featureTitle}>{feature.title}</Text>
-            <Text style={styles.featureDescription}>{feature.description}</Text>
-            <View style={styles.comingSoonBadge}>
-              <Text style={styles.comingSoonText}>Coming Soon</Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.activeCard}>
-            <View style={[styles.featureIcon, { backgroundColor: feature.color }]}>
-              <Ionicons name={feature.icon as any} size={24} color={colors.background} />
-            </View>
-            <Text style={styles.featureTitle}>{feature.title}</Text>
-            <Text style={styles.featureDescription}>{feature.description}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
+  const categories = ['All', 'Templates', 'Sharing', 'Storage', 'Security'];
+
+  const filteredData = selectedCategory === 'All' 
+    ? discoveryData 
+    : discoveryData.filter(item => item.category === selectedCategory);
+
+  const handleCardPress = (item: typeof discoveryData[0]) => {
+    console.log('Pressed:', item.title);
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top']}>
       <StatusBar 
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
-        backgroundColor={colors.background} 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor="transparent"
+        translucent
       />
       
-      {/* Hero Section */}
-      <LinearGradient
-        colors={colors.gradientOnboarding}
-        style={styles.heroSection}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
+          Discover
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.text.secondary }]}>
+          Explore DecaNotes features
+        </Text>
+      </View>
+
+      {/* Theme Switcher (Debug) */}
+      <ThemeSwitcher />
+
+      {/* Category Filter */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoriesContainer}
+        contentContainerStyle={styles.categoriesContent}
       >
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>Discover Wordsy</Text>
-          <Text style={styles.heroSubtitle}>
-            Powerful features to enhance your note-taking experience
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryChip,
+              {
+                backgroundColor: selectedCategory === category 
+                  ? DesignSystem.Colors.primary.teal 
+                  : colors.background.secondary,
+                borderColor: selectedCategory === category 
+                  ? DesignSystem.Colors.primary.teal 
+                  : colors.neutral.gray200,
+              }
+            ]}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <Text style={[
+              styles.categoryText,
+              {
+                color: selectedCategory === category 
+                  ? colors.text.inverse 
+                  : colors.text.secondary
+              }
+            ]}>
+              {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Discovery Cards */}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {filteredData.map((item) => (
+          <DiscoveryCard
+            key={item.id}
+            title={item.title}
+            description={item.description}
+            icon={item.icon}
+            category={item.category}
+            onPress={() => handleCardPress(item)}
+            isDark={isDark}
+          />
+        ))}
+        
+        {/* Feature Highlight */}
+        <View style={[
+          styles.featureHighlight,
+          {
+            backgroundColor: isDark 
+              ? DesignSystem.Colors.primary.purple + '20'
+              : DesignSystem.Colors.primary.purple + '10',
+            borderColor: DesignSystem.Colors.primary.purple + '30',
+          }
+        ]}>
+          <IconSymbol
+            name="star.fill"
+            size={32}
+            color={DesignSystem.Colors.primary.purple}
+          />
+          <Text style={[styles.highlightTitle, { color: colors.text.primary }]}>
+            Coming Soon
+          </Text>
+          <Text style={[styles.highlightDescription, { color: colors.text.secondary }]}>
+            AI-powered note organization and smart search features
           </Text>
         </View>
-      </LinearGradient>
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Features Grid */}
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionTitle}>Features</Text>
-          <View style={styles.featuresGrid}>
-            {features.map((feature, index) => renderFeatureCard(feature, index))}
-          </View>
-        </View>
-
-        {/* About Section */}
-        <View style={styles.aboutSection}>
-          <Text style={styles.sectionTitle}>About Wordsy</Text>
-          <View style={styles.aboutCard}>
-            <Text style={styles.aboutText}>
-              Wordsy is a modern note-taking app designed for writers, thinkers, and creators. 
-              With powerful markdown support, beautiful typography, and intuitive organization, 
-              it's the perfect tool for capturing and developing your ideas.
-            </Text>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>∞</Text>
-                <Text style={styles.statLabel}>Notes</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>📱</Text>
-                <Text style={styles.statLabel}>Cross-platform</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>⚡</Text>
-                <Text style={styles.statLabel}>Fast & Reliable</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        
+        <View style={styles.bottomSpacing} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const getStyles = (colorScheme: 'light' | 'dark') => {
-  const colors = Colors[colorScheme];
-  
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    heroSection: {
-      padding: 24,
-      borderBottomLeftRadius: 24,
-      borderBottomRightRadius: 24,
-    },
-    heroContent: {
-      alignItems: 'center',
-      paddingVertical: 20,
-    },
-    heroTitle: {
-      fontSize: 28,
-      fontFamily: 'AlbertSans_700Bold',
-      color: colors.background,
-      textAlign: 'center',
-      marginBottom: 8,
-    },
-    heroSubtitle: {
-      fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
-      color: colors.background,
-      textAlign: 'center',
-      opacity: 0.9,
-    },
-    scrollView: {
-      flex: 1,
-    },
-    featuresSection: {
-      padding: 20,
-    },
-    sectionTitle: {
-      fontSize: 20,
-      fontFamily: 'AlbertSans_600SemiBold',
-      color: colors.text,
-      marginBottom: 16,
-    },
-    featuresGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 16,
-      justifyContent: 'space-between',
-    },
-    featureCard: {
-      width: '48%',
-      borderRadius: 12,
-      marginBottom: 16,
-    },
-    featureCardLocked: {
-      opacity: 0.7,
-    },
-    activeCard: {
-      backgroundColor: colors.cardContent,
-      padding: 16,
-      borderRadius: 12,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-      elevation: 2,
-      borderWidth: 1,
-      borderColor: colors.borderLight,
-    },
-    lockedCard: {
-      backgroundColor: colors.cardLocked,
-      padding: 16,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    featureIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 12,
-      backgroundColor: colors.borderLight,
-    },
-    featureTitle: {
-      fontSize: 14,
-      fontFamily: 'AlbertSans_600SemiBold',
-      color: colors.text,
-      marginBottom: 8,
-    },
-    featureDescription: {
-      fontSize: 12,
-      fontFamily: 'AlbertSans_400Regular',
-      color: colors.textSecondary,
-      lineHeight: 16,
-    },
-    comingSoonBadge: {
-      backgroundColor: colors.border,
-      borderRadius: 8,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      marginTop: 8,
-      alignSelf: 'flex-start',
-    },
-    comingSoonText: {
-      fontSize: 10,
-      fontFamily: 'AlbertSans_500Medium',
-      color: colors.textSecondary,
-    },
-    aboutSection: {
-      padding: 20,
-      paddingBottom: 100, // Extra padding for tab bar
-    },
-    aboutCard: {
-      backgroundColor: colors.cardContent,
-      borderRadius: 16,
-      padding: 20,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 3,
-      borderWidth: 1,
-      borderColor: colors.borderLight,
-    },
-    aboutText: {
-      fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
-      color: colors.text,
-      lineHeight: 24,
-      marginBottom: 20,
-    },
-    statsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-    },
-    statItem: {
-      alignItems: 'center',
-    },
-    statNumber: {
-      fontSize: 24,
-      marginBottom: 4,
-    },
-    statLabel: {
-      fontSize: 12,
-      fontFamily: 'AlbertSans_500Medium',
-      color: colors.textSecondary,
-      textAlign: 'center',
-    },
-  });
-};
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingVertical: DesignSystem.Spacing.base,
+  },
+  headerTitle: {
+    ...DesignSystem.createTextStyle('3xl', 'bold'),
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    ...DesignSystem.createTextStyle('md'),
+  },
+  categoriesContainer: {
+    marginVertical: DesignSystem.Spacing.sm,
+  },
+  categoriesContent: {
+    paddingHorizontal: DesignSystem.Spacing.base,
+    gap: DesignSystem.Spacing.sm,
+  },
+  categoryChip: {
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingVertical: DesignSystem.Spacing.sm,
+    borderRadius: DesignSystem.BorderRadius.xl,
+    borderWidth: 1,
+  },
+  categoryText: {
+    ...DesignSystem.createTextStyle('sm', 'medium'),
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingTop: DesignSystem.Spacing.sm,
+  },
+  discoveryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: DesignSystem.Spacing.base,
+    borderRadius: DesignSystem.BorderRadius.xl,
+    marginBottom: DesignSystem.Spacing.md,
+    borderWidth: 1,
+    ...DesignSystem.Shadows.sm,
+  },
+  cardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: DesignSystem.BorderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: DesignSystem.Spacing.md,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardCategory: {
+    ...DesignSystem.createTextStyle('xs', 'medium'),
+    textTransform: 'uppercase',
+    letterSpacing: DesignSystem.Typography.letterSpacing.wide,
+    marginBottom: 2,
+  },
+  cardTitle: {
+    ...DesignSystem.createTextStyle('lg', 'semibold'),
+    marginBottom: 4,
+  },
+  cardDescription: {
+    ...DesignSystem.createTextStyle('sm'),
+    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.relaxed,
+  },
+  featureHighlight: {
+    alignItems: 'center',
+    padding: DesignSystem.Spacing.xl,
+    borderRadius: DesignSystem.BorderRadius.xl,
+    marginTop: DesignSystem.Spacing.lg,
+    borderWidth: 1,
+  },
+  highlightTitle: {
+    ...DesignSystem.createTextStyle('xl', 'bold'),
+    marginTop: DesignSystem.Spacing.sm,
+    marginBottom: DesignSystem.Spacing.xs,
+  },
+  highlightDescription: {
+    ...DesignSystem.createTextStyle('md'),
+    textAlign: 'center',
+    lineHeight: DesignSystem.Typography.sizes.md * DesignSystem.Typography.lineHeights.relaxed,
+  },
+  bottomSpacing: {
+    height: DesignSystem.Spacing['6xl'],
+  },
+});

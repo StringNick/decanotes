@@ -1,357 +1,370 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { NoteCard } from '@/components/NoteCard';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { DesignSystem, getThemeColors } from '@/constants/DesignSystem';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { FlatList, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/Colors';
-import { useColorScheme } from '../../hooks/useColorScheme';
 
-// Mock pages data - in real app this would come from a database
-const mockPages = [
+// Mock notes data - in real app this would come from a database
+const mockNotes = [
   { 
     id: '1', 
     title: 'Meeting Notes', 
-    lastModified: '2 hours ago', 
-    preview: 'Discussed project timeline and deliverables for the upcoming sprint...',
-    completed: 3,
-    total: 5,
-    priority: 'high'
+    lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    preview: 'Discussed project timeline and deliverables for the upcoming sprint. Key points include...',
+    color: 'cream' as const,
   },
   { 
     id: '2', 
     title: 'Project Ideas', 
-    lastModified: '1 day ago', 
-    preview: 'New app concept for productivity and task management...',
-    completed: 1,
-    total: 8,
-    priority: 'medium'
+    lastModified: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+    preview: 'New app concept for productivity and task management. Features should include...',
+    color: 'sage' as const,
   },
   { 
     id: '3', 
     title: 'Shopping List', 
-    lastModified: '3 days ago', 
-    preview: 'Groceries for this week including organic vegetables...',
-    completed: 7,
-    total: 10,
-    priority: 'low'
+    lastModified: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    preview: 'Groceries for this week including organic vegetables, fruits, and proteins...',
+    color: 'sky' as const,
   },
   { 
     id: '4', 
     title: 'Travel Planning', 
-    lastModified: '1 week ago', 
-    preview: 'Trip to Japan - research hotels, flights, and activities...',
-    completed: 2,
-    total: 12,
-    priority: 'medium'
+    lastModified: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
+    preview: 'Trip to Japan - research hotels, flights, and activities. Don\'t forget to check visa requirements...',
+    color: 'lavender' as const,
+  },
+  { 
+    id: '5', 
+    title: 'Book Notes', 
+    lastModified: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+    preview: 'Key insights from "Atomic Habits" by James Clear. The power of small changes...',
+    color: 'peach' as const,
   },
 ];
 
 export default function HomeScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
+  const { effectiveTheme } = useTheme();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
   
-  // Get theme colors and styles
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
+  const isDark = effectiveTheme === 'dark';
+  const colors = getThemeColors(isDark);
 
-  const handlePagePress = (pageId: string) => {
-    // Navigate to editor with page data
+  const handleNotePress = (noteId: string) => {
+    // Navigate to editor with note data
     router.push('/editor');
   };
 
-  const handleNewPage = () => {
-    // Create new page and navigate to editor
+  const handleNewNote = () => {
+    // Create new note and navigate to editor
     router.push('/editor');
   };
 
-  const renderPageItem = ({ item }: { item: typeof mockPages[0] }) => (
-    <TouchableOpacity 
-      style={styles.pageCard}
-      onPress={() => handlePagePress(item.id)}
-      activeOpacity={0.8}
-    >
-      <LinearGradient
-        colors={[colors.blue, colors.blue]}
-        style={styles.cardGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        {/* Card Header */}
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardSubtitle}>{item.lastModified}</Text>
-          </View>
-          <TouchableOpacity style={styles.cardActionButton}>
-            <Ionicons name="ellipsis-horizontal" size={16} color={colors.background} />
-          </TouchableOpacity>
-        </View>
+  const handleOptionsPress = (noteId: string) => {
+    // Show note options (share, delete, etc.)
+    console.log('Options for note:', noteId);
+  };
 
-        {/* Card Content */}
-        <View style={styles.cardContent}>
-          <View style={styles.todoItem}>
-            <Text style={styles.cardPreview} numberOfLines={2}>
-              {item.preview}
-            </Text>
-          </View>
-          
-          {/* Progress Section */}
-          <View style={styles.progressSection}>
-            <View style={styles.progressInfo}>
-              <View style={styles.checkboxContainer}>
-                <View style={[
-                  styles.checkbox,
-                  item.completed > 0 && styles.checkboxChecked
-                ]}>
-                  {item.completed > 0 && (
-                    <Ionicons name="checkmark" size={12} color={colors.background} />
-                  )}
-                </View>
-                <Text style={styles.progressText}>
-                  {item.completed}/{item.total} completed
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
+  const filteredNotes = mockNotes.filter(note => {
+    const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         note.preview.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (activeFilter === 'Recent') {
+      const isRecent = Date.now() - note.lastModified.getTime() < 7 * 24 * 60 * 60 * 1000; // 7 days
+      return matchesSearch && isRecent;
+    }
+    
+    return matchesSearch;
+  });
+
+  const renderNoteItem = ({ item }: { item: typeof mockNotes[0] }) => (
+    <NoteCard
+      key={item.id}
+      id={item.id}
+      title={item.title}
+      preview={item.preview}
+      lastModified={item.lastModified}
+      color={item.color as keyof typeof DesignSystem.Colors.notes.light}
+      onPress={() => handleNotePress(item.id)}
+      onOptionsPress={() => handleOptionsPress(item.id)}
+    />
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top']}>
       <StatusBar 
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
-        backgroundColor={colors.background} 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor="transparent"
+        translucent
       />
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Wordsy</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.searchButton}>
-            <Ionicons name="search" size={20} color={colors.icon} />
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
+            DecaNotes
+          </Text>
+          <Text style={[styles.headerSubtitle, { color: colors.text.secondary }]}>
+            {filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}
+          </Text>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            style={[styles.addButton, { backgroundColor: DesignSystem.Colors.primary.teal }]}
+            onPress={handleNewNote}
+            activeOpacity={0.8}
+          >
+            <IconSymbol 
+              name="plus" 
+              size={18} 
+              color={colors.text.inverse} 
+            />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="options" size={20} color={colors.icon} />
+          <TouchableOpacity 
+            style={styles.settingsButton}
+            onPress={() => router.push('/settings')}
+          >
+            <IconSymbol 
+              name="gearshape.fill" 
+              size={22} 
+              color={colors.text.secondary} 
+            />
           </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Theme Switcher (Debug) */}
+      <ThemeSwitcher />
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={[
+          styles.searchBar,
+          {
+            backgroundColor: colors.background.secondary,
+            borderColor: colors.neutral.gray200,
+          }
+        ]}>
+          <IconSymbol 
+            name="magnifyingglass" 
+            size={16} 
+            color={colors.text.tertiary} 
+          />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text.primary }]}
+            placeholder="Search notes..."
+            placeholderTextColor={colors.text.tertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
       </View>
 
       {/* Filter Tabs */}
       <View style={styles.filterTabs}>
-        {['All', 'Recent', 'Favorites'].map((filter, index) => (
+        {['All', 'Recent', 'Favorites'].map((filter) => (
           <TouchableOpacity 
             key={filter} 
-            style={[styles.filterTab, index === 0 && styles.filterTabActive]}
+            style={[
+              styles.filterTab,
+              {
+                backgroundColor: activeFilter === filter 
+                  ? DesignSystem.Colors.primary.dark 
+                  : colors.background.secondary,
+                borderColor: activeFilter === filter 
+                  ? DesignSystem.Colors.primary.dark 
+                  : colors.neutral.gray200,
+              },
+              activeFilter === filter && styles.filterTabActive
+            ]}
+            onPress={() => setActiveFilter(filter)}
           >
             <Text style={[
-              styles.filterTabText, 
-              index === 0 && styles.filterTabTextActive
+              styles.filterTabText,
+              {
+                color: activeFilter === filter 
+                  ? DesignSystem.Colors.text.light.inverse 
+                  : colors.text.secondary
+              }
             ]}>
               {filter}
             </Text>
           </TouchableOpacity>
         ))}
+        
+        {/* Quick Add when searching */}
+        {searchQuery.length > 0 && (
+          <TouchableOpacity 
+            style={[
+              styles.quickAddTab,
+              { 
+                backgroundColor: DesignSystem.Colors.primary.teal + '20',
+                borderColor: DesignSystem.Colors.primary.teal,
+              }
+            ]}
+            onPress={handleNewNote}
+          >
+            <IconSymbol 
+              name="plus" 
+              size={12} 
+              color={DesignSystem.Colors.primary.teal} 
+            />
+            <Text style={[
+              styles.quickAddText,
+              { color: DesignSystem.Colors.primary.teal }
+            ]}>
+              Create "{searchQuery}"
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Pages List */}
+      {/* Notes List */}
       <FlatList
-        data={mockPages}
-        renderItem={renderPageItem}
+        data={filteredNotes}
+        renderItem={renderNoteItem}
         keyExtractor={(item) => item.id}
-        style={styles.pagesList}
-        contentContainerStyle={styles.pagesListContent}
+        style={styles.notesList}
+        contentContainerStyle={styles.notesListContent}
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyState}>
+            <IconSymbol
+              name="doc.text"
+              size={48}
+              color={colors.text.tertiary}
+            />
+            <Text style={[styles.emptyTitle, { color: colors.text.secondary }]}>
+              No notes yet
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: colors.text.tertiary }]}>
+              Tap the + button to create your first note
+            </Text>
+          </View>
+        )}
       />
-
-      {/* Floating Action Button */}
-      <TouchableOpacity 
-        style={styles.floatingActionButton}
-        onPress={handleNewPage}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={[colors.teal, colors.teal]}
-          style={styles.fabGradient}
-        >
-          <Ionicons name="add" size={24} color={colors.background} />
-        </LinearGradient>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
-const getStyles = (colorScheme: 'light' | 'dark') => {
-  const colors = Colors[colorScheme];
-  
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-    },
-    headerTitle: {
-      fontSize: 28,
-      fontFamily: 'AlbertSans_700Bold',
-      color: colors.text,
-    },
-    headerActions: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    searchButton: {
-      padding: 8,
-    },
-    filterButton: {
-      padding: 8,
-    },
-    filterTabs: {
-      flexDirection: 'row',
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      gap: 12,
-    },
-    filterTab: {
-      backgroundColor: colors.borderLight,
-      borderRadius: 20,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-    },
-    filterTabActive: {
-      backgroundColor: colors.dark,
-    },
-    filterTabText: {
-      fontSize: 14,
-      fontFamily: 'AlbertSans_500Medium',
-      color: colors.textSecondary,
-    },
-    filterTabTextActive: {
-      color: colors.background,
-    },
-    pagesList: {
-      flex: 1,
-    },
-    pagesListContent: {
-      paddingHorizontal: 20,
-      paddingBottom: 100, // Extra padding for floating button
-    },
-    pageCard: {
-      borderRadius: 16,
-      marginBottom: 16,
-      shadowColor: colors.blue,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
-      elevation: 4,
-    },
-    cardGradient: {
-      borderRadius: 16,
-      padding: 20,
-    },
-    cardHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: 16,
-    },
-    cardHeaderLeft: {
-      flex: 1,
-    },
-    cardTitle: {
-      fontSize: 18,
-      fontFamily: 'AlbertSans_600SemiBold',
-      color: colors.text,
-      marginBottom: 4,
-    },
-    cardSubtitle: {
-      fontSize: 14,
-      fontFamily: 'AlbertSans_400Regular',
-      color: colors.text,
-      opacity: 0.7,
-    },
-    cardActionButton: {
-      backgroundColor: colors.dark,
-      borderRadius: 16,
-      width: 32,
-      height: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    cardContent: {
-      gap: 12,
-    },
-    todoItem: {
-      backgroundColor: colors.background,
-      borderRadius: 12,
-      padding: 16,
-    },
-    cardPreview: {
-      fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
-      color: colors.text,
-      lineHeight: 22,
-    },
-    progressSection: {
-      paddingTop: 8,
-    },
-    progressInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    checkboxContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    checkbox: {
-      width: 16,
-      height: 16,
-      borderRadius: 4,
-      backgroundColor: colors.background,
-      borderWidth: 2,
-      borderColor: colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    checkboxChecked: {
-      backgroundColor: colors.teal,
-      borderColor: colors.teal,
-    },
-    progressText: {
-      fontSize: 14,
-      fontFamily: 'AlbertSans_500Medium',
-      color: colors.text,
-    },
-    separator: {
-      height: 16,
-    },
-    floatingActionButton: {
-      position: 'absolute',
-      bottom: 100, // Above tab bar
-      right: 20,
-      borderRadius: 28,
-      shadowColor: colors.teal,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 16,
-      elevation: 8,
-    },
-    fabGradient: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-  });
-};
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingVertical: DesignSystem.Spacing.base,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerTitle: {
+    ...DesignSystem.createTextStyle('3xl', 'bold'),
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    ...DesignSystem.createTextStyle('sm', 'medium'),
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DesignSystem.Spacing.sm,
+  },
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: DesignSystem.BorderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...DesignSystem.Shadows.md,
+  },
+  settingsButton: {
+    padding: DesignSystem.Spacing.sm,
+    borderRadius: DesignSystem.BorderRadius.md,
+  },
+  searchContainer: {
+    paddingHorizontal: DesignSystem.Spacing.base,
+    marginBottom: DesignSystem.Spacing.base,
+  },
+  searchBar: {
+    ...DesignSystem.Components.input.default,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DesignSystem.Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    ...DesignSystem.createTextStyle('md'),
+    padding: 0, // Remove default TextInput padding
+  },
+  filterTabs: {
+    flexDirection: 'row',
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingBottom: DesignSystem.Spacing.base,
+    gap: DesignSystem.Spacing.sm,
+  },
+  filterTab: {
+    borderRadius: DesignSystem.BorderRadius.xl,
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingVertical: DesignSystem.Spacing.sm,
+    borderWidth: 1,
+  },
+  filterTabActive: {
+    backgroundColor: DesignSystem.Colors.primary.dark,
+    borderColor: DesignSystem.Colors.primary.dark,
+  },
+  filterTabText: {
+    ...DesignSystem.createTextStyle('sm', 'medium'),
+  },
+  filterTabTextActive: {
+    color: '#FFFFFF',
+  },
+  quickAddTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: DesignSystem.BorderRadius.xl,
+    paddingHorizontal: DesignSystem.Spacing.md,
+    paddingVertical: DesignSystem.Spacing.sm,
+    borderWidth: 1,
+    gap: DesignSystem.Spacing.xs,
+    maxWidth: 200,
+  },
+  quickAddText: {
+    ...DesignSystem.createTextStyle('sm', 'medium'),
+    flex: 1,
+  },
+  notesList: {
+    flex: 1,
+  },
+  notesListContent: {
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingBottom: DesignSystem.Spacing['5xl'], // Padding for tab bar
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: DesignSystem.Spacing['4xl'],
+    paddingHorizontal: DesignSystem.Spacing.xl,
+  },
+  emptyTitle: {
+    ...DesignSystem.createTextStyle('lg', 'semibold'),
+    marginTop: DesignSystem.Spacing.base,
+    marginBottom: DesignSystem.Spacing.xs,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    ...DesignSystem.createTextStyle('md'),
+    textAlign: 'center',
+    lineHeight: DesignSystem.Typography.sizes.md * DesignSystem.Typography.lineHeights.relaxed,
+  },
+});
