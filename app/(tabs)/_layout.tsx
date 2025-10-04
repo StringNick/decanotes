@@ -24,46 +24,44 @@ export default function TabLayout() {
         tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: DesignSystem.Spacing['3xl'],
-          left: '25%',
-          right: '25%',
-          height: 64,
-          paddingHorizontal: DesignSystem.Spacing.sm,
-          paddingVertical: DesignSystem.Spacing.sm,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 88,
+          paddingHorizontal: DesignSystem.Spacing.lg,
+          paddingTop: DesignSystem.Spacing.md,
+          paddingBottom: DesignSystem.Spacing.xl,
           borderTopWidth: 0,
-          borderRadius: DesignSystem.BorderRadius['2xl'],
-          overflow: 'hidden',
           backgroundColor: 'transparent',
-          shadowColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.15)',
-          shadowOffset: { width: 0, height: 8 },
+          shadowColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.1)',
+          shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 1,
-          shadowRadius: 24,
-          elevation: 12,
+          shadowRadius: 12,
+          elevation: 8,
         },
         tabBarBackground: () => (
           <View style={StyleSheet.absoluteFill}>
             <LinearGradient
               colors={isDark 
-                ? ['rgba(20, 20, 20, 0.95)', 'rgba(10, 10, 10, 0.98)']
-                : ['rgba(255, 255, 255, 0.95)', 'rgba(248, 250, 252, 0.98)']
+                ? ['rgba(0, 0, 0, 0.0)', 'rgba(0, 0, 0, 0.95)']
+                : ['rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.95)']
               }
               style={StyleSheet.absoluteFill}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              end={{ x: 0, y: 1 }}
             />
             <BlurView
-              intensity={isDark ? 40 : 100}
+              intensity={isDark ? 60 : 80}
               tint={isDark ? 'dark' : 'light'}
               style={StyleSheet.absoluteFill}
             />
             <View style={[
               StyleSheet.absoluteFill, 
               { 
-                borderRadius: DesignSystem.BorderRadius['2xl'],
-                borderWidth: isDark ? 0.5 : 0.5,
-                borderColor: isDark 
-                  ? 'rgba(255, 255, 255, 0.08)' 
-                  : 'rgba(0, 0, 0, 0.06)',
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: isDark 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : 'rgba(0, 0, 0, 0.08)',
               }
             ]} />
           </View>
@@ -75,6 +73,7 @@ export default function TabLayout() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
+          height: 48,
         },
       }}>
       <Tabs.Screen
@@ -84,7 +83,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View style={[
               styles.iconContainer,
-              focused && styles.activeIconContainer
+              focused && [styles.activeIconContainer, { 
+                backgroundColor: isDark 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : 'rgba(0, 0, 0, 0.06)' 
+              }]
             ]}>
               <IconSymbol 
                 size={24} 
@@ -98,11 +101,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Discover',
+          title: 'Explore',
           tabBarIcon: ({ color, focused }) => (
             <View style={[
               styles.iconContainer,
-              focused && styles.activeIconContainer
+              focused && [styles.activeIconContainer, { 
+                backgroundColor: isDark 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : 'rgba(0, 0, 0, 0.06)' 
+              }]
             ]}>
               <IconSymbol 
                 size={24} 
@@ -113,7 +120,7 @@ export default function TabLayout() {
           ),
         }}
       />
-     </Tabs>
+    </Tabs>
   );
 }
 
@@ -121,12 +128,11 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: DesignSystem.BorderRadius.xl,
   },
   activeIconContainer: {
-    backgroundColor: 'rgba(26, 26, 26, 0.08)',
-    transform: [{ scale: 1.05 }],
+    transform: [{ scale: 1.02 }],
   },
 });
