@@ -96,41 +96,49 @@ export function NoteCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: DesignSystem.BorderRadius.xl,
-    padding: DesignSystem.Spacing.lg,
-    marginBottom: DesignSystem.Spacing.md,
-    ...DesignSystem.Shadows.sm,
-    borderWidth: 1,
+    borderRadius: DesignSystem.BorderRadius['2xl'],
+    padding: DesignSystem.Spacing.xl,
+    marginBottom: DesignSystem.Spacing.lg,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 0,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: DesignSystem.Spacing.sm,
+    marginBottom: DesignSystem.Spacing.md,
   },
   titleContainer: {
     flex: 1,
-    marginRight: DesignSystem.Spacing.sm,
+    marginRight: DesignSystem.Spacing.md,
   },
   title: {
     fontSize: DesignSystem.Typography.sizes.lg,
     fontFamily: DesignSystem.Typography.fonts.semibold,
-    lineHeight: DesignSystem.Typography.sizes.lg * DesignSystem.Typography.lineHeights.normal,
-    marginBottom: 2,
+    lineHeight: DesignSystem.Typography.sizes.lg * DesignSystem.Typography.lineHeights.tight,
+    marginBottom: 4,
+    letterSpacing: -0.2,
   },
   date: {
     fontSize: DesignSystem.Typography.sizes.xs,
-    fontFamily: DesignSystem.Typography.fonts.primary,
+    fontFamily: DesignSystem.Typography.fonts.medium,
     lineHeight: DesignSystem.Typography.sizes.xs * DesignSystem.Typography.lineHeights.normal,
+    opacity: 0.7,
   },
   preview: {
     fontSize: DesignSystem.Typography.sizes.md,
     fontFamily: DesignSystem.Typography.fonts.primary,
     lineHeight: DesignSystem.Typography.sizes.md * DesignSystem.Typography.lineHeights.relaxed,
+    opacity: 0.8,
   },
   optionsButton: {
-    padding: DesignSystem.Spacing.xs,
-    borderRadius: DesignSystem.BorderRadius.sm,
+    padding: DesignSystem.Spacing.sm,
+    borderRadius: DesignSystem.BorderRadius.lg,
+    marginTop: -4,
   },
 });
 

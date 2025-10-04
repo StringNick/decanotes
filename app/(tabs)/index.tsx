@@ -116,13 +116,13 @@ export default function HomeScreen() {
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity 
-            style={[styles.addButton, { backgroundColor: DesignSystem.Colors.primary.teal }]}
+            style={[styles.addButton, { backgroundColor: colors.text.primary }]}
             onPress={handleNewNote}
             activeOpacity={0.8}
           >
             <IconSymbol 
               name="plus" 
-              size={18} 
+              size={20} 
               color={colors.text.inverse} 
             />
           </TouchableOpacity>
@@ -132,7 +132,7 @@ export default function HomeScreen() {
           >
             <IconSymbol 
               name="gearshape.fill" 
-              size={22} 
+              size={20} 
               color={colors.text.secondary} 
             />
           </TouchableOpacity>
@@ -261,50 +261,61 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: DesignSystem.Spacing.base,
-    paddingVertical: DesignSystem.Spacing.base,
+    paddingHorizontal: DesignSystem.Spacing.lg,
+    paddingVertical: DesignSystem.Spacing.lg,
+    paddingTop: DesignSystem.Spacing.xl,
   },
   headerLeft: {
     flex: 1,
   },
   headerTitle: {
     ...DesignSystem.createTextStyle('3xl', 'bold'),
-    marginBottom: 2,
+    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     ...DesignSystem.createTextStyle('sm', 'medium'),
+    opacity: 0.7,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: DesignSystem.Spacing.sm,
+    gap: DesignSystem.Spacing.md,
   },
   addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: DesignSystem.BorderRadius.lg,
+    width: 40,
+    height: 40,
+    borderRadius: DesignSystem.BorderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    ...DesignSystem.Shadows.md,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   settingsButton: {
     padding: DesignSystem.Spacing.sm,
-    borderRadius: DesignSystem.BorderRadius.md,
+    borderRadius: DesignSystem.BorderRadius.lg,
   },
   searchContainer: {
-    paddingHorizontal: DesignSystem.Spacing.base,
-    marginBottom: DesignSystem.Spacing.base,
+    paddingHorizontal: DesignSystem.Spacing.lg,
+    marginBottom: DesignSystem.Spacing.lg,
   },
   searchBar: {
     ...DesignSystem.Components.input.default,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: DesignSystem.Spacing.sm,
+    gap: DesignSystem.Spacing.md,
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingVertical: DesignSystem.Spacing.md,
+    borderRadius: DesignSystem.BorderRadius.xl,
+    borderWidth: 0,
   },
   searchInput: {
     flex: 1,
     ...DesignSystem.createTextStyle('md'),
-    padding: 0, // Remove default TextInput padding
+    padding: 0,
   },
   filterTabs: {
     flexDirection: 'row',

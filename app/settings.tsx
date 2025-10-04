@@ -4,14 +4,16 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface SettingItemProps {
   icon: IconSymbolName;
@@ -34,24 +36,16 @@ function SettingItem({
 }: SettingItemProps) {
   return (
     <TouchableOpacity
-      style={[
-        styles.settingItem,
-        {
-          borderBottomColor: colors.neutral.gray200,
-        }
-      ]}
+      style={styles.settingItem}
       onPress={onPress}
       disabled={!onPress}
     >
       <View style={styles.settingLeft}>
-        <View style={[
-          styles.iconContainer,
-          { backgroundColor: DesignSystem.Colors.primary.teal + '20' }
-        ]}>
+        <View style={styles.iconContainer}>
           <IconSymbol
             name={icon}
             size={20}
-            color={DesignSystem.Colors.primary.teal}
+            color={colors.text.secondary}
           />
         </View>
         <View style={styles.textContainer}>
@@ -77,7 +71,7 @@ export default function SettingsScreen() {
   const { theme, effectiveTheme, setTheme } = useTheme();
   const isDark = effectiveTheme === 'dark';
   const colors = DesignSystem.getThemeColors(isDark);
-  
+
   const [syncEnabled, setSyncEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
@@ -117,11 +111,16 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top']}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
       <View style={[
         styles.header,
         {
-          borderBottomColor: colors.neutral.gray200,
+          backgroundColor: colors.background.primary,
         }
       ]}>
         <TouchableOpacity
@@ -130,7 +129,7 @@ export default function SettingsScreen() {
         >
           <IconSymbol
             name="chevron.left"
-            size={24}
+            size={22}
             color={colors.text.primary}
           />
         </TouchableOpacity>
@@ -144,8 +143,7 @@ export default function SettingsScreen() {
           <View style={[
             styles.sectionContent,
             {
-              backgroundColor: colors.background.primary,
-              borderColor: colors.neutral.gray200,
+              backgroundColor: colors.background.secondary,
             }
           ]}>
             <SettingItem
@@ -266,7 +264,7 @@ export default function SettingsScreen() {
               onPress={() => Alert.alert('Help', 'Visit our documentation for help.')}
             />
             <SettingItem
-              icon="doc.text.fill"
+              icon="doc.text"
               title="Privacy Policy"
               colors={colors}
               onPress={() => Alert.alert('Privacy', 'Your data is stored locally and on IPFS.')}
@@ -285,7 +283,7 @@ export default function SettingsScreen() {
             <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
               <IconSymbol
                 name="power"
-                size={20}
+                size={18}
                 color={DesignSystem.Colors.semantic.error}
               />
               <Text style={[styles.signOutText, { color: DesignSystem.Colors.semantic.error }]}>Sign Out</Text>
@@ -295,7 +293,7 @@ export default function SettingsScreen() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -307,49 +305,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: DesignSystem.Spacing.base,
-    paddingTop: DesignSystem.Spacing.xl,
-    paddingBottom: DesignSystem.Spacing.base,
-    borderBottomWidth: 1,
+    paddingHorizontal: DesignSystem.Spacing.lg,
+    paddingTop: DesignSystem.Spacing.sm,
+    paddingBottom: DesignSystem.Spacing.lg,
   },
   backButton: {
-    padding: DesignSystem.Spacing.sm,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: DesignSystem.BorderRadius.full,
   },
   headerTitle: {
-    fontSize: DesignSystem.Typography.sizes.xl,
-    fontFamily: DesignSystem.Typography.fonts.semibold,
-    lineHeight: DesignSystem.Typography.sizes.xl * DesignSystem.Typography.lineHeights.normal,
+    fontSize: DesignSystem.Typography.sizes['2xl'],
+    fontFamily: DesignSystem.Typography.fonts.bold,
+    lineHeight: DesignSystem.Typography.sizes['2xl'] * DesignSystem.Typography.lineHeights.tight,
+    letterSpacing: -0.5,
   },
   placeholder: {
-    width: 40, // Same as back button for centering
+    width: 40,
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    marginTop: DesignSystem.Spacing.xl,
+    marginBottom: DesignSystem.Spacing.xl,
   },
   sectionTitle: {
-    fontSize: DesignSystem.Typography.sizes.md,
-    fontFamily: DesignSystem.Typography.fonts.semibold,
-    paddingHorizontal: DesignSystem.Spacing.base,
-    marginBottom: DesignSystem.Spacing.sm,
+    fontSize: DesignSystem.Typography.sizes.sm,
+    fontFamily: DesignSystem.Typography.fonts.medium,
+    paddingHorizontal: DesignSystem.Spacing.lg,
+    marginBottom: DesignSystem.Spacing.md,
     textTransform: 'uppercase',
-    letterSpacing: DesignSystem.Typography.letterSpacing.wide,
+    letterSpacing: DesignSystem.Typography.letterSpacing.wider,
+    opacity: 0.7,
   },
   sectionContent: {
-    marginHorizontal: DesignSystem.Spacing.base,
+    marginHorizontal: DesignSystem.Spacing.lg,
     borderRadius: DesignSystem.BorderRadius.xl,
-    ...DesignSystem.Shadows.sm,
-    borderWidth: 1,
+    overflow: 'hidden',
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: DesignSystem.Spacing.base,
-    paddingVertical: DesignSystem.Spacing.base,
+    paddingHorizontal: DesignSystem.Spacing.lg,
+    paddingVertical: DesignSystem.Spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   settingLeft: {
     flexDirection: 'row',
@@ -357,12 +360,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: DesignSystem.BorderRadius.md,
+    width: 36,
+    height: 36,
+    borderRadius: DesignSystem.BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: DesignSystem.Spacing.md,
+    backgroundColor: 'transparent',
   },
   textContainer: {
     flex: 1,
@@ -371,30 +375,31 @@ const styles = StyleSheet.create({
     fontSize: DesignSystem.Typography.sizes.md,
     fontFamily: DesignSystem.Typography.fonts.medium,
     lineHeight: DesignSystem.Typography.sizes.md * DesignSystem.Typography.lineHeights.normal,
+    marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: DesignSystem.Typography.sizes.sm,
     fontFamily: DesignSystem.Typography.fonts.primary,
-    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.normal,
-    marginTop: 2,
+    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.relaxed,
+    opacity: 0.6,
   },
   settingRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: DesignSystem.Spacing.sm,
+    gap: DesignSystem.Spacing.md,
   },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: DesignSystem.Spacing.base,
+    paddingVertical: DesignSystem.Spacing.lg,
     gap: DesignSystem.Spacing.sm,
   },
   signOutText: {
     fontSize: DesignSystem.Typography.sizes.md,
-    fontFamily: DesignSystem.Typography.fonts.semibold,
+    fontFamily: DesignSystem.Typography.fonts.medium,
   },
   bottomSpacing: {
-    height: DesignSystem.Spacing['6xl'],
+    height: DesignSystem.Spacing['4xl'],
   },
 });

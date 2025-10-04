@@ -17,69 +17,64 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: DesignSystem.Colors.primary.teal,
-        tabBarInactiveTintColor: colors.text.tertiary,
+        tabBarActiveTintColor: isDark ? '#FFFFFF' : DesignSystem.Colors.primary.dark,
+        tabBarInactiveTintColor: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.4)',
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: DesignSystem.Spacing['2xl'],
-          left: '20%',
-          right: '20%',
-          height: 60,
-          paddingHorizontal: DesignSystem.Spacing.xs,
-          paddingVertical: DesignSystem.Spacing.xs,
+          bottom: DesignSystem.Spacing['3xl'],
+          left: '25%',
+          right: '25%',
+          height: 64,
+          paddingHorizontal: DesignSystem.Spacing.sm,
+          paddingVertical: DesignSystem.Spacing.sm,
           borderTopWidth: 0,
-          ...DesignSystem.Shadows.xl,
-          borderRadius: DesignSystem.BorderRadius.full,
+          borderRadius: DesignSystem.BorderRadius['2xl'],
           overflow: 'hidden',
           backgroundColor: 'transparent',
+          shadowColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.15)',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 1,
+          shadowRadius: 24,
+          elevation: 12,
         },
         tabBarBackground: () => (
           <View style={StyleSheet.absoluteFill}>
-            {isDark ? (
-              <LinearGradient
-                colors={['rgba(0, 0, 0, 0.95)', 'rgba(10, 10, 10, 0.95)']}
-                style={StyleSheet.absoluteFill}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-            ) : (
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.95)', 'rgba(250, 250, 250, 0.95)']}
-                style={StyleSheet.absoluteFill}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-            )}
+            <LinearGradient
+              colors={isDark 
+                ? ['rgba(20, 20, 20, 0.95)', 'rgba(10, 10, 10, 0.98)']
+                : ['rgba(255, 255, 255, 0.95)', 'rgba(248, 250, 252, 0.98)']
+              }
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
             <BlurView
-              intensity={isDark ? 30 : 80}
+              intensity={isDark ? 40 : 100}
               tint={isDark ? 'dark' : 'light'}
               style={StyleSheet.absoluteFill}
             />
             <View style={[
               StyleSheet.absoluteFill, 
               { 
-                borderRadius: DesignSystem.BorderRadius.full,
-                borderWidth: isDark ? 1 : 0.5,
+                borderRadius: DesignSystem.BorderRadius['2xl'],
+                borderWidth: isDark ? 0.5 : 0.5,
                 borderColor: isDark 
-                  ? 'rgba(255, 255, 255, 0.1)' 
-                  : 'rgba(0, 0, 0, 0.05)',
+                  ? 'rgba(255, 255, 255, 0.08)' 
+                  : 'rgba(0, 0, 0, 0.06)',
               }
             ]} />
           </View>
         ),
-        tabBarLabelStyle: {
-          fontFamily: DesignSystem.Typography.fonts.semibold,
-          fontSize: DesignSystem.Typography.sizes.xs,
-          marginTop: 4,
-          letterSpacing: DesignSystem.Typography.letterSpacing.wide,
-        },
         tabBarItemStyle: {
           paddingVertical: DesignSystem.Spacing.sm,
-          borderRadius: DesignSystem.BorderRadius.full,
+          borderRadius: DesignSystem.BorderRadius.xl,
           marginHorizontal: DesignSystem.Spacing.xs,
           flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
         },
       }}>
       <Tabs.Screen
@@ -92,7 +87,7 @@ export default function TabLayout() {
               focused && styles.activeIconContainer
             ]}>
               <IconSymbol 
-                size={focused ? 22 : 20} 
+                size={24} 
                 name={focused ? "doc.text.fill" : "doc.text"} 
                 color={color} 
               />
@@ -110,7 +105,7 @@ export default function TabLayout() {
               focused && styles.activeIconContainer
             ]}>
               <IconSymbol 
-                size={focused ? 22 : 20} 
+                size={24} 
                 name={focused ? "sparkles" : "sparkles"} 
                 color={color} 
               />
@@ -126,15 +121,12 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: DesignSystem.Spacing.xs,
-    paddingHorizontal: DesignSystem.Spacing.sm,
-    borderRadius: DesignSystem.BorderRadius.full,
-    minHeight: 40,
-    minWidth: 40,
+    width: 48,
+    height: 48,
+    borderRadius: DesignSystem.BorderRadius.xl,
   },
   activeIconContainer: {
-    backgroundColor: DesignSystem.Colors.primary.teal + '20',
-    ...DesignSystem.Shadows.colored(DesignSystem.Colors.primary.teal, 0.3),
-    transform: [{ scale: 1.1 }],
+    backgroundColor: 'rgba(26, 26, 26, 0.08)',
+    transform: [{ scale: 1.05 }],
   },
 });
