@@ -5,57 +5,71 @@
 
 // === COLORS ===
 export const Colors = {
-  // Primary Brand Colors
+  // Primary Brand Colors - Enhanced with modern vibrant palette
   primary: {
-    purple: '#8B5FBF',      // Softer purple for better readability
-    teal: '#00A693',        // Adjusted teal for better contrast
-    blue: '#4FC3E7',        // Softer blue
-    dark: '#1A1A1A',        // True dark for better contrast
+    purple: '#A78BFA',      // Vibrant purple (Tailwind violet-400)
+    purpleDark: '#7C3AED',  // Deeper purple for accents
+    teal: '#14B8A6',        // Modern teal (Tailwind teal-500)
+    tealDark: '#0D9488',    // Deeper teal
+    blue: '#60A5FA',        // Modern blue (Tailwind blue-400)
+    blueDark: '#3B82F6',    // Deeper blue
+    dark: '#0A0A0A',        // True dark for OLED screens
+    accent: '#F472B6',      // Pink accent for highlights
   },
 
-  // Neutral Palette
+  // Neutral Palette - Refined for better contrast
   neutral: {
     white: '#FFFFFF',
     gray50: '#FAFAFA',
-    gray100: '#F5F5F5',
-    gray200: '#EEEEEE',
-    gray300: '#E0E0E0',
-    gray400: '#BDBDBD',
-    gray500: '#9E9E9E',
-    gray600: '#757575',
-    gray700: '#616161',
-    gray800: '#424242',
-    gray900: '#212121',
+    gray100: '#F4F4F5',     // Zinc-100
+    gray200: '#E4E4E7',     // Zinc-200
+    gray300: '#D4D4D8',     // Zinc-300
+    gray400: '#A1A1AA',     // Zinc-400
+    gray500: '#71717A',     // Zinc-500
+    gray600: '#52525B',     // Zinc-600
+    gray700: '#3F3F46',     // Zinc-700
+    gray800: '#27272A',     // Zinc-800
+    gray850: '#1C1C1F',     // Between 800-900
+    gray900: '#18181B',     // Zinc-900
+    gray950: '#0F0F11',     // Deeper black
     black: '#000000',
   },
 
-  // Semantic Colors
+  // Semantic Colors - Modern palette
   semantic: {
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6',
+    success: '#10B981',     // Emerald-500
+    successLight: '#34D399', // Emerald-400
+    warning: '#F59E0B',     // Amber-500
+    warningLight: '#FBBF24', // Amber-400
+    error: '#EF4444',       // Red-500
+    errorLight: '#F87171',  // Red-400
+    info: '#3B82F6',        // Blue-500
+    infoLight: '#60A5FA',   // Blue-400
   },
 
-  // Note Colors (Soft, minimalistic palette)
+  // Note Colors (Modern, vibrant yet subtle palette with glassmorphism support)
   notes: {
     light: {
       default: '#FFFFFF',
-      cream: '#FEF7ED',
-      sage: '#F0F9F4',
-      sky: '#F0F9FF',
-      lavender: '#F8F7FF',
-      peach: '#FFF7ED',
-      mint: '#ECFDF5',
+      cream: '#FEF3C7',       // Amber-100
+      sage: '#D1FAE5',        // Emerald-100
+      sky: '#DBEAFE',         // Blue-100
+      lavender: '#E9D5FF',    // Purple-200
+      peach: '#FED7AA',       // Orange-200
+      mint: '#A7F3D0',        // Emerald-200
+      rose: '#FECDD3',        // Rose-200
+      indigo: '#C7D2FE',      // Indigo-200
     },
     dark: {
-      default: '#1A1A1A',
-      cream: '#2A1F1A',
-      sage: '#1A2A1F',
-      sky: '#1A1F2A',
-      lavender: '#1F1A2A',
-      peach: '#2A1F1A',
-      mint: '#1A2A1F',
+      default: '#18181B',     // Zinc-900
+      cream: '#3F2410',       // Amber-900/80
+      sage: '#14362B',        // Emerald-950
+      sky: '#1E3A5F',         // Blue-950
+      lavender: '#3B1E54',    // Purple-950
+      peach: '#431407',       // Orange-950
+      mint: '#0A2922',        // Emerald-950
+      rose: '#4C0519',        // Rose-950
+      indigo: '#1E1B4B',      // Indigo-950
     },
   },
 
@@ -77,21 +91,43 @@ export const Colors = {
     }
   },
 
-  // Background Colors
+  // Background Colors - Enhanced with glassmorphism
   background: {
     light: {
       primary: '#FFFFFF',
       secondary: '#FAFAFA',
-      tertiary: '#F5F5F5',
-      overlay: 'rgba(0, 0, 0, 0.5)',
-      blur: 'rgba(255, 255, 255, 0.9)',
+      tertiary: '#F4F4F5',
+      quaternary: '#E4E4E7',
+      overlay: 'rgba(0, 0, 0, 0.4)',
+      overlayLight: 'rgba(0, 0, 0, 0.2)',
+      blur: 'rgba(255, 255, 255, 0.85)',
+      glass: 'rgba(255, 255, 255, 0.7)',
+      glassStrong: 'rgba(255, 255, 255, 0.9)',
     },
     dark: {
       primary: '#000000',
       secondary: '#0A0A0A',
-      tertiary: '#1A1A1A',
-      overlay: 'rgba(255, 255, 255, 0.1)',
-      blur: 'rgba(0, 0, 0, 0.9)',
+      tertiary: '#18181B',
+      quaternary: '#27272A',
+      overlay: 'rgba(0, 0, 0, 0.6)',
+      overlayLight: 'rgba(0, 0, 0, 0.3)',
+      blur: 'rgba(0, 0, 0, 0.85)',
+      glass: 'rgba(24, 24, 27, 0.7)',
+      glassStrong: 'rgba(24, 24, 27, 0.9)',
+    }
+  },
+
+  // Glassmorphism presets
+  glass: {
+    light: {
+      soft: 'rgba(255, 255, 255, 0.6)',
+      medium: 'rgba(255, 255, 255, 0.75)',
+      strong: 'rgba(255, 255, 255, 0.9)',
+    },
+    dark: {
+      soft: 'rgba(24, 24, 27, 0.6)',
+      medium: 'rgba(24, 24, 27, 0.75)',
+      strong: 'rgba(24, 24, 27, 0.9)',
     }
   },
 };
@@ -154,55 +190,85 @@ export const Spacing = {
 };
 
 // === BORDER RADIUS ===
+// Enhanced with modern rounded values
 export const BorderRadius = {
   none: 0,
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  '2xl': 20,
-  '3xl': 24,
+  xs: 6,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  '2xl': 24,
+  '3xl': 28,
   '4xl': 32,
+  '5xl': 40,
   full: 9999,
 };
 
 // === SHADOWS ===
+// Modern shadow system with colored and soft shadows
 export const Shadows = {
-  sm: {
+  xs: {
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOpacity: 0.03,
+    shadowRadius: 1,
     elevation: 1,
+  },
+  sm: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   md: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   lg: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 16,
+    elevation: 5,
   },
   xl: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowRadius: 24,
     elevation: 8,
   },
-  colored: (color: string, opacity: number = 0.2) => ({
+  '2xl': {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.15,
+    shadowRadius: 32,
+    elevation: 12,
+  },
+  // Colored shadow presets for modern effects
+  colored: (color: string, opacity: number = 0.3) => ({
     shadowColor: color,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: opacity,
-    shadowRadius: 12,
+    shadowRadius: 16,
     elevation: 6,
   }),
+  glow: (color: string, intensity: 'soft' | 'medium' | 'strong' = 'medium') => {
+    const opacityMap = { soft: 0.2, medium: 0.4, strong: 0.6 };
+    const radiusMap = { soft: 12, medium: 20, strong: 32 };
+    return {
+      shadowColor: color,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: opacityMap[intensity],
+      shadowRadius: radiusMap[intensity],
+      elevation: 4,
+    };
+  },
 };
 
 // === HELPER FUNCTIONS ===
@@ -344,25 +410,65 @@ export const createComponents = (isDark: boolean) => {
 export const Components = createComponents(false);
 
 // === GRADIENTS ===
+// Modern gradient presets for vibrant UI elements
 export const Gradients = {
   brand: [Colors.primary.purple, Colors.primary.blue],
-  brandSubtle: ['rgba(139, 95, 191, 0.1)', 'rgba(79, 195, 231, 0.1)'],
-  glass: ['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.7)'],
-  overlay: ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.3)'],
+  brandVibrant: [Colors.primary.purpleDark, Colors.primary.teal],
+  sunset: ['#F472B6', '#FB923C', '#FBBF24'], // Pink to Orange to Amber
+  ocean: [Colors.primary.blue, Colors.primary.teal],
+  purple: [Colors.primary.purple, Colors.primary.purpleDark],
+  brandSubtle: ['rgba(167, 139, 250, 0.1)', 'rgba(96, 165, 250, 0.1)'],
+  glass: {
+    light: ['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.6)'],
+    dark: ['rgba(24, 24, 27, 0.9)', 'rgba(24, 24, 27, 0.6)'],
+  },
+  overlay: {
+    light: ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.4)'],
+    dark: ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.7)'],
+  },
+  mesh: {
+    light: ['#DBEAFE', '#E9D5FF', '#FECDD3'],
+    dark: ['#1E3A5F', '#3B1E54', '#4C0519'],
+  },
 };
 
 // === ANIMATIONS ===
+// Modern animation timings and spring configurations
 export const Animations = {
   timing: {
+    instant: 100,
     fast: 150,
     normal: 250,
     slow: 400,
+    slower: 600,
   },
   easing: {
     ease: 'ease',
     easeIn: 'ease-in',
     easeOut: 'ease-out',
     easeInOut: 'ease-in-out',
+  },
+  spring: {
+    gentle: {
+      tension: 100,
+      friction: 10,
+      useNativeDriver: true,
+    },
+    bouncy: {
+      tension: 150,
+      friction: 8,
+      useNativeDriver: true,
+    },
+    stiff: {
+      tension: 200,
+      friction: 15,
+      useNativeDriver: true,
+    },
+  },
+  scale: {
+    press: 0.96,
+    active: 1.02,
+    hover: 1.01,
   },
 };
 

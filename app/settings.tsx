@@ -34,23 +34,31 @@ function SettingItem({
   showChevron = true,
   colors,
 }: SettingItemProps) {
+  const isDark = colors.background.primary === '#000000';
+  
   return (
     <TouchableOpacity
-      style={styles.settingItem}
+      style={[
+        styles.settingItem,
+        {
+          borderBottomColor: isDark 
+            ? 'rgba(255, 255, 255, 0.05)'
+            : 'rgba(0, 0, 0, 0.05)',
+        }
+      ]}
       onPress={onPress}
       disabled={!onPress}
+      activeOpacity={0.7}
     >
       <View style={styles.settingLeft}>
-        <View style={styles.iconContainer}>
-          <IconSymbol
-            name={icon}
-            size={20}
-            color={colors.text.secondary}
-          />
-        </View>
+        <IconSymbol
+          name={icon}
+          size={20}
+          color={colors.text.tertiary}
+        />
         <View style={styles.textContainer}>
           <Text style={[styles.settingTitle, { color: colors.text.primary }]}>{title}</Text>
-          {subtitle && <Text style={[styles.settingSubtitle, { color: colors.text.secondary }]}>{subtitle}</Text>}
+          {subtitle && <Text style={[styles.settingSubtitle, { color: colors.text.tertiary }]}>{subtitle}</Text>}
         </View>
       </View>
       <View style={styles.settingRight}>
@@ -58,7 +66,7 @@ function SettingItem({
         {showChevron && onPress && (
           <IconSymbol
             name="chevron.right"
-            size={16}
+            size={14}
             color={colors.text.tertiary}
           />
         )}
@@ -77,6 +85,10 @@ export default function SettingsScreen() {
 
   const handleThemeChange = (value: boolean) => {
     setTheme(value ? 'dark' : 'light');
+  };
+  
+  const handleSystemTheme = () => {
+    setTheme('system');
   };
 
   const handleSignOut = () => {
@@ -117,19 +129,14 @@ export default function SettingsScreen() {
         backgroundColor="transparent"
         translucent
       />
-      <View style={[
-        styles.header,
-        {
-          backgroundColor: colors.background.primary,
-        }
-      ]}>
+      <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
         >
           <IconSymbol
             name="chevron.left"
-            size={22}
+            size={24}
             color={colors.text.primary}
           />
         </TouchableOpacity>
@@ -139,15 +146,10 @@ export default function SettingsScreen() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Appearance</Text>
-          <View style={[
-            styles.sectionContent,
-            {
-              backgroundColor: colors.background.secondary,
-            }
-          ]}>
+          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>APPEARANCE</Text>
+          <View style={styles.sectionContent}>
             <SettingItem
-              icon="moon.fill"
+              icon="moon"
               title="Dark Mode"
               subtitle="Toggle dark theme"
               colors={colors}
@@ -156,10 +158,11 @@ export default function SettingsScreen() {
                   value={isDark}
                   onValueChange={handleThemeChange}
                   trackColor={{
-                    false: colors.neutral.gray300,
-                    true: DesignSystem.Colors.primary.teal,
+                    false: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                    true: colors.text.primary,
                   }}
-                  thumbColor={colors.background.primary}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor={isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'}
                 />
               }
               showChevron={false}
@@ -168,16 +171,10 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Sync & Storage</Text>
-          <View style={[
-            styles.sectionContent,
-            {
-              backgroundColor: colors.background.primary,
-              borderColor: colors.neutral.gray200,
-            }
-          ]}>
+          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>SYNC & STORAGE</Text>
+          <View style={styles.sectionContent}>
             <SettingItem
-              icon="icloud.fill"
+              icon="icloud"
               title="Auto Sync"
               subtitle="Automatically sync notes to IPFS"
               colors={colors}
@@ -186,10 +183,11 @@ export default function SettingsScreen() {
                   value={syncEnabled}
                   onValueChange={setSyncEnabled}
                   trackColor={{
-                    false: colors.neutral.gray300,
-                    true: DesignSystem.Colors.primary.teal,
+                    false: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                    true: colors.text.primary,
                   }}
-                  thumbColor={colors.background.primary}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor={isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'}
                 />
               }
               showChevron={false}
@@ -202,7 +200,7 @@ export default function SettingsScreen() {
               onPress={handleExportData}
             />
             <SettingItem
-              icon="shield.fill"
+              icon="shield"
               title="Backup Notes"
               subtitle="Backup to connected wallet"
               colors={colors}
@@ -212,16 +210,10 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Notifications</Text>
-          <View style={[
-            styles.sectionContent,
-            {
-              backgroundColor: colors.background.primary,
-              borderColor: colors.neutral.gray200,
-            }
-          ]}>
+          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>NOTIFICATIONS</Text>
+          <View style={styles.sectionContent}>
             <SettingItem
-              icon="bell.fill"
+              icon="bell"
               title="Push Notifications"
               subtitle="Get notified about sync status"
               colors={colors}
@@ -230,10 +222,11 @@ export default function SettingsScreen() {
                   value={notificationsEnabled}
                   onValueChange={setNotificationsEnabled}
                   trackColor={{
-                    false: colors.neutral.gray300,
-                    true: DesignSystem.Colors.primary.teal,
+                    false: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                    true: colors.text.primary,
                   }}
-                  thumbColor={colors.background.primary}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor={isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'}
                 />
               }
               showChevron={false}
@@ -242,23 +235,17 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>About</Text>
-          <View style={[
-            styles.sectionContent,
-            {
-              backgroundColor: colors.background.primary,
-              borderColor: colors.neutral.gray200,
-            }
-          ]}>
+          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>ABOUT</Text>
+          <View style={styles.sectionContent}>
             <SettingItem
-              icon="info.circle.fill"
+              icon="info.circle"
               title="App Version"
               subtitle="1.0.0"
               colors={colors}
               showChevron={false}
             />
             <SettingItem
-              icon="questionmark.circle.fill"
+              icon="questionmark.circle"
               title="Help & Support"
               colors={colors}
               onPress={() => Alert.alert('Help', 'Visit our documentation for help.')}
@@ -273,19 +260,12 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={[
-            styles.sectionContent,
-            {
-              backgroundColor: colors.background.primary,
-              borderColor: colors.neutral.gray200,
-            }
-          ]}>
-            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-              <IconSymbol
-                name="power"
-                size={18}
-                color={DesignSystem.Colors.semantic.error}
-              />
+          <View style={styles.sectionContent}>
+            <TouchableOpacity 
+              style={styles.signOutButton} 
+              onPress={handleSignOut}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.signOutText, { color: DesignSystem.Colors.semantic.error }]}>Sign Out</Text>
             </TouchableOpacity>
           </View>
@@ -305,21 +285,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: DesignSystem.Spacing.lg,
-    paddingTop: DesignSystem.Spacing.sm,
-    paddingBottom: DesignSystem.Spacing.lg,
+    paddingHorizontal: DesignSystem.Spacing.xl,
+    paddingTop: DesignSystem.Spacing.lg,
+    paddingBottom: DesignSystem.Spacing.xl,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: DesignSystem.BorderRadius.full,
+    padding: DesignSystem.Spacing.xs,
   },
   headerTitle: {
-    fontSize: DesignSystem.Typography.sizes['2xl'],
+    fontSize: DesignSystem.Typography.sizes['3xl'],
     fontFamily: DesignSystem.Typography.fonts.bold,
-    lineHeight: DesignSystem.Typography.sizes['2xl'] * DesignSystem.Typography.lineHeights.tight,
+    lineHeight: DesignSystem.Typography.sizes['3xl'] * DesignSystem.Typography.lineHeights.tight,
     letterSpacing: -0.5,
   },
   placeholder: {
@@ -329,59 +305,45 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginBottom: DesignSystem.Spacing.xl,
+    marginBottom: DesignSystem.Spacing['2xl'],
   },
   sectionTitle: {
-    fontSize: DesignSystem.Typography.sizes.sm,
-    fontFamily: DesignSystem.Typography.fonts.medium,
-    paddingHorizontal: DesignSystem.Spacing.lg,
+    fontSize: DesignSystem.Typography.sizes.xs,
+    fontFamily: DesignSystem.Typography.fonts.semibold,
+    paddingHorizontal: DesignSystem.Spacing.xl,
     marginBottom: DesignSystem.Spacing.md,
     textTransform: 'uppercase',
-    letterSpacing: DesignSystem.Typography.letterSpacing.wider,
-    opacity: 0.7,
+    letterSpacing: 1,
   },
   sectionContent: {
-    marginHorizontal: DesignSystem.Spacing.lg,
-    borderRadius: DesignSystem.BorderRadius.xl,
-    overflow: 'hidden',
+    marginHorizontal: DesignSystem.Spacing.xl,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: DesignSystem.Spacing.lg,
     paddingVertical: DesignSystem.Spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-  },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: DesignSystem.BorderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: DesignSystem.Spacing.md,
-    backgroundColor: 'transparent',
+    gap: DesignSystem.Spacing.base,
   },
   textContainer: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: DesignSystem.Typography.sizes.md,
+    fontSize: DesignSystem.Typography.sizes.base,
     fontFamily: DesignSystem.Typography.fonts.medium,
-    lineHeight: DesignSystem.Typography.sizes.md * DesignSystem.Typography.lineHeights.normal,
+    lineHeight: DesignSystem.Typography.sizes.base * DesignSystem.Typography.lineHeights.tight,
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: DesignSystem.Typography.sizes.sm,
     fontFamily: DesignSystem.Typography.fonts.primary,
-    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.relaxed,
-    opacity: 0.6,
+    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.normal,
   },
   settingRight: {
     flexDirection: 'row',
@@ -389,14 +351,12 @@ const styles = StyleSheet.create({
     gap: DesignSystem.Spacing.md,
   },
   signOutButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: DesignSystem.Spacing.lg,
-    gap: DesignSystem.Spacing.sm,
+    paddingVertical: DesignSystem.Spacing.base,
   },
   signOutText: {
-    fontSize: DesignSystem.Typography.sizes.md,
+    fontSize: DesignSystem.Typography.sizes.base,
     fontFamily: DesignSystem.Typography.fonts.medium,
   },
   bottomSpacing: {

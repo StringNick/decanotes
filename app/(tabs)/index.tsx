@@ -1,12 +1,16 @@
 import { NoteCard } from '@/components/NoteCard';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import DesignSystem from '@/constants/DesignSystem';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { FlatList, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Animated, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// Create Animated FlatList
+const AnimatedFlatList = Animated.createAnimatedComponent(Animated.FlatList);
 
 // Mock notes data - in real app this would come from a database
 const mockNotes = [
@@ -55,6 +59,10 @@ export default function HomeScreen() {
   
   const isDark = effectiveTheme === 'dark';
   const colors = DesignSystem.getThemeColors(isDark);
+  
+  // Animation values
+  const fabScale = useRef(new Animated.Value(1)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const handleNotePress = (noteId: string) => {
     // Navigate to editor with note data
@@ -62,8 +70,20 @@ export default function HomeScreen() {
   };
 
   const handleNewNote = () => {
+    // Animate FAB press
+    Animated.sequence([
+      Animated.spring(fabScale, {
+        toValue: 0.9,
+        ...DesignSystem.Animations.spring.stiff,
+      }),
+      Animated.spring(fabScale, {
+        toValue: 1,
+        ...DesignSystem.Animations.spring.bouncy,
+      }),
+    ]).start();
+    
     // Create new note and navigate to editor
-    router.push('/editor');
+    setTimeout(() => router.push('/editor'), 100);
   };
 
   const handleOptionsPress = (noteId: string) => {
@@ -110,45 +130,30 @@ export default function HomeScreen() {
           <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
             DecaNotes
           </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.text.secondary }]}>
+          <Text style={[styles.headerSubtitle, { color: colors.text.tertiary }]}>
             {filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}
           </Text>
         </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity 
-            style={[styles.addButton, { backgroundColor: colors.text.primary }]}
-            onPress={handleNewNote}
-            activeOpacity={0.8}
-          >
-            <IconSymbol 
-              name="plus" 
-              size={20} 
-              color={colors.text.inverse} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.settingsButton}
-            onPress={() => router.push('/settings')}
-          >
-            <IconSymbol 
-              name="gearshape.fill" 
-              size={20} 
-              color={colors.text.secondary} 
-            />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.settingsButton}
+          onPress={() => router.push('/settings')}
+        >
+          <IconSymbol 
+            name="gearshape" 
+            size={22} 
+            color={colors.text.tertiary} 
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* Theme Switcher (Debug) */}
-      <ThemeSwitcher />
-
-      {/* Search Bar */}
+      {/* Search Bar - Minimal */}
       <View style={styles.searchContainer}>
         <View style={[
           styles.searchBar,
           {
-            backgroundColor: colors.background.secondary,
-            borderColor: colors.neutral.gray200,
+            backgroundColor: isDark 
+              ? 'rgba(255, 255, 255, 0.05)' 
+              : 'rgba(0, 0, 0, 0.03)',
           }
         ]}>
           <IconSymbol 
@@ -163,40 +168,51 @@ export default function HomeScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity 
+              onPress={() => setSearchQuery('')}
+              style={styles.clearButton}
+            >
+              <IconSymbol 
+                name="xmark.circle.fill" 
+                size={16} 
+                color={colors.text.tertiary} 
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs - Minimal */}
       <View style={styles.filterTabs}>
-        {['All', 'Recent', 'Favorites'].map((filter) => (
-          <TouchableOpacity 
-            key={filter} 
-            style={[
-              styles.filterTab,
-              {
-                backgroundColor: activeFilter === filter 
-                  ? DesignSystem.Colors.primary.dark 
-                  : colors.background.secondary,
-                borderColor: activeFilter === filter 
-                  ? DesignSystem.Colors.primary.dark 
-                  : colors.neutral.gray200,
-              },
-              activeFilter === filter && styles.filterTabActive
-            ]}
-            onPress={() => setActiveFilter(filter)}
-          >
-            <Text style={[
-              styles.filterTabText,
-              {
-                color: activeFilter === filter 
-                  ? DesignSystem.Colors.text.light.inverse 
-                  : colors.text.secondary
-              }
-            ]}>
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {['All', 'Recent', 'Favorites'].map((filter) => {
+          const isActive = activeFilter === filter;
+          return (
+            <TouchableOpacity 
+              key={filter} 
+              style={[
+                styles.filterTab,
+                {
+                  backgroundColor: isActive
+                    ? (isDark ? colors.text.primary : colors.text.primary)
+                    : 'transparent',
+                }
+              ]}
+              onPress={() => setActiveFilter(filter)}
+            >
+              <Text style={[
+                styles.filterTabText,
+                {
+                  color: isActive 
+                    ? (isDark ? colors.background.primary : colors.background.primary)
+                    : colors.text.tertiary
+                }
+              ]}>
+                {filter}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
         
         {/* Quick Add when searching */}
         {searchQuery.length > 0 && (
@@ -226,13 +242,18 @@ export default function HomeScreen() {
       </View>
 
       {/* Notes List */}
-      <FlatList
+      <AnimatedFlatList
         data={filteredNotes}
         renderItem={renderNoteItem}
         keyExtractor={(item) => item.id}
         style={styles.notesList}
         contentContainerStyle={styles.notesListContent}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
             <IconSymbol
@@ -240,7 +261,7 @@ export default function HomeScreen() {
               size={48}
               color={colors.text.tertiary}
             />
-            <Text style={[styles.emptyTitle, { color: colors.text.secondary }]}>
+            <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>
               No notes yet
             </Text>
             <Text style={[styles.emptySubtitle, { color: colors.text.tertiary }]}>
@@ -249,6 +270,40 @@ export default function HomeScreen() {
           </View>
         )}
       />
+      
+      {/* Floating Action Button - Minimal */}
+      <Animated.View 
+        style={[
+          styles.fabContainer,
+          {
+            transform: [
+              { scale: fabScale },
+              {
+                translateY: scrollY.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: [0, 80],
+                  extrapolate: 'clamp',
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <TouchableOpacity 
+          style={[
+            styles.fab,
+            { backgroundColor: colors.text.primary }
+          ]}
+          onPress={handleNewNote}
+          activeOpacity={0.8}
+        >
+          <IconSymbol 
+            name="plus" 
+            size={24} 
+            color={colors.background.primary} 
+          />
+        </TouchableOpacity>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -261,83 +316,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: DesignSystem.Spacing.lg,
-    paddingVertical: DesignSystem.Spacing.lg,
+    paddingHorizontal: DesignSystem.Spacing.xl,
     paddingTop: DesignSystem.Spacing.xl,
+    paddingBottom: DesignSystem.Spacing.lg,
   },
   headerLeft: {
     flex: 1,
   },
   headerTitle: {
     ...DesignSystem.createTextStyle('3xl', 'bold'),
-    marginBottom: 4,
+    marginBottom: 2,
     letterSpacing: -0.5,
   },
   headerSubtitle: {
     ...DesignSystem.createTextStyle('sm', 'medium'),
-    opacity: 0.7,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: DesignSystem.Spacing.md,
-  },
-  addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: DesignSystem.BorderRadius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
   settingsButton: {
     padding: DesignSystem.Spacing.sm,
-    borderRadius: DesignSystem.BorderRadius.lg,
   },
   searchContainer: {
-    paddingHorizontal: DesignSystem.Spacing.lg,
+    paddingHorizontal: DesignSystem.Spacing.xl,
     marginBottom: DesignSystem.Spacing.lg,
   },
   searchBar: {
-    ...DesignSystem.Components.input.default,
     flexDirection: 'row',
     alignItems: 'center',
     gap: DesignSystem.Spacing.md,
     paddingHorizontal: DesignSystem.Spacing.base,
     paddingVertical: DesignSystem.Spacing.md,
-    borderRadius: DesignSystem.BorderRadius.xl,
-    borderWidth: 0,
+    borderRadius: DesignSystem.BorderRadius.lg,
   },
   searchInput: {
     flex: 1,
-    ...DesignSystem.createTextStyle('md'),
+    ...DesignSystem.createTextStyle('base', 'primary'),
     padding: 0,
+  },
+  clearButton: {
+    padding: 4,
   },
   filterTabs: {
     flexDirection: 'row',
-    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingHorizontal: DesignSystem.Spacing.xl,
     paddingBottom: DesignSystem.Spacing.base,
     gap: DesignSystem.Spacing.sm,
   },
   filterTab: {
-    borderRadius: DesignSystem.BorderRadius.xl,
     paddingHorizontal: DesignSystem.Spacing.base,
-    paddingVertical: DesignSystem.Spacing.sm,
-    borderWidth: 1,
-  },
-  filterTabActive: {
-    backgroundColor: DesignSystem.Colors.primary.dark,
-    borderColor: DesignSystem.Colors.primary.dark,
+    paddingVertical: DesignSystem.Spacing.xs,
+    borderRadius: DesignSystem.BorderRadius.lg,
   },
   filterTabText: {
     ...DesignSystem.createTextStyle('sm', 'medium'),
-  },
-  filterTabTextActive: {
-    color: '#FFFFFF',
   },
   quickAddTab: {
     flexDirection: 'row',
@@ -357,25 +386,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notesListContent: {
-    paddingHorizontal: DesignSystem.Spacing.base,
-    paddingBottom: DesignSystem.Spacing['5xl'], // Padding for tab bar
+    paddingHorizontal: DesignSystem.Spacing.xl,
+    paddingBottom: DesignSystem.Spacing['6xl'], // Padding for tab bar + FAB
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: DesignSystem.Spacing['4xl'],
-    paddingHorizontal: DesignSystem.Spacing.xl,
+    paddingHorizontal: DesignSystem.Spacing['2xl'],
+    gap: DesignSystem.Spacing.base,
   },
   emptyTitle: {
-    ...DesignSystem.createTextStyle('lg', 'semibold'),
-    marginTop: DesignSystem.Spacing.base,
-    marginBottom: DesignSystem.Spacing.xs,
+    ...DesignSystem.createTextStyle('xl', 'bold'),
+    marginBottom: DesignSystem.Spacing.sm,
     textAlign: 'center',
   },
   emptySubtitle: {
-    ...DesignSystem.createTextStyle('md'),
+    ...DesignSystem.createTextStyle('md', 'medium'),
     textAlign: 'center',
     lineHeight: DesignSystem.Typography.sizes.md * DesignSystem.Typography.lineHeights.relaxed,
+    opacity: 0.7,
+  },
+  fabContainer: {
+    position: 'absolute',
+    right: DesignSystem.Spacing.xl,
+    bottom: 100,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: DesignSystem.BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...DesignSystem.Shadows.lg,
   },
 });

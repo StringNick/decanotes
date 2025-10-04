@@ -1,8 +1,8 @@
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useRef } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -13,12 +13,13 @@ export default function TabLayout() {
   const { effectiveTheme } = useTheme();
   const isDark = effectiveTheme === 'dark';
   const colors = DesignSystem.getThemeColors(isDark);
+  const tabScaleValues = useRef([new Animated.Value(1), new Animated.Value(1)]).current;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: isDark ? '#FFFFFF' : DesignSystem.Colors.primary.dark,
-        tabBarInactiveTintColor: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.4)',
+        tabBarActiveTintColor: isDark ? '#FFFFFF' : DesignSystem.Colors.primary.purpleDark,
+        tabBarInactiveTintColor: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.35)',
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarShowLabel: false,
@@ -27,53 +28,24 @@ export default function TabLayout() {
           bottom: 0,
           left: 0,
           right: 0,
-          height: 88,
+          height: 80,
           paddingHorizontal: DesignSystem.Spacing.lg,
-          paddingTop: DesignSystem.Spacing.md,
-          paddingBottom: DesignSystem.Spacing.xl,
+          paddingBottom: DesignSystem.Spacing.lg,
           borderTopWidth: 0,
           backgroundColor: 'transparent',
-          shadowColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.1)',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 1,
-          shadowRadius: 12,
-          elevation: 8,
         },
         tabBarBackground: () => (
-          <View style={StyleSheet.absoluteFill}>
-            <LinearGradient
-              colors={isDark 
-                ? ['rgba(0, 0, 0, 0.0)', 'rgba(0, 0, 0, 0.95)']
-                : ['rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.95)']
-              }
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-            />
-            <BlurView
-              intensity={isDark ? 60 : 80}
-              tint={isDark ? 'dark' : 'light'}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={[
-              StyleSheet.absoluteFill, 
-              { 
-                borderTopWidth: StyleSheet.hairlineWidth,
-                borderTopColor: isDark 
-                  ? 'rgba(255, 255, 255, 0.1)' 
-                  : 'rgba(0, 0, 0, 0.08)',
-              }
-            ]} />
-          </View>
+          <BlurView
+            intensity={isDark ? 95 : 100}
+            tint={isDark ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          />
         ),
         tabBarItemStyle: {
           paddingVertical: DesignSystem.Spacing.sm,
-          borderRadius: DesignSystem.BorderRadius.xl,
-          marginHorizontal: DesignSystem.Spacing.xs,
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          height: 48,
         },
       }}>
       <Tabs.Screen
@@ -81,20 +53,11 @@ export default function TabLayout() {
         options={{
           title: 'Notes',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && [styles.activeIconContainer, { 
-                backgroundColor: isDark 
-                  ? 'rgba(255, 255, 255, 0.1)' 
-                  : 'rgba(0, 0, 0, 0.06)' 
-              }]
-            ]}>
-              <IconSymbol 
-                size={24} 
-                name={focused ? "doc.text.fill" : "doc.text"} 
-                color={color} 
-              />
-            </View>
+            <IconSymbol 
+              size={24} 
+              name={focused ? "doc.text.fill" : "doc.text"} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -103,20 +66,11 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && [styles.activeIconContainer, { 
-                backgroundColor: isDark 
-                  ? 'rgba(255, 255, 255, 0.1)' 
-                  : 'rgba(0, 0, 0, 0.06)' 
-              }]
-            ]}>
-              <IconSymbol 
-                size={24} 
-                name={focused ? "sparkles" : "sparkles"} 
-                color={color} 
-              />
-            </View>
+            <IconSymbol 
+              size={24} 
+              name={focused ? "sparkles" : "sparkles"} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -124,15 +78,4 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  iconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 44,
-    height: 44,
-    borderRadius: DesignSystem.BorderRadius.xl,
-  },
-  activeIconContainer: {
-    transform: [{ scale: 1.02 }],
-  },
-});
+const styles = StyleSheet.create({});
