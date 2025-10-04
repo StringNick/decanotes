@@ -1,5 +1,5 @@
-import React, { useState, memo } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, memo, useRef, useCallback } from 'react';
+import { View, TextInput, StyleSheet, Text, TouchableOpacity, ScrollView, NativeSyntheticEvent, TextInputContentSizeChangeEventData } from 'react-native';
 import { BlockPlugin } from '../../types/PluginTypes';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -26,6 +26,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   const [isLanguageEditing, setIsLanguageEditing] = useState(false);
+  const [contentHeight, setContentHeight] = useState(0);
   const language = block.meta?.language || 'text';
   const showLineNumbers = block.meta?.showLineNumbers !== false;
 
@@ -54,11 +55,19 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
     });
   };
 
+  const handleContentSizeChange = useCallback((e: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
+    setContentHeight(e.nativeEvent.contentSize.height);
+  }, []);
+
   const getLineNumbers = () => {
     if (!showLineNumbers) return null;
     
-    const lines = block.content.split('\n');
-    return lines.map((_, index) => (
+    // Count lines in content
+    const lines = block.content ? block.content.split('\n') : [''];
+    const lineCount = lines.length;
+    
+    // Render each line number separately to match TextInput line rendering
+    return Array.from({ length: lineCount }, (_, index) => (
       <Text key={index} style={styles.lineNumber}>
         {index + 1}
       </Text>
@@ -109,38 +118,45 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
       )}
 
       {/* Code editor */}
-      <View style={[
-        styles.codeContainer,
-        isSelected && styles.selected,
-        isFocused && styles.editing
-      ]}>
-        {showLineNumbers && (
-          <View style={styles.lineNumbersContainer}>
-            {getLineNumbers()}
-          </View>
-        )}
-        
-        <TextInput
-          style={[
-            styles.codeInput,
-            !showLineNumbers && styles.codeInputFullWidth
-          ]}
-          value={block.content}
-          onChangeText={handleCodeChange}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          onKeyPress={onKeyPress}
-          placeholder="Enter your code..."
-          placeholderTextColor={colors.textMuted}
-          multiline
-          textAlignVertical="top"
-          scrollEnabled={false}
-          autoCapitalize="none"
-          autoCorrect={false}
-          spellCheck={false}
-          editable={!readOnly}
-        />
-      </View>
+      <ScrollView 
+        horizontal
+        showsHorizontalScrollIndicator={true}
+        style={[
+          styles.codeContainer,
+          isSelected && styles.selected,
+          isFocused && styles.editing
+        ]}
+      >
+        <View style={styles.codeWrapper}>
+          {showLineNumbers && (
+            <View style={styles.lineNumbersContainer} pointerEvents="none">
+              {getLineNumbers()}
+            </View>
+          )}
+          
+          <TextInput
+            style={[
+              styles.codeInput,
+              showLineNumbers && styles.codeInputWithNumbers
+            ]}
+            value={block.content}
+            onChangeText={handleCodeChange}
+            onContentSizeChange={handleContentSizeChange}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            onKeyPress={onKeyPress}
+            placeholder="Enter your code..."
+            placeholderTextColor={colors.textMuted}
+            multiline
+            textAlignVertical="top"
+            scrollEnabled={false}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            editable={!readOnly}
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 }, (prevProps, nextProps) => {
@@ -165,38 +181,38 @@ const COMMON_LANGUAGES = [
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   
   return StyleSheet.create({
     container: {
       marginVertical: 12,
-      borderRadius: 12,
-      backgroundColor: colors.backgroundSecondary,
-      borderWidth: 1,
-      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
       overflow: 'hidden',
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: colors.backgroundTertiary,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      backgroundColor: 'transparent',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
     },
     languageButton: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      backgroundColor: colors.accent,
-      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      backgroundColor: 'transparent',
+      borderRadius: 4,
     },
     languageText: {
-      color: colors.surface,
-      fontSize: 11,
-      fontWeight: '600',
+      color: colors.text,
+      fontSize: 10,
+      fontWeight: '500',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
+      opacity: 0.6,
     },
     languageInput: {
       fontSize: 11,
@@ -245,50 +261,55 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       fontWeight: '500',
     },
     codeContainer: {
-      flexDirection: 'row',
-      minHeight: 120,
-      backgroundColor: colors.backgroundSecondary,
-    },
-    selected: {
-      borderColor: colors.accent,
-      borderWidth: 2,
-    },
-    editing: {
-      borderColor: colors.accent,
-      borderWidth: 2,
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 4,
-    },
-    lineNumbersContainer: {
-      paddingVertical: 16,
-      paddingHorizontal: 12,
-      backgroundColor: colors.backgroundTertiary,
-      borderRightWidth: 1,
-      borderRightColor: colors.border,
-    },
-    lineNumber: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontFamily: 'Courier New',
-      lineHeight: 20,
-      textAlign: 'right',
-      minWidth: 24,
-    },
-    codeInput: {
-      flex: 1,
-      fontSize: 14,
-      fontFamily: 'Courier New',
-      lineHeight: 20,
-      color: colors.text,
-      padding: 16,
+      minHeight: 100,
       backgroundColor: 'transparent',
     },
-    codeInputFullWidth: {
-      borderBottomLeftRadius: 12,
-      borderBottomRightRadius: 12,
+    selected: {
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+    },
+    editing: {
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+    },
+    codeWrapper: {
+      position: 'relative',
+      flexDirection: 'row',
+      minWidth: '100%',
+    },
+    lineNumbersContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      paddingTop: 16,
+      paddingBottom: 16,
+      paddingLeft: 12,
+      paddingRight: 12,
+      backgroundColor: 'transparent',
+      zIndex: 1,
+    },
+    lineNumber: {
+      fontSize: 14,
+      color: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+      fontFamily: 'SpaceMono-Regular',
+      lineHeight: 21,
+      height: 21,
+      textAlign: 'right',
+      minWidth: 32,
+      includeFontPadding: false,
+    },
+    codeInput: {
+      fontSize: 14,
+      fontFamily: 'SpaceMono-Regular',
+      lineHeight: 21,
+      color: colors.text,
+      paddingTop: 16,
+      paddingBottom: 16,
+      paddingHorizontal: 16,
+      backgroundColor: 'transparent',
+      includeFontPadding: false,
+      minWidth: 500,
+    },
+    codeInputWithNumbers: {
+      paddingLeft: 60,
     },
   });
 };

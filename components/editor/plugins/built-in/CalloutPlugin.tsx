@@ -17,50 +17,50 @@ interface CalloutConfig {
 }
 
 const getCalloutConfigs = (colorScheme: 'light' | 'dark'): Record<CalloutType, CalloutConfig> => {
-  const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   
-  if (colorScheme === 'dark') {
+  if (isDark) {
     return {
       note: {
         icon: '📝',
-        color: '#60a5fa',
-        backgroundColor: colors.blue + '20',
-        borderColor: '#60a5fa',
+        color: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
         label: 'Note'
       },
       tip: {
         icon: '💡',
-        color: colors.success,
-        backgroundColor: colors.success + '20',
-        borderColor: colors.success,
+        color: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
         label: 'Tip'
       },
       warning: {
         icon: '⚠️',
-        color: '#fbbf24',
-        backgroundColor: '#451a03',
-        borderColor: '#f59e0b',
+        color: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
         label: 'Warning'
       },
       danger: {
         icon: '🚨',
-        color: colors.error,
-        backgroundColor: colors.error + '20',
-        borderColor: colors.error,
+        color: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
         label: 'Danger'
       },
       info: {
         icon: 'ℹ️',
-        color: '#93c5fd',
-        backgroundColor: '#1e3a8a',
-        borderColor: '#3b82f6',
+        color: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
         label: 'Info'
       },
       success: {
         icon: '✅',
-        color: colors.success,
-        backgroundColor: colors.success + '20',
-        borderColor: colors.success,
+        color: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
         label: 'Success'
       }
     };
@@ -69,44 +69,44 @@ const getCalloutConfigs = (colorScheme: 'light' | 'dark'): Record<CalloutType, C
   return {
     note: {
       icon: '📝',
-      color: '#0969da',
-      backgroundColor: '#ddf4ff',
-      borderColor: '#54aeff',
+      color: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.03)',
+      borderColor: 'rgba(0, 0, 0, 0.15)',
       label: 'Note'
     },
     tip: {
       icon: '💡',
-      color: '#1a7f37',
-      backgroundColor: '#dcffe4',
-      borderColor: '#4ac26b',
+      color: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.03)',
+      borderColor: 'rgba(0, 0, 0, 0.15)',
       label: 'Tip'
     },
     warning: {
       icon: '⚠️',
-      color: '#9a6700',
-      backgroundColor: '#fff8c5',
-      borderColor: '#ffdf5d',
+      color: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.03)',
+      borderColor: 'rgba(0, 0, 0, 0.15)',
       label: 'Warning'
     },
     danger: {
       icon: '🚨',
-      color: '#cf222e',
-      backgroundColor: '#ffebe9',
-      borderColor: '#ff818a',
+      color: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.03)',
+      borderColor: 'rgba(0, 0, 0, 0.15)',
       label: 'Danger'
     },
     info: {
       icon: 'ℹ️',
-      color: '#0969da',
-      backgroundColor: '#f6f8fa',
-      borderColor: '#d1d9e0',
+      color: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.03)',
+      borderColor: 'rgba(0, 0, 0, 0.15)',
       label: 'Info'
     },
     success: {
       icon: '✅',
-      color: '#1a7f37',
-      backgroundColor: '#dcffe4',
-      borderColor: '#4ac26b',
+      color: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.03)',
+      borderColor: 'rgba(0, 0, 0, 0.15)',
       label: 'Success'
     }
   };
@@ -293,135 +293,102 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   
   return StyleSheet.create({
     container: {
       marginVertical: 12,
     },
     typeSelector: {
-      marginBottom: 12,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      marginBottom: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 0,
+      backgroundColor: 'transparent',
     },
     typeOption: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 12,
-      paddingVertical: 8,
-      marginRight: 8,
+      paddingVertical: 6,
+      marginRight: 6,
       borderRadius: 8,
-      borderWidth: 1,
-      backgroundColor: colors.surface,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 1,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
     },
     typeIcon: {
-      fontSize: 16,
-      marginRight: 8,
+      fontSize: 14,
+      marginRight: 6,
     },
     typeLabel: {
-      fontSize: 12,
-      fontFamily: 'AlbertSans_600SemiBold',
+      fontSize: 11,
+      fontFamily: 'AlbertSans_500Medium',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
     calloutContainer: {
-      borderLeftWidth: 4,
-      borderRadius: 12,
-      borderTopLeftRadius: 4,
-      borderBottomLeftRadius: 4,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
+      borderLeftWidth: 2,
+      borderRadius: 8,
+      padding: 16,
+      borderWidth: 0,
     },
     selected: {
-      borderWidth: 2,
-      borderColor: colors.teal,
-      backgroundColor: colors.blue + '20',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
     },
     editing: {
-      borderWidth: 2,
-      borderColor: colors.teal,
-      shadowColor: colors.teal,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 3,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 12,
+      marginBottom: 8,
     },
     typeButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderRadius: 8,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+      backgroundColor: 'transparent',
     },
     icon: {
-      fontSize: 18,
-      marginRight: 8,
+      fontSize: 16,
+      marginRight: 6,
     },
     typeText: {
-      fontSize: 12,
-      fontFamily: 'AlbertSans_600SemiBold',
+      fontSize: 11,
+      fontFamily: 'AlbertSans_500Medium',
       textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      letterSpacing: 0.3,
     },
     titleToggle: {
-      padding: 6,
-      borderRadius: 6,
-      backgroundColor: colors.backgroundSecondary,
+      padding: 4,
+      borderRadius: 4,
     },
     toggleText: {
-      fontSize: 14,
-      fontFamily: 'AlbertSans_500Medium',
+      fontSize: 12,
       color: colors.textSecondary,
     },
     titleContainer: {
-      marginBottom: 12,
+      marginBottom: 8,
     },
     title: {
-      fontSize: 16,
+      fontSize: 14,
       fontFamily: 'AlbertSans_600SemiBold',
-      marginBottom: 4,
     },
     titleInput: {
-      fontSize: 16,
+      fontSize: 14,
       fontFamily: 'AlbertSans_600SemiBold',
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      backgroundColor: colors.surface,
+      paddingVertical: 4,
+      paddingHorizontal: 0,
     },
     contentInput: {
       fontSize: 15,
       fontFamily: 'AlbertSans_400Regular',
-      lineHeight: 24,
-      minHeight: 48,
+      lineHeight: 22,
+      minHeight: 44,
       textAlignVertical: 'top',
       color: colors.text,
-      paddingVertical: 8,
+      paddingVertical: 0,
     },
   });
 };

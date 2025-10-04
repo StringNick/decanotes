@@ -90,6 +90,7 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   
   return StyleSheet.create({
     container: {
@@ -97,42 +98,29 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     quoteContainer: {
       flexDirection: 'row',
-      backgroundColor: colors.surface,
-      borderLeftWidth: 4,
-      borderLeftColor: colors.accent,
-      borderRadius: 12,
-      borderTopLeftRadius: 4,
-      borderBottomLeftRadius: 4,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+      borderLeftWidth: 2,
+      borderLeftColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+      borderRadius: 8,
+      padding: 16,
+      borderWidth: 0,
     },
     selected: {
-      backgroundColor: colors.accentLight,
-      borderColor: colors.borderFocus,
-      borderWidth: 2,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
     },
     editing: {
-      backgroundColor: colors.surface,
-      borderColor: colors.accent,
-      borderWidth: 2,
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 2,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
     },
     quoteMark: {
-      marginRight: 16,
+      marginRight: 12,
       alignItems: 'center',
       justifyContent: 'flex-start',
-      paddingTop: 4,
     },
     quoteIcon: {
-      fontSize: 28,
-      color: colors.accent,
+      fontSize: 24,
+      color: colors.text,
       fontWeight: '300',
-      opacity: 0.7,
+      opacity: 0.3,
     },
     content: {
       flex: 1,
