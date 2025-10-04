@@ -1,6 +1,6 @@
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { DesignSystem, getThemeColors } from '@/constants/DesignSystem';
+import { IconSymbol, IconSymbolName } from '@/components/ui/IconSymbol';
+import DesignSystem from '@/constants/DesignSystem';
 import { useTheme } from '@/contexts/ThemeContext';
 import React, { useState } from 'react';
 import {
@@ -16,14 +16,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 interface DiscoveryCardProps {
   title: string;
   description: string;
-  icon: string;
+  icon: IconSymbolName;
   category: string;
   onPress: () => void;
   isDark: boolean;
 }
 
 function DiscoveryCard({ title, description, icon, category, onPress, isDark }: DiscoveryCardProps) {
-  const colors = getThemeColors(isDark);
+  const colors = DesignSystem.getThemeColors(isDark);
   
   return (
     <TouchableOpacity
@@ -67,7 +67,7 @@ function DiscoveryCard({ title, description, icon, category, onPress, isDark }: 
   );
 }
 
-const discoveryData = [
+const discoveryData: { id: string; title: string; description: string; icon: IconSymbolName; category: string; }[] = [
   {
     id: '1',
     title: 'Note Templates',
@@ -115,7 +115,7 @@ const discoveryData = [
 export default function ExploreScreen() {
   const { effectiveTheme } = useTheme();
   const isDark = effectiveTheme === 'dark';
-  const colors = getThemeColors(isDark);
+  const colors = DesignSystem.getThemeColors(isDark);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const categories = ['All', 'Templates', 'Sharing', 'Storage', 'Security'];

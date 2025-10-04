@@ -205,72 +205,143 @@ export const Shadows = {
   }),
 };
 
+// === HELPER FUNCTIONS ===
+export const getThemeColors = (isDark: boolean) => ({
+  text: isDark ? Colors.text.dark : Colors.text.light,
+  background: isDark ? Colors.background.dark : Colors.background.light,
+  neutral: Colors.neutral,
+  primary: Colors.primary,
+  semantic: Colors.semantic,
+  notes: isDark ? Colors.notes.dark : Colors.notes.light,
+});
+
 // === COMPONENT STYLES ===
-export const Components = {
-  // Button Variants
-  button: {
-    primary: {
-      backgroundColor: Colors.primary.dark,
-      paddingHorizontal: Spacing.lg,
-      paddingVertical: Spacing.md,
-      borderRadius: BorderRadius.xl,
-      ...Shadows.md,
+// Theme-aware component factory functions
+export const createComponents = (isDark: boolean) => {
+  const themeColors = getThemeColors(isDark);
+  
+  return {
+    // Button Variants
+    button: {
+      primary: {
+        backgroundColor: Colors.primary.dark,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.xl,
+        ...Shadows.md,
+      },
+      secondary: {
+        backgroundColor: themeColors.background.secondary,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.xl,
+        borderWidth: 1,
+        borderColor: Colors.neutral.gray200,
+      },
+      ghost: {
+        backgroundColor: 'transparent',
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.xl,
+      },
     },
-    secondary: {
-      backgroundColor: Colors.background.secondary,
-      paddingHorizontal: Spacing.lg,
-      paddingVertical: Spacing.md,
-      borderRadius: BorderRadius.xl,
-      borderWidth: 1,
-      borderColor: Colors.neutral.gray200,
-    },
-    ghost: {
-      backgroundColor: 'transparent',
-      paddingHorizontal: Spacing.lg,
-      paddingVertical: Spacing.md,
-      borderRadius: BorderRadius.xl,
-    },
-  },
 
-  // Card Variants
-  card: {
-    default: {
-      backgroundColor: Colors.background.primary,
-      borderRadius: BorderRadius.xl,
-      padding: Spacing.base,
-      ...Shadows.sm,
-      borderWidth: 1,
-      borderColor: Colors.neutral.gray100,
+    // Card Variants
+    card: {
+      default: {
+        backgroundColor: themeColors.background.primary,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.base,
+        ...Shadows.sm,
+        borderWidth: 1,
+        borderColor: Colors.neutral.gray100,
+      },
+      elevated: {
+        backgroundColor: themeColors.background.primary,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.lg,
+        ...Shadows.lg,
+      },
+      note: {
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.lg,
+        ...Shadows.sm,
+        borderWidth: 1,
+        borderColor: Colors.neutral.gray100,
+      },
     },
-    elevated: {
-      backgroundColor: Colors.background.primary,
-      borderRadius: BorderRadius.xl,
-      padding: Spacing.lg,
-      ...Shadows.lg,
-    },
-    note: {
-      borderRadius: BorderRadius.xl,
-      padding: Spacing.lg,
-      ...Shadows.sm,
-      borderWidth: 1,
-      borderColor: Colors.neutral.gray100,
-    },
-  },
 
-  // Input Variants
-  input: {
-    default: {
-      backgroundColor: Colors.background.secondary,
-      borderRadius: BorderRadius.lg,
-      paddingHorizontal: Spacing.base,
-      paddingVertical: Spacing.md,
-      borderWidth: 1,
-      borderColor: Colors.neutral.gray200,
-      fontSize: Typography.sizes.md,
-      fontFamily: Typography.fonts.primary,
+    // Input Variants
+    input: {
+      default: {
+        backgroundColor: themeColors.background.secondary,
+        borderRadius: BorderRadius.lg,
+        paddingHorizontal: Spacing.base,
+        paddingVertical: Spacing.md,
+        borderWidth: 1,
+        borderColor: Colors.neutral.gray200,
+        fontSize: Typography.sizes.md,
+        fontFamily: Typography.fonts.primary,
+        color: themeColors.text.primary,
+      },
     },
-  },
+
+    // Editor-specific components
+    editor: {
+      container: {
+        backgroundColor: themeColors.background.primary,
+        flex: 1,
+      },
+      block: {
+        backgroundColor: 'transparent',
+        marginVertical: Spacing.xs,
+        paddingHorizontal: Spacing.base,
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.md,
+      },
+      focusedBlock: {
+        backgroundColor: isDark 
+          ? 'rgba(139, 95, 191, 0.1)' 
+          : 'rgba(139, 95, 191, 0.05)',
+        borderWidth: 1,
+        borderColor: isDark 
+          ? 'rgba(139, 95, 191, 0.3)' 
+          : 'rgba(139, 95, 191, 0.2)',
+      },
+      input: {
+        fontSize: Typography.sizes.md,
+        lineHeight: Typography.sizes.md * Typography.lineHeights.normal,
+        color: themeColors.text.primary,
+        fontFamily: Typography.fonts.primary,
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+        padding: 0,
+        margin: 0,
+      },
+      placeholder: {
+        color: themeColors.text.tertiary,
+        fontStyle: 'italic',
+      },
+      toolbar: {
+        backgroundColor: themeColors.background.secondary,
+        borderTopWidth: 1,
+        borderTopColor: isDark ? Colors.neutral.gray700 : Colors.neutral.gray200,
+        paddingHorizontal: Spacing.base,
+        paddingVertical: Spacing.sm,
+      },
+      toolbarButton: {
+        backgroundColor: Colors.primary.dark,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.lg,
+        marginHorizontal: Spacing.xs,
+      },
+    },
+  };
 };
+
+// Legacy static components (for backward compatibility)
+export const Components = createComponents(false);
 
 // === GRADIENTS ===
 export const Gradients = {
@@ -295,26 +366,22 @@ export const Animations = {
   },
 };
 
-// === HELPER FUNCTIONS ===
-export const getThemeColors = (isDark: boolean) => ({
-  text: isDark ? Colors.text.dark : Colors.text.light,
-  background: isDark ? Colors.background.dark : Colors.background.light,
-  neutral: Colors.neutral,
-  primary: Colors.primary,
-  semantic: Colors.semantic,
-  notes: isDark ? Colors.notes.dark : Colors.notes.light,
-});
-
 export const createTextStyle = (
   size: keyof typeof Typography.sizes,
   weight: keyof typeof Typography.fonts = 'primary',
-  color?: string
-) => ({
-  fontSize: Typography.sizes[size],
-  fontFamily: Typography.fonts[weight],
-  color: color || Colors.text.light.primary,
-  lineHeight: Typography.sizes[size] * Typography.lineHeights.normal,
-});
+  color?: string,
+  isDark?: boolean
+) => {
+  const themeColors = isDark !== undefined ? getThemeColors(isDark) : null;
+  const defaultColor = themeColors ? themeColors.text.primary : Colors.text.light.primary;
+  
+  return {
+    fontSize: Typography.sizes[size],
+    fontFamily: Typography.fonts[weight],
+    color: color || defaultColor,
+    lineHeight: Typography.sizes[size] * Typography.lineHeights.normal,
+  };
+};
 
 export const createSpacingStyle = (
   horizontal: keyof typeof Spacing,
@@ -324,18 +391,143 @@ export const createSpacingStyle = (
   paddingVertical: Spacing[vertical || horizontal],
 });
 
+// Editor-specific helper functions
+export const createEditorTheme = (isDark: boolean) => {
+  const themeColors = getThemeColors(isDark);
+  const components = createComponents(isDark);
+  
+  return {
+    // Core editor styles
+    container: components.editor.container,
+    block: components.editor.block,
+    focusedBlock: components.editor.focusedBlock,
+    input: components.editor.input,
+    placeholder: components.editor.placeholder,
+    
+    // Typography styles
+    heading1: createTextStyle('4xl', 'bold', themeColors.text.primary, isDark),
+    heading2: createTextStyle('3xl', 'semibold', themeColors.text.primary, isDark),
+    heading3: createTextStyle('2xl', 'semibold', themeColors.text.primary, isDark),
+    heading4: createTextStyle('xl', 'semibold', themeColors.text.primary, isDark),
+    heading5: createTextStyle('lg', 'semibold', themeColors.text.primary, isDark),
+    heading6: createTextStyle('md', 'semibold', themeColors.text.primary, isDark),
+    
+    // Code styles
+    code: {
+      ...createTextStyle('sm', 'mono', themeColors.text.primary, isDark),
+      backgroundColor: isDark ? Colors.neutral.gray800 : Colors.neutral.gray100,
+      paddingHorizontal: Spacing.xs,
+      paddingVertical: 2,
+      borderRadius: BorderRadius.sm,
+    },
+    codeBlock: {
+      backgroundColor: isDark ? Colors.neutral.gray800 : Colors.neutral.gray100,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.base,
+      borderWidth: 1,
+      borderColor: isDark ? Colors.neutral.gray700 : Colors.neutral.gray200,
+    },
+    
+    // Quote styles
+    quoteBlock: {
+      backgroundColor: isDark ? 'rgba(139, 95, 191, 0.1)' : 'rgba(139, 95, 191, 0.05)',
+      borderLeftWidth: 4,
+      borderLeftColor: Colors.primary.purple,
+      paddingLeft: Spacing.base,
+      paddingVertical: Spacing.sm,
+      marginVertical: Spacing.sm,
+    },
+    
+    // Text formatting
+    bold: {
+      fontFamily: Typography.fonts.bold,
+      color: themeColors.text.primary,
+    },
+    italic: {
+      fontFamily: Typography.fonts.medium,
+      fontStyle: 'italic',
+      color: themeColors.text.primary,
+    },
+    inlineCode: {
+      fontFamily: Typography.fonts.mono,
+      fontSize: Typography.sizes.sm,
+      backgroundColor: isDark ? Colors.neutral.gray800 : Colors.neutral.gray100,
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+      borderRadius: BorderRadius.sm,
+      color: themeColors.text.primary,
+    },
+    
+    // Toolbar styles
+    toolbar: components.editor.toolbar,
+    toolbarButton: components.editor.toolbarButton,
+    
+    // Colors for easy access
+    colors: themeColors,
+  };
+};
+
+// Create shadow styles with theme awareness
+export const createShadowStyle = (
+  size: keyof typeof Shadows,
+  isDark: boolean = false
+) => {
+  const shadow = Shadows[size];
+  if (typeof shadow === 'function') {
+    return shadow;
+  }
+  
+  return {
+    ...shadow,
+    shadowOpacity: isDark ? shadow.shadowOpacity * 0.5 : shadow.shadowOpacity,
+  };
+};
+
+// Create responsive spacing
+export const createResponsiveSpacing = (
+  base: keyof typeof Spacing,
+  multiplier: number = 1
+) => ({
+  padding: Spacing[base] * multiplier,
+  margin: Spacing[base] * multiplier * 0.5,
+});
+
 // Export default design system object
 export const DesignSystem = {
+  // Core design tokens
   Colors,
   Typography,
   Spacing,
   BorderRadius,
   Shadows,
-  Components,
   Gradients,
   Animations,
+  
+  // Component factories
+  Components,
+  createComponents,
+  
+  // Theme helpers
+  createEditorTheme,
+  
+  // Style helpers
+  getThemeColors,
   createTextStyle,
   createSpacingStyle,
+  createShadowStyle,
+  createResponsiveSpacing,
+};
+
+// Convenience exports for editor integration
+export const EditorThemes = {
+  light: createEditorTheme(false),
+  dark: createEditorTheme(true),
+};
+
+// Theme-aware component sets
+export const ThemeComponents = {
+  light: createComponents(false),
+  dark: createComponents(true),
 };
 
 export default DesignSystem;

@@ -58,7 +58,7 @@ export default function AuthScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <LinearGradient
-        colors={DesignSystem.Gradients.brand}
+        colors={['#8B5FBF', '#4FC3E7']}
         style={styles.background}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -85,8 +85,8 @@ export default function AuthScreen() {
                   size={20}
                   color={
                     activeMethod === 'seed'
-                      ? DesignSystem.Colors.text.inverse
-                      : DesignSystem.Colors.text.secondary
+                      ? '#FFFFFF'
+                      : '#6B7280'
                   }
                 />
                 <Text
@@ -111,8 +111,8 @@ export default function AuthScreen() {
                   size={20}
                   color={
                     activeMethod === 'ipfs'
-                      ? DesignSystem.Colors.text.inverse
-                      : DesignSystem.Colors.text.secondary
+                      ? '#FFFFFF'
+                      : '#6B7280'
                   }
                 />
                 <Text
@@ -134,7 +134,7 @@ export default function AuthScreen() {
                     <TextInput
                       style={styles.textInput}
                       placeholder="Enter your 12-24 word seed phrase"
-                      placeholderTextColor={DesignSystem.Colors.text.tertiary}
+                      placeholderTextColor="#9CA3AF"
                       value={seedPhrase}
                       onChangeText={setSeedPhrase}
                       multiline
@@ -149,7 +149,7 @@ export default function AuthScreen() {
                     <TextInput
                       style={styles.textInput}
                       placeholder="0x..."
-                      placeholderTextColor={DesignSystem.Colors.text.tertiary}
+                      placeholderTextColor="#9CA3AF"
                       value={address}
                       onChangeText={setAddress}
                       autoCapitalize="none"
@@ -178,7 +178,7 @@ export default function AuthScreen() {
                     <TextInput
                       style={styles.textInput}
                       placeholder="QmXoYpizjW3WknFiJnKLwHCnL..."
-                      placeholderTextColor={DesignSystem.Colors.text.tertiary}
+                      placeholderTextColor="#9CA3AF"
                       value={ipfsHash}
                       onChangeText={setIpfsHash}
                       autoCapitalize="none"
@@ -236,12 +236,12 @@ const styles = StyleSheet.create({
     marginBottom: DesignSystem.Spacing['4xl'],
   },
   appTitle: {
-    ...DesignSystem.createTextStyle('5xl', 'bold', DesignSystem.Colors.text.inverse),
+    ...DesignSystem.createTextStyle('5xl', 'bold', '#FFFFFF'),
     marginBottom: DesignSystem.Spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
-    ...DesignSystem.createTextStyle('lg', 'primary', DesignSystem.Colors.text.inverse),
+    ...DesignSystem.createTextStyle('lg', 'primary', '#FFFFFF'),
     opacity: 0.9,
     textAlign: 'center',
   },
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   methodSelector: {
     flexDirection: 'row',
     marginBottom: DesignSystem.Spacing.xl,
-    backgroundColor: DesignSystem.Colors.background.secondary,
+    backgroundColor: '#FAFAFA',
     borderRadius: DesignSystem.BorderRadius.lg,
     padding: DesignSystem.Spacing.xs,
   },
@@ -267,14 +267,14 @@ const styles = StyleSheet.create({
     borderRadius: DesignSystem.BorderRadius.md,
   },
   activeMethodButton: {
-    backgroundColor: DesignSystem.Colors.primary.dark,
+    backgroundColor: '#1A1A1A',
   },
   methodText: {
-    ...DesignSystem.createTextStyle('md', 'medium', DesignSystem.Colors.text.secondary),
+    ...DesignSystem.createTextStyle('md', 'medium'),
     marginLeft: DesignSystem.Spacing.sm,
   },
   activeMethodText: {
-    color: DesignSystem.Colors.text.inverse,
+    color: '#FFFFFF',
   },
   formContainer: {
     gap: DesignSystem.Spacing.lg,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   helperText: {
-    ...DesignSystem.createTextStyle('sm', 'primary', DesignSystem.Colors.text.secondary),
+    ...DesignSystem.createTextStyle('sm', 'primary'),
     textAlign: 'center',
     lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.relaxed,
   },
@@ -303,14 +303,14 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   authButtonText: {
-    ...DesignSystem.createTextStyle('md', 'semibold', DesignSystem.Colors.text.inverse),
+    ...DesignSystem.createTextStyle('md', 'semibold', '#FFFFFF'),
   },
   footer: {
     alignItems: 'center',
     marginTop: DesignSystem.Spacing.xl,
   },
   footerText: {
-    ...DesignSystem.createTextStyle('sm', 'primary', DesignSystem.Colors.text.inverse),
+    ...DesignSystem.createTextStyle('sm', 'primary', '#FFFFFF'),
     opacity: 0.8,
     textAlign: 'center',
   },

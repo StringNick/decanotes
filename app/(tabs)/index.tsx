@@ -1,7 +1,7 @@
 import { NoteCard } from '@/components/NoteCard';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { DesignSystem, getThemeColors } from '@/constants/DesignSystem';
+import DesignSystem from '@/constants/DesignSystem';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -54,7 +54,7 @@ export default function HomeScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
   
   const isDark = effectiveTheme === 'dark';
-  const colors = getThemeColors(isDark);
+  const colors = DesignSystem.getThemeColors(isDark);
 
   const handleNotePress = (noteId: string) => {
     // Navigate to editor with note data

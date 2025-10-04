@@ -5,9 +5,6 @@ import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
-type IconSymbolName = keyof typeof MAPPING;
-
 /**
  * Add your SF Symbols to Material Icons mappings here.
  * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
@@ -18,7 +15,42 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-} as IconMapping;
+  'chevron.left': 'chevron-left',
+  'doc.text.fill': 'description',
+  'doc.text': 'description',
+  'person.2.fill': 'people',
+  'icloud.fill': 'cloud',
+  'textformat': 'text-format',
+  'lock.shield.fill': 'security',
+  'laptopcomputer.and.iphone': 'devices',
+  'star.fill': 'star',
+  'moon.fill': 'brightness-2',
+  'sun.max.fill': 'wb-sunny',
+  'square.and.arrow.up': 'upload',
+  'shield.fill': 'shield',
+  'bell.fill': 'notifications',
+  'info.circle.fill': 'info',
+  'questionmark.circle.fill': 'help',
+  'power': 'power-settings-new',
+  'plus': 'add',
+  'minus': 'remove',
+  'xmark': 'close',
+  'checkmark': 'check',
+  'pencil': 'edit',
+  'trash': 'delete',
+  'gear': 'settings',
+  'gearshape.fill': 'settings',
+  'magnifyingglass': 'search',
+  'ellipsis': 'more-horiz',
+  'paintbrush.pointed.fill': 'palette',
+  'key.fill': 'vpn-key',
+  'globe': 'public',
+  'sparkles': 'auto-awesome',
+  'person.crop.circle.fill': 'account-circle',
+  'person.crop.circle': 'account-circle',
+} as const;
+
+export type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.

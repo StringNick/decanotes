@@ -6,13 +6,13 @@ import { StyleSheet, View } from 'react-native';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { DesignSystem, getThemeColors } from '@/constants/DesignSystem';
+import DesignSystem from '@/constants/DesignSystem';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function TabLayout() {
   const { effectiveTheme } = useTheme();
   const isDark = effectiveTheme === 'dark';
-  const colors = getThemeColors(isDark);
+  const colors = DesignSystem.getThemeColors(isDark);
 
   return (
     <Tabs

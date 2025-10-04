@@ -1,5 +1,5 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { DesignSystem, getThemeColors } from '@/constants/DesignSystem';
+import { IconSymbol, IconSymbolName } from '@/components/ui/IconSymbol';
+import DesignSystem from '@/constants/DesignSystem';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -14,13 +14,13 @@ import {
 } from 'react-native';
 
 interface SettingItemProps {
-  icon: string;
+  icon: IconSymbolName;
   title: string;
   subtitle?: string;
   onPress?: () => void;
   rightElement?: React.ReactNode;
   showChevron?: boolean;
-  colors: ReturnType<typeof getThemeColors>;
+  colors: ReturnType<typeof DesignSystem.getThemeColors>;
 }
 
 function SettingItem({
@@ -76,7 +76,7 @@ function SettingItem({
 export default function SettingsScreen() {
   const { theme, effectiveTheme, setTheme } = useTheme();
   const isDark = effectiveTheme === 'dark';
-  const colors = getThemeColors(isDark);
+  const colors = DesignSystem.getThemeColors(isDark);
   
   const [syncEnabled, setSyncEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
