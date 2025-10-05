@@ -158,11 +158,11 @@ export default function SettingsScreen() {
                   value={isDark}
                   onValueChange={handleThemeChange}
                   trackColor={{
-                    false: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
-                    true: colors.text.primary,
+                    false: isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300,
+                    true: DesignSystem.Colors.primary.purple,
                   }}
-                  thumbColor="#FFFFFF"
-                  ios_backgroundColor={isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'}
+                  thumbColor={isDark ? DesignSystem.Colors.neutral.white : DesignSystem.Colors.neutral.white}
+                  ios_backgroundColor={isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300}
                 />
               }
               showChevron={false}
@@ -183,11 +183,11 @@ export default function SettingsScreen() {
                   value={syncEnabled}
                   onValueChange={setSyncEnabled}
                   trackColor={{
-                    false: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
-                    true: colors.text.primary,
+                    false: isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300,
+                    true: DesignSystem.Colors.primary.teal,
                   }}
-                  thumbColor="#FFFFFF"
-                  ios_backgroundColor={isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'}
+                  thumbColor={isDark ? DesignSystem.Colors.neutral.white : DesignSystem.Colors.neutral.white}
+                  ios_backgroundColor={isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300}
                 />
               }
               showChevron={false}
@@ -222,11 +222,11 @@ export default function SettingsScreen() {
                   value={notificationsEnabled}
                   onValueChange={setNotificationsEnabled}
                   trackColor={{
-                    false: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
-                    true: colors.text.primary,
+                    false: isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300,
+                    true: DesignSystem.Colors.primary.blue,
                   }}
-                  thumbColor="#FFFFFF"
-                  ios_backgroundColor={isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'}
+                  thumbColor={isDark ? DesignSystem.Colors.neutral.white : DesignSystem.Colors.neutral.white}
+                  ios_backgroundColor={isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300}
                 />
               }
               showChevron={false}
