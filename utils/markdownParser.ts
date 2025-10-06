@@ -76,33 +76,26 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
       continue;
     }
 
-    // quotes (> or >> etc.)
-    const quoteMatch = trimmedLine.match(/^(>+)\s+(.*)$/);
+    // quotes (> or >> etc.) - combine sequential quotes with same depth
+    const quoteMatch = trimmedLine.match(/^(>+)\s*(.*)$/);
     if (quoteMatch) {
-      if (currentBlock) blocks.push(currentBlock);
       const [, markers, content] = quoteMatch;
-      blocks.push({
-        id: generateId(),
-        type: 'quote',
-        content,
-        meta: { depth: markers.length - 1 },
-      });
-      currentBlock = null;
-      continue;
-    }
-
-    // empty quote line " > "
-    const emptyQuoteMatch = trimmedLine.match(/^(>+)\s*$/);
-    if (emptyQuoteMatch) {
-      if (currentBlock) blocks.push(currentBlock);
-      const [, markers] = emptyQuoteMatch;
-      blocks.push({
-        id: generateId(),
-        type: 'quote',
-        content: '',
-        meta: { depth: markers.length - 1 },
-      });
-      currentBlock = null;
+      const quoteDepth = markers.length;
+      
+      // Check if we can combine with the current block
+      if (currentBlock && currentBlock.type === 'quote' && currentBlock.meta?.depth === quoteDepth) {
+        // Combine with previous quote block
+        currentBlock.content += '\n' + content;
+      } else {
+        // Start a new quote block
+        if (currentBlock) blocks.push(currentBlock);
+        currentBlock = {
+          id: generateId(),
+          type: 'quote',
+          content,
+          meta: { depth: quoteDepth },
+        };
+      }
       continue;
     }
 
@@ -189,8 +182,8 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
         md = `\`\`\`${block.meta?.language || ''}\n${block.content}\n\`\`\``;
         break;
       case 'quote': {
-        const depth = block.meta?.depth || 0;
-        const prefix = '>'.repeat(depth + 1);
+        const depth = block.meta?.depth || 1;
+        const prefix = '>'.repeat(depth);
         md = block.content.trim()
           ? block.content.split('\n').map(l => `${prefix} ${l}`).join('\n')
           : `${prefix} `;
@@ -294,12 +287,12 @@ export const parseRawText = (
   const quoteMatch = text.match(/^(>+)\s+(.*)$/);
   if (quoteMatch) {
     const [, markers, content] = quoteMatch;
-    return { type: 'quote', content, meta: { depth: markers.length - 1 } };
+    return { type: 'quote', content, meta: { depth: markers.length } };
   }
 
   const quoteMarkersOnly = text.match(/^(>+)\s*$/);
   if (quoteMarkersOnly && currentBlock.type === 'quote') {
-    return { type: 'quote', content: '', meta: { depth: quoteMarkersOnly[1].length - 1 } };
+    return { type: 'quote', content: '', meta: { depth: quoteMarkersOnly[1].length } };
   }
 
   const malformedQuote = text.match(/^>+\S/);
@@ -414,8 +407,8 @@ export const getDisplayValue = (block: EditorBlock, isActive: boolean): string =
       return `\`\`\`${lang}${block.content ? '\n' + block.content : ''}`;
     }
     case 'quote': {
-      const depth = block.meta?.depth || 0;
-      const prefix = '>'.repeat(depth + 1);
+      const depth = block.meta?.depth || 1;
+      const prefix = '>'.repeat(depth);
       if (!block.content.trim()) return `${prefix} `;
       return block.content.split('\n').map(l => `${prefix} ${l}`).join('\n');
     }

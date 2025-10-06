@@ -247,12 +247,15 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       
       // Check for quote pattern (> text) - single line only
       if (!isMultiline) {
-        const quoteMatch = content.match(/^>\s+(.+)$/);
+        const quoteMatch = content.match(/^(>+)\s*(.*)$/);
         if (quoteMatch) {
+          const depth = quoteMatch[1].length;
+          const quoteContent = quoteMatch[2];
           return {
             ...updates,
             type: 'quote',
-            content: quoteMatch[1]
+            content: quoteContent,
+            meta: { depth }
           };
         }
       }

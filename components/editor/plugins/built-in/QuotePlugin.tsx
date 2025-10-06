@@ -1,5 +1,5 @@
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef, useMemo, useState } from 'react';
+import { StyleSheet, Text, TextInput, View, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -9,9 +9,9 @@ import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
 
 /**
- * Quote block component with modern dark theme support
+ * Quote block component with multi-line and depth support
  */
-const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({  
+const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
   block,
   onBlockChange,
   onUpdate,
@@ -24,12 +24,102 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
   const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  
+  const isDark = colorScheme === 'dark';
+  const [cursorPosition, setCursorPosition] = useState(0);
+
   // Expose the TextInput methods through ref
   useImperativeHandle(ref, () => inputRef.current as TextInput);
 
+  const handleSelectionChange = (event: any) => {
+    setCursorPosition(event.nativeEvent.selection.start);
+  };
+
+  const handleKeyPress = (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    const key = event.nativeEvent.key;
+
+    // Handle backspace at start of text to decrease depth
+    if (key === 'Backspace' && cursorPosition === 0 && block.content.length > 0) {
+      event.preventDefault();
+
+      const currentDepth = block.meta?.depth || 1;
+
+      if (currentDepth === 1) {
+        // Convert to paragraph when at depth 1
+        if (onBlockChange) {
+          onBlockChange({
+            type: 'paragraph' as EditorBlockType,
+            meta: {}
+          });
+        } else if (onUpdate) {
+          onUpdate({
+            ...block,
+            type: 'paragraph',
+            meta: {}
+          });
+        }
+      } else {
+        // Decrease depth
+        if (onBlockChange) {
+          onBlockChange({
+            meta: { ...block.meta, depth: currentDepth - 1 }
+          });
+        } else if (onUpdate) {
+          onUpdate({
+            ...block,
+            meta: { ...block.meta, depth: currentDepth - 1 }
+          });
+        }
+      }
+    }
+  };
+
   const handleTextChange = (text: string) => {
+    // Check if user is trying to adjust depth with > at start
+    const depthMatch = text.match(/^(>+)\s*(.*)$/);
+
+    if (depthMatch) {
+      // User typed > at the start - adjust depth
+      const newDepth = Math.min(depthMatch[1].length + depth, 5);
+      const cleanContent = depthMatch[2];
+
+      if (onBlockChange) {
+        onBlockChange({
+          content: cleanContent,
+          meta: { ...block.meta, depth: newDepth }
+        });
+      } else if (onUpdate) {
+        onUpdate({
+          ...block,
+          content: cleanContent,
+          meta: { ...block.meta, depth: newDepth }
+        });
+      }
+      return;
+    }
+
+    // Check if user is trying to decrease depth with < at start
+    const decreaseMatch = text.match(/^<+\s*(.*)$/);
+    if (decreaseMatch) {
+      const decreaseAmount = text.match(/^<+/)?.[0].length || 1;
+      const newDepth = Math.max(depth - decreaseAmount, 1);
+      const cleanContent = decreaseMatch[1];
+
+      if (onBlockChange) {
+        onBlockChange({
+          content: cleanContent,
+          meta: { ...block.meta, depth: newDepth }
+        });
+      } else if (onUpdate) {
+        onUpdate({
+          ...block,
+          content: cleanContent,
+          meta: { ...block.meta, depth: newDepth }
+        });
+      }
+      return;
+    }
+
+    // Normal text update
     if (onBlockChange) {
       onBlockChange({ content: text });
     } else if (onUpdate) {
@@ -40,8 +130,16 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
     }
   };
 
+  // Get depth level (default to 1)
+  const depth = Math.min(Math.max(block.meta?.depth || 1, 1), 5); // Max depth of 5
   const author = block.meta?.author;
   const source = block.meta?.source;
+  
+  // Memoize styles based on depth and theme
+  const styles = useMemo(() => getStyles(colorScheme ?? 'light', depth), [colorScheme, depth]);
+  
+  // Calculate depth bar color - same for all depths
+  const barColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
 
   return (
     <View style={[styles.container, style]}>
@@ -50,8 +148,9 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
         isSelected && styles.selected,
         isEditing && styles.editing
       ]}>
-        <View style={styles.quoteMark}>
-          <Text style={styles.quoteIcon}>"</Text>
+        {/* Minimal vertical bar for all depths */}
+        <View style={styles.quoteMarkMinimal}>
+          <View style={[styles.quoteBarMinimal, { backgroundColor: barColor }]} />
         </View>
         
         <View style={styles.content}>
@@ -59,9 +158,11 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
             ref={inputRef}
             value={block.content}
             onChangeText={handleTextChange}
+            onSelectionChange={handleSelectionChange}
+            onKeyPress={handleKeyPress}
             onFocus={onFocus}
             onBlur={onBlur}
-            placeholder="Enter quote..."
+            placeholder={`Quote... (depth ${depth}, backspace at start to decrease depth)`}
             placeholderTextColor={colors.textSecondary}
             isSelected={isSelected}
             isEditing={isEditing}
@@ -89,39 +190,45 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
 
 QuoteComponent.displayName = 'QuoteComponent';
 
-const getStyles = (colorScheme: 'light' | 'dark') => {
+const getStyles = (colorScheme: 'light' | 'dark', depth: number = 1) => {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   
+  // Calculate indentation based on depth
+  const indentation = (depth - 1) * 12;
+  
   return StyleSheet.create({
     container: {
-      marginVertical: 12,
+      marginVertical: 8,
+      marginLeft: indentation,
     },
     quoteContainer: {
       flexDirection: 'row',
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-      borderLeftWidth: 2,
-      borderLeftColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
-      borderRadius: 8,
-      padding: 16,
+      backgroundColor: 'transparent',
+      borderLeftWidth: 0,
+      borderRadius: 12,
+      padding: 12,
+      paddingLeft: 16,
       borderWidth: 0,
+      position: 'relative',
     },
     selected: {
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+      backgroundColor: isDark ? 'rgba(100, 181, 246, 0.08)' : 'rgba(33, 150, 243, 0.06)',
     },
     editing: {
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+      backgroundColor: isDark ? 'rgba(100, 181, 246, 0.12)' : 'rgba(33, 150, 243, 0.08)',
     },
-    quoteMark: {
+    quoteMarkMinimal: {
       marginRight: 12,
       alignItems: 'center',
-      justifyContent: 'flex-start',
+      justifyContent: 'center',
+      width: 4,
     },
-    quoteIcon: {
-      fontSize: 24,
-      color: colors.text,
-      fontWeight: '300',
-      opacity: 0.3,
+    quoteBarMinimal: {
+      width: 3,
+      height: '100%',
+      minHeight: 24,
+      borderRadius: 2,
     },
     content: {
       flex: 1,
@@ -131,19 +238,24 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       color: colors.text,
-      fontStyle: 'italic',
-      minHeight: 48,
-      paddingVertical: 8,
+      fontStyle: 'normal',
+      minHeight: 24,
+      paddingVertical: 0,
+      opacity: 0.9,
     },
     attribution: {
       marginTop: 12,
       alignItems: 'flex-end',
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
     },
     author: {
       fontSize: 14,
       color: colors.textSecondary,
       fontWeight: '500',
       fontStyle: 'normal',
+      fontFamily: 'AlbertSans_500Medium',
     },
     source: {
       fontSize: 12,
@@ -167,7 +279,7 @@ export class QuotePlugin extends BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^>\s+(.+)$/
+      block: /^(>+)\s*(.*)$/  // Match one or more '>' followed by optional content
     },
     priority: 75
   };
@@ -181,8 +293,12 @@ export class QuotePlugin extends BlockPlugin {
 
   readonly settings = {
     allowedParents: ['root', 'callout'] as EditorBlockType[],
-    validation: {},
-    defaultMeta: {}
+    validation: {
+      maxDepth: 5
+    },
+    defaultMeta: {
+      depth: 1
+    }
   };
 
   constructor() {
@@ -190,28 +306,49 @@ export class QuotePlugin extends BlockPlugin {
   }
 
   protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
-    // Create new paragraph after quote
-    return {
-      id: generateId(),
-      type: 'paragraph',
-      content: '',
-      meta: {}
-    };
+    const depth = block.meta?.depth || 1;
+    
+    // If the current quote is empty, exit quote mode and create paragraph
+    if (block.content.trim() === '') {
+      return {
+        id: generateId(),
+        type: 'paragraph',
+        content: '',
+        meta: {}
+      };
+    }
+    
+    // Create new quote block with same depth
+    return [
+      block, // Keep current block
+      {
+        id: generateId(),
+        type: 'quote',
+        content: '',
+        meta: { depth }
+      }
+    ];
   }
 
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
-    // Convert quote back to paragraph with markdown syntax when backspace at beginning
-    return {
-      ...block,
-      type: 'paragraph',
-      content: `> ${block.content}`,
-      meta: {}
-    };
+    const depth = block.meta?.depth || 1;
+    
+    // Only convert to paragraph at depth 1 with empty content
+    if (depth === 1 && block.content.trim() === '') {
+      return {
+        ...block,
+        type: 'paragraph',
+        content: '',
+        meta: {}
+      };
+    }
+    
+    return block;
   }
 
   protected transformContent(content: string): string {
-    // Remove markdown quote syntax if present
-    return content.replace(/^>\s+/, '').trim();
+    // Remove markdown quote syntax if present (handles multiple levels)
+    return content.replace(/^>+\s*/, '').trim();
   }
 
   public getActions(block: EditorBlock) {
@@ -220,10 +357,12 @@ export class QuotePlugin extends BlockPlugin {
   }
 
   /**
-   * Create quote block with author and source
+   * Create quote block with author, source, and depth
    */
-  createQuoteBlock(content: string = '', author?: string, source?: string): EditorBlock {
-    const meta: Record<string, any> = {};
+  createQuoteBlock(content: string = '', depth: number = 1, author?: string, source?: string): EditorBlock {
+    const meta: Record<string, any> = {
+      depth: Math.min(Math.max(depth, 1), 5) // Clamp between 1 and 5
+    };
     if (author) meta.author = author;
     if (source) meta.source = source;
     
@@ -236,21 +375,78 @@ export class QuotePlugin extends BlockPlugin {
   }
 
   /**
-   * Parse markdown quote syntax
+   * Parse markdown quote syntax with depth support
+   * Examples:
+   * > depth 1
+   * >> depth 2
+   * >>> depth 3
+   * 
+   * Multi-line quotes with same depth are combined:
+   * > line 1
+   * > line 2
+   * becomes one block with content "line 1\nline 2"
    */
   parseMarkdown(text: string): EditorBlock | null {
     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
     
-    const content = match[1];
-    return this.createQuoteBlock(content);
+    const quoteMarkers = match[1]; // The '>' characters
+    const content = match[2]; // The actual content
+    const depth = quoteMarkers.length; // Count the number of '>'
+    
+    return this.createQuoteBlock(content, depth);
   }
 
   /**
-   * Convert block to markdown
+   * Convert block to markdown with depth support
+   * Handles multi-line content properly
    */
   toMarkdown(block: EditorBlock): string {
-    const lines = block.content.split('\n').map((line: string) => `> ${line}`);
+    const depth = block.meta?.depth || 1;
+    const quotePrefix = '>'.repeat(depth);
+    const lines = block.content.split('\n').map((line: string) => {
+      // Handle empty lines
+      if (line.trim() === '') {
+        return quotePrefix;
+      }
+      return `${quotePrefix} ${line}`;
+    });
     return lines.join('\n');
+  }
+
+  /**
+   * Increase quote depth
+   */
+  increaseDepth(block: EditorBlock): EditorBlock {
+    const currentDepth = block.meta?.depth || 1;
+    return {
+      ...block,
+      meta: {
+        ...block.meta,
+        depth: Math.min(currentDepth + 1, 5)
+      }
+    };
+  }
+
+  /**
+   * Decrease quote depth
+   */
+  decreaseDepth(block: EditorBlock): EditorBlock {
+    const currentDepth = block.meta?.depth || 1;
+    if (currentDepth <= 1) {
+      // Convert to paragraph when depth reaches 1
+      return {
+        ...block,
+        type: 'paragraph',
+        meta: {}
+      };
+    }
+    return {
+      ...block,
+      meta: {
+        ...block.meta,
+        depth: currentDepth - 1
+      }
+    };
   }
 }
