@@ -173,9 +173,14 @@ export function BlockRenderer({
         <BlockComponent {...blockComponentProps} />
       </TouchableOpacity>
       
-      {/* Block Actions */}
-      {isSelected && (showActions || isHovered) && blockActions.length > 0 && (
-        <View style={[styles.actionsContainer, { backgroundColor: colors.surface }]}>
+      {/* Block Actions - Always show when selected, position based on block index */}
+      {isSelected && blockActions.length > 0 && (
+        <View style={[
+          styles.actionsContainer, 
+          { backgroundColor: colors.surface },
+          // For first block (index 0), position below instead of above
+          index === 0 ? styles.actionsContainerBelow : {}
+        ]}>
           {blockActions.map((action: any) => (
             <TouchableOpacity
               key={action.id}
@@ -183,12 +188,15 @@ export function BlockRenderer({
                 styles.actionButton,
                 action.style === 'destructive' && styles.destructiveAction
               ]}
-              onPress={() => handleAction(action.id)}
+              onPress={() => {
+                handleAction(action.id);
+                setShowActions(false);
+              }}
             >
               {action.icon && (
                 <Ionicons
                   name={action.icon as any}
-                  size={14}
+                  size={16}
                   color={
                     action.style === 'destructive'
                       ? '#FF3B30'
@@ -357,6 +365,11 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       zIndex: 20,
       paddingHorizontal: 4,
       paddingVertical: 4,
+    },
+    
+    actionsContainerBelow: {
+      top: 'auto',
+      bottom: -50,
     },
     
     actionButton: {

@@ -498,31 +498,26 @@ export class CalloutPlugin implements BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
+    // Return only the default actions (duplicate and delete)
+    // Note: CalloutPlugin doesn't extend BlockPlugin, so we need to provide default actions
     const actions: any[] = [];
-    const currentType = block.meta?.calloutType || 'note';
-    const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for actions
     
-    // Add callout type change actions
-    Object.entries(calloutConfigs).forEach(([type, config]) => {
-      if (type !== currentType) {
-        actions.unshift({
-          id: `callout-${type}`,
-          label: `Change to ${config.label}`,
-          icon: 'info-circle',
-          handler: (block: EditorBlock) => {
-            console.log(`Change callout to ${type}:`, block.id);
-          }
-        });
+    actions.push({
+      id: 'duplicate',
+      label: 'Duplicate',
+      icon: 'copy',
+      handler: (block: EditorBlock, context: any) => {
+        context.duplicateBlock();
       }
     });
     
-    // Add title toggle action
-    actions.unshift({
-      id: 'toggle-title',
-      label: block.meta?.showTitle ? 'Hide Title' : 'Show Title',
-      icon: 'eye',
-      handler: (block: EditorBlock) => {
-        console.log('Toggle callout title:', block.id);
+    actions.push({
+      id: 'delete',
+      label: 'Delete',
+      icon: 'trash',
+      style: 'destructive',
+      handler: (block: EditorBlock, context: any) => {
+        context.deleteBlock();
       }
     });
     

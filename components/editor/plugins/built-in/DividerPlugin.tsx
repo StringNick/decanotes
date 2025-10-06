@@ -479,21 +479,25 @@ export class DividerPlugin implements BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
+    // Return only the default actions (duplicate and delete)
     const actions: any[] = [];
-    const dividerStyle = (block.meta as any)?.dividerStyle || 'solid';
-    const dividerStyles = getDividerStyles('light'); // Default to light theme for actions
     
-    // Add divider-specific actions
-    Object.entries(dividerStyles).forEach(([styleKey, styleConfig]) => {
-      if (styleKey !== dividerStyle) {
-        actions.unshift({
-          id: `divider-${styleKey}`,
-          label: `Change to ${styleConfig.label}`,
-          icon: 'minus',
-          handler: (block: EditorBlock) => {
-            console.log(`Change divider to ${styleKey}:`, block.id);
-          }
-        });
+    actions.push({
+      id: 'duplicate',
+      label: 'Duplicate',
+      icon: 'copy',
+      handler: (block: EditorBlock, context: any) => {
+        context.duplicateBlock();
+      }
+    });
+    
+    actions.push({
+      id: 'delete',
+      label: 'Delete',
+      icon: 'trash',
+      style: 'destructive',
+      handler: (block: EditorBlock, context: any) => {
+        context.deleteBlock();
       }
     });
     

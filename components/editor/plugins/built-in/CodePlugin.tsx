@@ -505,33 +505,26 @@ export class CodePlugin implements BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
+    // Return only the default actions (duplicate and delete)
+    // Note: CodePlugin doesn't extend BlockPlugin, so we need to provide default actions
     const actions: any[] = [];
     
-    // Add code-specific actions
-    actions.unshift({
-      id: 'change-language',
-      label: 'Change Language',
-      icon: 'language',
-      handler: (block: EditorBlock) => {
-        console.log('Change code language:', block.id);
-      }
-    });
-    
-    actions.unshift({
-      id: 'toggle-line-numbers',
-      label: (block.meta as any)?.showLineNumbers ? 'Hide Line Numbers' : 'Show Line Numbers',
-      icon: 'list-ol',
-      handler: (block: EditorBlock) => {
-        console.log('Toggle line numbers:', block.id);
-      }
-    });
-    
-    actions.unshift({
-      id: 'copy-code',
-      label: 'Copy Code',
+    actions.push({
+      id: 'duplicate',
+      label: 'Duplicate',
       icon: 'copy',
-      handler: (block: EditorBlock) => {
-        console.log('Copy code:', block.content);
+      handler: (block: EditorBlock, context: any) => {
+        context.duplicateBlock();
+      }
+    });
+    
+    actions.push({
+      id: 'delete',
+      label: 'Delete',
+      icon: 'trash',
+      style: 'destructive',
+      handler: (block: EditorBlock, context: any) => {
+        context.deleteBlock();
       }
     });
     

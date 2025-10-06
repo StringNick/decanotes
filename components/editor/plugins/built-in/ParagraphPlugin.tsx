@@ -191,28 +191,7 @@ export class ParagraphPlugin extends BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
-    const actions = super.getActions(block);
-    
-    // Add paragraph-specific actions
-    actions.unshift({
-      id: 'convert-heading',
-      label: 'Convert to Heading',
-      icon: 'heading',
-      handler: (block) => {
-        // This will be handled by the editor
-        console.log('Convert to heading:', block.id);
-      }
-    });
-    
-    actions.unshift({
-      id: 'convert-quote',
-      label: 'Convert to Quote',
-      icon: 'quote',
-      handler: (block) => {
-        console.log('Convert to quote:', block.id);
-      }
-    });
-    
-    return actions;
+    // Return only the default actions (duplicate and delete)
+    return super.getActions(block);
   }
 }

@@ -409,35 +409,25 @@ export class ImagePlugin implements BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
+    // Return only the default actions (duplicate and delete)
     const actions: any[] = [];
     
-    // Add image-specific actions
-    actions.unshift({
-      id: 'edit-image',
-      label: 'Edit Image',
-      icon: 'edit',
-      handler: (block: EditorBlock) => {
-        console.log('Edit image:', block.id);
+    actions.push({
+      id: 'duplicate',
+      label: 'Duplicate',
+      icon: 'copy',
+      handler: (block: EditorBlock, context: any) => {
+        context.duplicateBlock();
       }
     });
     
-    if (block.meta?.url) {
-      actions.unshift({
-        id: 'open-image',
-        label: 'Open Image',
-        icon: 'external-link',
-        handler: (block: EditorBlock) => {
-          console.log('Open image:', block.meta?.url);
-        }
-      });
-    }
-    
-    actions.unshift({
-      id: 'add-caption',
-      label: 'Add Caption',
-      icon: 'comment',
-      handler: (block: EditorBlock) => {
-        console.log('Add/edit caption:', block.id);
+    actions.push({
+      id: 'delete',
+      label: 'Delete',
+      icon: 'trash',
+      style: 'destructive',
+      handler: (block: EditorBlock, context: any) => {
+        context.deleteBlock();
       }
     });
     

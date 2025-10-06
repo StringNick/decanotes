@@ -210,28 +210,8 @@ export class QuotePlugin extends BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
-    const actions: any[] = [];
-    
-    // Add quote-specific actions
-    actions.unshift({
-      id: 'add-author',
-      label: 'Add Author',
-      icon: 'user',
-      handler: (block: EditorBlock) => {
-        console.log('Add author to quote:', block.id);
-      }
-    });
-    
-    actions.unshift({
-      id: 'add-source',
-      label: 'Add Source',
-      icon: 'link',
-      handler: (block: EditorBlock) => {
-        console.log('Add source to quote:', block.id);
-      }
-    });
-    
-    return actions;
+    // Return only the default actions (duplicate and delete)
+    return super.getActions(block);
   }
 
   /**
