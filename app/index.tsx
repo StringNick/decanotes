@@ -305,7 +305,7 @@ export default function HomeScreen() {
               {
                 translateY: scrollY.interpolate({
                   inputRange: [0, 100],
-                  outputRange: [0, 80],
+                  outputRange: [0, 120],
                   extrapolate: 'clamp',
                 }),
               },
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   },
   notesListContent: {
     paddingHorizontal: DesignSystem.Spacing.xl,
-    paddingBottom: DesignSystem.Spacing['6xl'], // Padding for tab bar + FAB
+    paddingBottom: DesignSystem.Spacing['4xl'], // Padding for FAB
   },
   emptyState: {
     flex: 1,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
     right: DesignSystem.Spacing.xl,
-    bottom: 100,
+    bottom: DesignSystem.Spacing['2xl'],
   },
   fab: {
     width: 56,

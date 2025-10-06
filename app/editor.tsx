@@ -17,7 +17,8 @@ import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
 
 
-const initialMarkdown = `# Welcome to DecanNotes Editor
+// Demo markdown text (not used - we use initialBlocks from loaded notes instead)
+/* const initialMarkdown = `# Welcome to DecanNotes Editor
 
 ## All Supported Markdown Components
 
@@ -162,7 +163,7 @@ Blocks can be reordered by dragging and dropping for better organization.
 4. **Experiment with drag and drop** for reordering
 5. **Use keyboard shortcuts** for efficiency
 
-Enjoy creating with DecanNotes! 🚀`;
+Enjoy creating with DecanNotes! 🚀`; */
 
 // Import built-in plugins
 
@@ -183,6 +184,8 @@ export default function EditorScreen() {
   const [tempTitle, setTempTitle] = useState('');
   const [showMarkdownModal, setShowMarkdownModal] = useState(false);
   const [rawMarkdown, setRawMarkdown] = useState('');
+  const [isEditingMarkdown, setIsEditingMarkdown] = useState(false);
+  const [editedMarkdown, setEditedMarkdown] = useState('');
   const isInitialLoad = useRef(true);
   const initialBlocksRef = useRef<EditorBlock[]>([]);
   const isTitleManuallySet = useRef(false);
@@ -383,6 +386,8 @@ export default function EditorScreen() {
     if (editorRef.current) {
       const markdown = editorRef.current.getMarkdown();
       setRawMarkdown(markdown);
+      setEditedMarkdown(markdown);
+      setIsEditingMarkdown(false);
       setShowMarkdownModal(true);
     }
   }, []);
@@ -397,9 +402,48 @@ export default function EditorScreen() {
   }, []);
 
   const handleCopyFromModal = useCallback(async () => {
-    await Clipboard.setStringAsync(rawMarkdown);
+    await Clipboard.setStringAsync(isEditingMarkdown ? editedMarkdown : rawMarkdown);
     Alert.alert('Copied!', 'Markdown copied to clipboard');
-    setShowMarkdownModal(false);
+  }, [rawMarkdown, editedMarkdown, isEditingMarkdown]);
+  
+  // Apply edited markdown
+  const handleApplyMarkdown = useCallback(() => {
+    if (editorRef.current && editedMarkdown !== rawMarkdown) {
+      try {
+        // Apply the markdown to the editor
+        editorRef.current.setMarkdown(editedMarkdown);
+        
+        // Get the updated blocks from the editor after parsing
+        setTimeout(() => {
+          if (editorRef.current) {
+            const updatedBlocks = editorRef.current.getBlocks();
+            setBlocks(updatedBlocks);
+          }
+        }, 100);
+        
+        setRawMarkdown(editedMarkdown);
+        setIsEditingMarkdown(false);
+        markAsChanged();
+        Alert.alert('Success', 'Markdown applied successfully!');
+      } catch (error) {
+        console.error('Failed to apply markdown:', error);
+        Alert.alert('Error', 'Failed to parse markdown. Please check your syntax.');
+      }
+    } else {
+      setIsEditingMarkdown(false);
+    }
+  }, [editedMarkdown, rawMarkdown, markAsChanged]);
+  
+  // Start editing markdown
+  const handleEditMarkdown = useCallback(() => {
+    setEditedMarkdown(rawMarkdown);
+    setIsEditingMarkdown(true);
+  }, [rawMarkdown]);
+  
+  // Cancel editing markdown
+  const handleCancelEditMarkdown = useCallback(() => {
+    setEditedMarkdown(rawMarkdown);
+    setIsEditingMarkdown(false);
   }, [rawMarkdown]);
 
   // Block types for the menu - Notion-style
@@ -486,13 +530,7 @@ export default function EditorScreen() {
               style={styles.actionButton}
               onPress={handleGetRawMarkdown}
             >
-              <FileText size={16} color={colors.textSecondary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleCopyMarkdown}
-            >
-              <Copy size={16} color={colors.textSecondary} />
+              <Code size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -508,7 +546,7 @@ export default function EditorScreen() {
         <View style={styles.editorContainer}>
           <MarkdownEditor
             ref={editorRef}
-            initialMarkdown={initialMarkdown}
+            initialBlocks={blocks}
             placeholder="Start writing..."
             onBlocksChange={handleBlockChange}
             theme={getEditorTheme(colorScheme || 'light')}
@@ -666,29 +704,91 @@ export default function EditorScreen() {
         visible={showMarkdownModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowMarkdownModal(false)}
+        onRequestClose={() => {
+          if (isEditingMarkdown) {
+            handleCancelEditMarkdown();
+          } else {
+            setShowMarkdownModal(false);
+          }
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.markdownModalContent, { backgroundColor: colors.background }]}>
             <View style={styles.markdownModalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Raw Markdown</Text>
-              <TouchableOpacity onPress={() => setShowMarkdownModal(false)}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {isEditingMarkdown ? 'Edit Markdown' : 'View Markdown'}
+              </Text>
+              <TouchableOpacity onPress={() => {
+                if (isEditingMarkdown) {
+                  handleCancelEditMarkdown();
+                } else {
+                  setShowMarkdownModal(false);
+                }
+              }}>
                 <X size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
-            <View style={[styles.markdownContainer, {
-              backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-              borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-            }]}>
-              <Text style={[styles.markdownText, { color: colors.text }]}>{rawMarkdown}</Text>
+            
+            {isEditingMarkdown ? (
+              <TextInput
+                style={[styles.markdownInput, {
+                  backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  color: colors.text,
+                }]}
+                value={editedMarkdown}
+                onChangeText={setEditedMarkdown}
+                multiline
+                textAlignVertical="top"
+                placeholder="Enter your markdown here..."
+                placeholderTextColor={colors.textSecondary}
+                autoFocus
+              />
+            ) : (
+              <View style={[styles.markdownContainer, {
+                backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              }]}>
+                <Text style={[styles.markdownText, { color: colors.text }]}>{rawMarkdown}</Text>
+              </View>
+            )}
+            
+            <View style={styles.markdownModalActions}>
+              {isEditingMarkdown ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonCancel]}
+                    onPress={handleCancelEditMarkdown}
+                  >
+                    <Text style={[styles.modalButtonTextCancel, { color: colors.text }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonConfirm]}
+                    onPress={handleApplyMarkdown}
+                  >
+                    <Save size={16} color="#FFFFFF" />
+                    <Text style={styles.modalButtonTextConfirm}>Apply Changes</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonSecondary]}
+                    onPress={handleCopyFromModal}
+                  >
+                    <Copy size={16} color={colors.text} />
+                    <Text style={[styles.modalButtonTextSecondary, { color: colors.text }]}>Copy</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonConfirm]}
+                    onPress={handleEditMarkdown}
+                  >
+                    <Ionicons name="pencil" size={16} color="#FFFFFF" />
+                    <Text style={styles.modalButtonTextConfirm}>Edit Markdown</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.modalButtonConfirm, styles.copyButton]}
-              onPress={handleCopyFromModal}
-            >
-              <Copy size={16} color="#FFFFFF" />
-              <Text style={styles.modalButtonTextConfirm}>Copy to Clipboard</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -832,7 +932,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     markdownContainer: {
       borderWidth: 1,
-      borderRadius: 8,
+      borderRadius: 12,
       padding: 16,
       marginBottom: 16,
       maxHeight: 400,
@@ -842,9 +942,35 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       fontFamily: 'SpaceMono',
       lineHeight: 20,
     },
+    markdownInput: {
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      minHeight: 400,
+      maxHeight: 400,
+      fontSize: 14,
+      fontFamily: 'SpaceMono',
+      lineHeight: 20,
+    },
+    markdownModalActions: {
+      flexDirection: 'row',
+      gap: 12,
+      justifyContent: 'flex-end',
+    },
     copyButton: {
       flexDirection: 'row',
       gap: 8,
+    },
+    modalButtonSecondary: {
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      flexDirection: 'row',
+      gap: 8,
+      paddingHorizontal: 20,
+    },
+    modalButtonTextSecondary: {
+      fontSize: 16,
+      fontFamily: 'AlbertSans_500Medium',
     },
     headerActions: {
       flexDirection: 'row',

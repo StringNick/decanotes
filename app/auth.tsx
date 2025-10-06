@@ -65,7 +65,7 @@ export default function AuthScreen() {
     setIsLoading(true);
     try {
       await signIn('local', { type: 'local' });
-      router.replace('/(tabs)');
+      router.replace('/');
     } catch (error) {
       console.error('Local storage auth failed:', error);
       Alert.alert('Error', 'Failed to initialize local storage');
@@ -87,7 +87,7 @@ export default function AuthScreen() {
         host: renterdHost, 
         password: renterdPassword 
       });
-      router.replace('/(tabs)');
+      router.replace('/');
     } catch (error) {
       console.error('Renterd auth failed:', error);
       Alert.alert('Error', 'Failed to connect to Renterd. Please check your credentials.');
