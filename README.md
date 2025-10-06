@@ -1,52 +1,40 @@
-# Build Local
+# DecaNotes
 
-```bash
-eas build --profile development --platform android
-```
+A decentralized markdown editor with block-based architecture supporting multiple storage backends including Sia Renterd and IPFS. Features real-time markdown editing, drag & drop functionality, and cross-platform compatibility.
 
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
+## Build & Run
 
 1. Install dependencies
-
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. Start development server
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+3. Build for iOS/Android
+   ```bash
+   npx prebuild --platform ios
+   npx prebuild --platform android
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+4. Run on devices
+   ```bash
+   # iOS
+   npx expo run:ios
+   
+   # Android
+   npx expo run:android
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Features
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Block-based markdown editor with real-time rendering
+- Multiple storage backends (Local, Renterd, IPFS-ready)
+- Dark/light theme support
+- Cross-platform (iOS, Android, Web)
 
 ## Join the community
 
