@@ -13,6 +13,7 @@ import { BlockPlugin } from '../BlockPlugin';
  */
 const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({  
   block,
+  onBlockChange,
   onUpdate,
   onFocus,
   onBlur,
@@ -29,10 +30,14 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
   useImperativeHandle(ref, () => inputRef.current as TextInput);
 
   const handleTextChange = (text: string) => {
-    onUpdate?.({
-      ...block,
-      content: text
-    });
+    if (onBlockChange) {
+      onBlockChange({ content: text });
+    } else if (onUpdate) {
+      onUpdate({
+        ...block,
+        content: text
+      });
+    }
   };
 
   const author = block.meta?.author;
