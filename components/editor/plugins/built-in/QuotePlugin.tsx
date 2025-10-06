@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -11,7 +11,7 @@ import { BlockPlugin } from '../BlockPlugin';
 /**
  * Quote block component with modern dark theme support
  */
-const QuoteComponent: React.FC<BlockComponentProps> = memo(({
+const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({  
   block,
   onUpdate,
   onFocus,
@@ -19,10 +19,14 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
   isSelected,
   isEditing,
   style
-}) => {
+}, ref) => {
+  const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
+  
+  // Expose the TextInput methods through ref
+  useImperativeHandle(ref, () => inputRef.current as TextInput);
 
   const handleTextChange = (text: string) => {
     onUpdate?.({
@@ -47,6 +51,7 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
         
         <View style={styles.content}>
           <FormattedTextInput
+            ref={inputRef}
             value={block.content}
             onChangeText={handleTextChange}
             onFocus={onFocus}
@@ -75,21 +80,13 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
       </View>
     </View>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison function to prevent unnecessary re-renders
-  return (
-    prevProps.block.id === nextProps.block.id &&
-    prevProps.block.content === nextProps.block.content &&
-    prevProps.block.meta?.author === nextProps.block.meta?.author &&
-    prevProps.block.meta?.source === nextProps.block.meta?.source &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.isEditing === nextProps.isEditing &&
-    prevProps.style === nextProps.style
-  );
 });
+
+QuoteComponent.displayName = 'QuoteComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   
   return StyleSheet.create({
     container: {
@@ -97,42 +94,29 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     quoteContainer: {
       flexDirection: 'row',
-      backgroundColor: colors.surface,
-      borderLeftWidth: 4,
-      borderLeftColor: colors.accent,
-      borderRadius: 12,
-      borderTopLeftRadius: 4,
-      borderBottomLeftRadius: 4,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+      borderLeftWidth: 2,
+      borderLeftColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+      borderRadius: 8,
+      padding: 16,
+      borderWidth: 0,
     },
     selected: {
-      backgroundColor: colors.accentLight,
-      borderColor: colors.borderFocus,
-      borderWidth: 2,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
     },
     editing: {
-      backgroundColor: colors.surface,
-      borderColor: colors.accent,
-      borderWidth: 2,
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 2,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
     },
     quoteMark: {
-      marginRight: 16,
+      marginRight: 12,
       alignItems: 'center',
       justifyContent: 'flex-start',
-      paddingTop: 4,
     },
     quoteIcon: {
-      fontSize: 28,
-      color: colors.accent,
+      fontSize: 24,
+      color: colors.text,
       fontWeight: '300',
-      opacity: 0.7,
+      opacity: 0.3,
     },
     content: {
       flex: 1,
@@ -226,28 +210,8 @@ export class QuotePlugin extends BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
-    const actions: any[] = [];
-    
-    // Add quote-specific actions
-    actions.unshift({
-      id: 'add-author',
-      label: 'Add Author',
-      icon: 'user',
-      handler: (block: EditorBlock) => {
-        console.log('Add author to quote:', block.id);
-      }
-    });
-    
-    actions.unshift({
-      id: 'add-source',
-      label: 'Add Source',
-      icon: 'link',
-      handler: (block: EditorBlock) => {
-        console.log('Add source to quote:', block.id);
-      }
-    });
-    
-    return actions;
+    // Return only the default actions (duplicate and delete)
+    return super.getActions(block);
   }
 
   /**

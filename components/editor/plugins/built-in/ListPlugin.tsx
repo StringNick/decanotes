@@ -358,42 +358,29 @@ export class ListPlugin implements BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
+    // Return only the default actions (duplicate and delete)
+    // Note: ListPlugin implements BlockPlugin but doesn't extend it
     const actions: any[] = [];
-    const listType = block.meta?.listType || 'unordered';
-    const level = block.meta?.level || 0;
-
-    // Add list-specific actions
-    actions.unshift({
-      id: 'toggle-list-type',
-      label: listType === 'ordered' ? 'Convert to Bullet List' : 'Convert to Numbered List',
-      icon: listType === 'ordered' ? 'list-ul' : 'list-ol',
-      handler: (block: EditorBlock) => {
-        console.log('Toggle list type:', block.id);
+    
+    actions.push({
+      id: 'duplicate',
+      label: 'Duplicate',
+      icon: 'copy',
+      handler: (block: EditorBlock, context: any) => {
+        context.duplicateBlock();
       }
     });
-
-    if (level > 0) {
-      actions.unshift({
-        id: 'decrease-indent',
-        label: 'Decrease Indent',
-        icon: 'outdent',
-        handler: (block: EditorBlock) => {
-          console.log('Decrease indent:', block.id);
-        }
-      });
-    }
-
-    if (level < 5) {
-      actions.unshift({
-        id: 'increase-indent',
-        label: 'Increase Indent',
-        icon: 'indent',
-        handler: (block: EditorBlock) => {
-          console.log('Increase indent:', block.id);
-        }
-      });
-    }
-
+    
+    actions.push({
+      id: 'delete',
+      label: 'Delete',
+      icon: 'trash',
+      style: 'destructive',
+      handler: (block: EditorBlock, context: any) => {
+        context.deleteBlock();
+      }
+    });
+    
     return actions;
   }
 

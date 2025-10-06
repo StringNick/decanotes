@@ -1,10 +1,14 @@
 import { Colors } from '@/constants/Colors';
+import { useStorage } from '@/contexts/StorageContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import type { Note } from '@/types/storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { CheckSquare, Code, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Type, Undo2, X } from 'lucide-react-native';
-import React, { useCallback, useRef, useState } from 'react';
-import { Animated, FlatList, Keyboard, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Crypto from 'expo-crypto';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { CheckSquare, Code, Copy, FileText, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Type, Undo2, X } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
@@ -13,7 +17,8 @@ import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
 
 
-const initialMarkdown = `# Welcome to DecanNotes Editor
+// Demo markdown text (not used - we use initialBlocks from loaded notes instead)
+/* const initialMarkdown = `# Welcome to DecanNotes Editor
 
 ## All Supported Markdown Components
 
@@ -158,38 +163,82 @@ Blocks can be reordered by dragging and dropping for better organization.
 4. **Experiment with drag and drop** for reordering
 5. **Use keyboard shortcuts** for efficiency
 
-Enjoy creating with DecanNotes! 🚀`;
+Enjoy creating with DecanNotes! 🚀`; */
 
 // Import built-in plugins
 
 export default function EditorScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ noteId?: string }>();
   const colorScheme = useColorScheme();
+  const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges } = useStorage();
+
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [showBlockComponents, setShowBlockComponents] = useState(false);
   const [showFormattingToolbar, setShowFormattingToolbar] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [noteTitle, setNoteTitle] = useState('Untitled');
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [tempTitle, setTempTitle] = useState('');
+  const [showMarkdownModal, setShowMarkdownModal] = useState(false);
+  const [rawMarkdown, setRawMarkdown] = useState('');
+  const [isEditingMarkdown, setIsEditingMarkdown] = useState(false);
+  const [editedMarkdown, setEditedMarkdown] = useState('');
+  const isInitialLoad = useRef(true);
+  const initialBlocksRef = useRef<EditorBlock[]>([]);
+  const isTitleManuallySet = useRef(false);
   const blockComponentsAnim = useRef(new Animated.Value(0)).current;
 
-  // Mock page data - in real app this would come from navigation params
-  const pageTitle = "Untitled";
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
 
-  // Handle adding blocks
-  const handleAddBlock = useCallback((blockType: EditorBlockType) => {
-    if (editorRef.current) {
-      editorRef.current.insertBlock(blockType);
-      // Focus the newly added block
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.focus();
+  // Load note if noteId is provided
+  useEffect(() => {
+    const loadExistingNote = async () => {
+      if (params.noteId) {
+        try {
+          const note = await loadNote(params.noteId);
+          if (note) {
+            setBlocks(note.content);
+            const title = note.title || 'Untitled';
+            setNoteTitle(title);
+            initialBlocksRef.current = note.content;
+            // If note has a title, consider it manually set
+            if (title && title !== 'Untitled') {
+              isTitleManuallySet.current = true;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load note:', error);
+          Alert.alert('Error', 'Failed to load note');
         }
-      }, 100);
-    }
-    hideBlockComponents();
-    Keyboard.dismiss();
+      } else {
+        // New note - no initial content
+        initialBlocksRef.current = [];
+        isTitleManuallySet.current = false;
+      }
+      setIsLoading(false);
+      // Mark as loaded after a short delay to allow editor to initialize
+      setTimeout(() => {
+        isInitialLoad.current = false;
+        clearUnsavedChanges();
+      }, 500);
+    };
+
+    loadExistingNote();
+  }, [params.noteId]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      setCurrentNote(null);
+      clearUnsavedChanges();
+    };
   }, []);
+
+
 
   // Show block components with animation
   const showBlockComponentsWithAnimation = useCallback(() => {
@@ -214,10 +263,85 @@ export default function EditorScreen() {
     });
   }, [blockComponentsAnim]);
 
+  // Handle adding blocks
+  const handleAddBlock = useCallback((blockType: EditorBlockType) => {
+    if (editorRef.current) {
+
+      // Insert the new block
+      editorRef.current.insertBlock(blockType);
+
+      // Focus the newly added block after a short delay
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+        }
+      }, 150);
+    }
+    hideBlockComponents();
+  }, [hideBlockComponents]);
+  
   // Handle block changes
   const handleBlockChange = useCallback((blocks: EditorBlock[]) => {
     setBlocks(blocks);
-  }, []);
+
+    // Don't mark as changed during initial load
+    if (isInitialLoad.current) {
+      return;
+    }
+
+    // Check if blocks actually changed by comparing with initial blocks
+    const hasActualChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocksRef.current);
+
+    if (hasActualChanges) {
+      markAsChanged();
+    }
+  }, [markAsChanged]);
+
+  // Save note handler
+  const handleSaveNote = useCallback(async () => {
+    if (isSaving) return;
+
+    setIsSaving(true);
+    try {
+      // Generate note preview from blocks
+      const preview = blocks
+        .filter(b => b.type === 'paragraph' || b.type === 'heading')
+        .slice(0, 3)
+        .map(b => b.content)
+        .join(' ')
+        .substring(0, 150);
+
+      // Use current noteTitle if manually set, otherwise extract from content
+      let title = noteTitle;
+      if (!isTitleManuallySet.current && (!title || title === 'Untitled')) {
+        // Auto-extract title from first heading or use first paragraph
+        const titleBlock = blocks.find(b => b.type === 'heading' && b.meta?.level === 1);
+        title = titleBlock?.content || blocks[0]?.content || 'Untitled';
+        setNoteTitle(title);
+      }
+
+      const note: Note = {
+        id: currentNote?.id || Crypto.randomUUID(),
+        title,
+        content: blocks,
+        preview: preview || 'Empty note',
+        color: currentNote?.color || 'default',
+        createdAt: currentNote?.createdAt || new Date(),
+        updatedAt: new Date(),
+        lastModified: new Date(),
+      };
+
+      await saveNote(note);
+      // Update initial blocks reference after successful save
+      initialBlocksRef.current = blocks;
+      Alert.alert('Success', 'Note saved successfully!');
+    } catch (error) {
+      console.error('Failed to save note:', error);
+      Alert.alert('Error', 'Failed to save note');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [blocks, currentNote, saveNote, isSaving, noteTitle]);
 
   // Handle undo
   const handleUndo = useCallback(() => {
@@ -239,6 +363,89 @@ export default function EditorScreen() {
     // TODO: Implement formatting actions
   }, []);
 
+  // Handle rename
+  const handleRename = useCallback(() => {
+    setTempTitle(noteTitle);
+    setShowRenameModal(true);
+  }, [noteTitle]);
+
+  const handleConfirmRename = useCallback(() => {
+    if (tempTitle.trim()) {
+      setNoteTitle(tempTitle.trim());
+      isTitleManuallySet.current = true; // Mark title as manually set
+      // Only mark as changed if not in initial load
+      if (!isInitialLoad.current) {
+        markAsChanged();
+      }
+    }
+    setShowRenameModal(false);
+  }, [tempTitle, markAsChanged]);
+
+  // Get raw markdown
+  const handleGetRawMarkdown = useCallback(() => {
+    if (editorRef.current) {
+      const markdown = editorRef.current.getMarkdown();
+      setRawMarkdown(markdown);
+      setEditedMarkdown(markdown);
+      setIsEditingMarkdown(false);
+      setShowMarkdownModal(true);
+    }
+  }, []);
+
+  // Copy markdown to clipboard
+  const handleCopyMarkdown = useCallback(async () => {
+    if (editorRef.current) {
+      const markdown = editorRef.current.getMarkdown();
+      await Clipboard.setStringAsync(markdown);
+      Alert.alert('Copied!', 'Markdown copied to clipboard');
+    }
+  }, []);
+
+  const handleCopyFromModal = useCallback(async () => {
+    await Clipboard.setStringAsync(isEditingMarkdown ? editedMarkdown : rawMarkdown);
+    Alert.alert('Copied!', 'Markdown copied to clipboard');
+  }, [rawMarkdown, editedMarkdown, isEditingMarkdown]);
+  
+  // Apply edited markdown
+  const handleApplyMarkdown = useCallback(() => {
+    if (editorRef.current && editedMarkdown !== rawMarkdown) {
+      try {
+        // Apply the markdown to the editor
+        editorRef.current.setMarkdown(editedMarkdown);
+        
+        // Get the updated blocks from the editor after parsing
+        setTimeout(() => {
+          if (editorRef.current) {
+            const updatedBlocks = editorRef.current.getBlocks();
+            setBlocks(updatedBlocks);
+          }
+        }, 100);
+        
+        setRawMarkdown(editedMarkdown);
+        setIsEditingMarkdown(false);
+        markAsChanged();
+        Alert.alert('Success', 'Markdown applied successfully!');
+      } catch (error) {
+        console.error('Failed to apply markdown:', error);
+        Alert.alert('Error', 'Failed to parse markdown. Please check your syntax.');
+      }
+    } else {
+      setIsEditingMarkdown(false);
+    }
+  }, [editedMarkdown, rawMarkdown, markAsChanged]);
+  
+  // Start editing markdown
+  const handleEditMarkdown = useCallback(() => {
+    setEditedMarkdown(rawMarkdown);
+    setIsEditingMarkdown(true);
+  }, [rawMarkdown]);
+  
+  // Cancel editing markdown
+  const handleCancelEditMarkdown = useCallback(() => {
+    setEditedMarkdown(rawMarkdown);
+    setIsEditingMarkdown(false);
+  }, [rawMarkdown]);
+
   // Block types for the menu - Notion-style
   const blockTypes: Array<{ type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: any }> = [
     { type: 'paragraph', icon: Type, label: 'Text' },
@@ -256,89 +463,157 @@ export default function EditorScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar 
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
-        backgroundColor={colors.background} 
+      <StatusBar
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
       />
-      {/* Header */}
+      {/* Compact Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.pageTitle}>{pageTitle}</Text>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              if (hasUnsavedChanges) {
+                Alert.alert(
+                  'Unsaved Changes',
+                  'You have unsaved changes. Do you want to save before leaving?',
+                  [
+                    { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Save',
+                      onPress: async () => {
+                        await handleSaveNote();
+                        router.back();
+                      }
+                    },
+                  ]
+                );
+              } else {
+                router.back();
+              }
+            }}
+          >
+            <Ionicons name="arrow-back" size={16} color={colors.text} />
+          </TouchableOpacity>
+
+          <View style={styles.titleContainer}>
+            <Text style={styles.pageTitle}>{noteTitle}</Text>
+            {hasUnsavedChanges && (
+              <View style={styles.unsavedIndicator}>
+                <View style={styles.unsavedDot} />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.headerActions}>
+            {hasUnsavedChanges && (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.saveButton]}
+                onPress={handleSaveNote}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color={colors.background} />
+                ) : (
+                  <Save size={16} color={colors.background} />
+                )}
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleRename}
+            >
+              <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleGetRawMarkdown}
+            >
+              <Code size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
-        </TouchableOpacity>
       </View>
 
       {/* Editor */}
-      <View style={styles.editorContainer}>
-        <MarkdownEditor
-          ref={editorRef}
-          initialMarkdown={initialMarkdown}
-          placeholder="Start writing..."
-          onBlocksChange={handleBlockChange}
-          theme={getEditorTheme(colorScheme || 'light')}
-          config={{
-            toolbar: { enabled: false },
-            theme: {
-              colors: {
-                background: colors.background,
-                text: colors.text,
-                border: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                primary: colors.tint,
-                secondary: colors.icon
-              }
-            }
-          }}
-        />
-      </View>
-
-      {/* Minimal Bottom Toolbar */}
-      <View style={styles.bottomToolbar}>
-        <View style={styles.leftToolbarButtons}>
-          <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={handleUndo}
-        >
-          <Undo2 size={20} color={colors.background} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={handleRedo}
-        >
-          <Redo2 size={20} color={colors.background} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={showBlockComponentsWithAnimation}
-        >
-          <Plus size={20} color={colors.background} />
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={() => setShowFormattingToolbar(!showFormattingToolbar)}
-        >
-          <Ionicons name="text" size={20} color={colors.background} />
-        </TouchableOpacity>
+      {isLoading ? (
+        <View style={[styles.editorContainer, styles.loadingContainer]}>
+          <ActivityIndicator size="large" color={colors.text} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading note...</Text>
         </View>
-        
-        {showBlockComponents && (
-          <TouchableOpacity 
-            style={styles.iconButton}
-            onPress={hideBlockComponents}
+      ) : (
+        <View style={styles.editorContainer}>
+          <MarkdownEditor
+            ref={editorRef}
+            initialBlocks={blocks}
+            placeholder="Start writing..."
+            onBlocksChange={handleBlockChange}
+            theme={getEditorTheme(colorScheme || 'light')}
+            config={{
+              toolbar: { enabled: false },
+              theme: {
+                colors: {
+                  background: colors.background,
+                  text: colors.text,
+                  border: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  primary: colors.tint,
+                  secondary: colors.icon
+                }
+              }
+            }}
+          />
+        </View>
+      )}
+
+      {/* Modern Bottom Toolbar */}
+      <View style={styles.bottomToolbar}>
+        <View style={styles.toolbarInner}>
+          {/* History Controls Group */}
+          <View style={styles.toolbarGroup}>
+            <TouchableOpacity
+              style={styles.toolbarButton}
+              onPress={handleUndo}
+              activeOpacity={0.7}
+            >
+              <Undo2 size={20} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+
+            <View style={styles.toolbarDivider} />
+
+            <TouchableOpacity
+              style={styles.toolbarButton}
+              onPress={handleRedo}
+              activeOpacity={0.7}
+            >
+              <Redo2 size={20} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Primary Action - Add Block */}
+          <TouchableOpacity
+            style={[styles.primaryActionButton, showBlockComponents && styles.primaryActionButtonActive]}
+            onPress={showBlockComponents ? hideBlockComponents : showBlockComponentsWithAnimation}
+            activeOpacity={0.8}
           >
-            <X size={20} color={colors.background} />
+            {showBlockComponents ? (
+              <X size={22} color={colors.background} strokeWidth={2.5} />
+            ) : (
+              <Plus size={22} color={colors.background} strokeWidth={2.5} />
+            )}
           </TouchableOpacity>
-        )}
+
+          {/* Formatting Control */}
+          <View style={styles.toolbarGroup}>
+            <TouchableOpacity
+              style={[styles.toolbarButton, showFormattingToolbar && styles.toolbarButtonActive]}
+              onPress={() => setShowFormattingToolbar(!showFormattingToolbar)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="text" size={20} color={showFormattingToolbar ? colors.tint : colors.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       {/* Formatting Toolbar */}
@@ -366,41 +641,171 @@ export default function EditorScreen() {
             showsVerticalScrollIndicator={false}
             columnWrapperStyle={styles.blockPanelRow}
             renderItem={({ item, index }) => {
-               const IconComponent = item.icon;
-               return (
-                 <TouchableOpacity
-                   style={styles.blockPanelItem}
-                   onPress={() => handleAddBlock(item.type)}
-                 >
-                   <View style={styles.blockPanelIconContainer}>
-                     <IconComponent size={18} color={colors.text} />
-                   </View>
-                   <Text style={styles.blockPanelLabel}>{item.label}</Text>
-                 </TouchableOpacity>
-               );
-             }}
+              const IconComponent = item.icon;
+              return (
+                <TouchableOpacity
+                  style={styles.blockPanelItem}
+                  onPress={() => handleAddBlock(item.type)}
+                >
+                  <View style={styles.blockPanelIconContainer}>
+                    <IconComponent size={18} color={colors.text} />
+                  </View>
+                  <Text style={styles.blockPanelLabel}>{item.label}</Text>
+                </TouchableOpacity>
+              );
+            }}
             keyExtractor={(item, index) => index.toString()}
           />
         </View>
       )}
+
+      {/* Rename Modal */}
+      <Modal
+        visible={showRenameModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRenameModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Rename Note</Text>
+            <TextInput
+              style={[styles.modalInput, {
+                color: colors.text,
+                borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+              }]}
+              value={tempTitle}
+              onChangeText={setTempTitle}
+              placeholder="Enter note title"
+              placeholderTextColor={colors.textSecondary}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowRenameModal(false)}
+              >
+                <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleConfirmRename}
+              >
+                <Text style={styles.modalButtonTextConfirm}>Rename</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Raw Markdown Modal */}
+      <Modal
+        visible={showMarkdownModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (isEditingMarkdown) {
+            handleCancelEditMarkdown();
+          } else {
+            setShowMarkdownModal(false);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.markdownModalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.markdownModalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {isEditingMarkdown ? 'Edit Markdown' : 'View Markdown'}
+              </Text>
+              <TouchableOpacity onPress={() => {
+                if (isEditingMarkdown) {
+                  handleCancelEditMarkdown();
+                } else {
+                  setShowMarkdownModal(false);
+                }
+              }}>
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            
+            {isEditingMarkdown ? (
+              <TextInput
+                style={[styles.markdownInput, {
+                  backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  color: colors.text,
+                }]}
+                value={editedMarkdown}
+                onChangeText={setEditedMarkdown}
+                multiline
+                textAlignVertical="top"
+                placeholder="Enter your markdown here..."
+                placeholderTextColor={colors.textSecondary}
+                autoFocus
+              />
+            ) : (
+              <View style={[styles.markdownContainer, {
+                backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              }]}>
+                <Text style={[styles.markdownText, { color: colors.text }]}>{rawMarkdown}</Text>
+              </View>
+            )}
+            
+            <View style={styles.markdownModalActions}>
+              {isEditingMarkdown ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonCancel]}
+                    onPress={handleCancelEditMarkdown}
+                  >
+                    <Text style={[styles.modalButtonTextCancel, { color: colors.text }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonConfirm]}
+                    onPress={handleApplyMarkdown}
+                  >
+                    <Save size={16} color="#FFFFFF" />
+                    <Text style={styles.modalButtonTextConfirm}>Apply Changes</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonSecondary]}
+                    onPress={handleCopyFromModal}
+                  >
+                    <Copy size={16} color={colors.text} />
+                    <Text style={[styles.modalButtonTextSecondary, { color: colors.text }]}>Copy</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonConfirm]}
+                    onPress={handleEditMarkdown}
+                  >
+                    <Ionicons name="pencil" size={16} color="#FFFFFF" />
+                    <Text style={styles.modalButtonTextConfirm}>Edit Markdown</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
     },
     header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-      backgroundColor: colors.background, // Changed from colors.surface to match status bar
+      backgroundColor: colors.background,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       shadowColor: colors.text,
@@ -409,37 +814,175 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       shadowRadius: 2,
       elevation: 1,
     },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
     backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
       backgroundColor: colors.surface,
+      marginRight: 12,
     },
-    headerCenter: {
+    titleContainer: {
       flex: 1,
+      flexDirection: 'row',
       alignItems: 'center',
+      gap: 8,
     },
     pageTitle: {
       fontSize: 18,
-      fontFamily: 'AlbertSans_700Bold',
+      fontFamily: 'AlbertSans_600SemiBold',
       color: colors.text,
       letterSpacing: -0.3,
     },
-    lastModified: {
-      fontSize: 13,
-      color: colors.icon,
-      marginTop: 2,
+    unsavedIndicator: {
+      padding: 4,
     },
-    moreButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+    unsavedDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: '#FCD34D',
+    },
+    saveButton: {
+      backgroundColor: colors.tint,
+    },
+    loadingContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 16,
+    },
+    loadingText: {
+      fontSize: 16,
+      fontFamily: 'AlbertSans_500Medium',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalContent: {
+      width: '100%',
+      maxWidth: 400,
+      borderRadius: 16,
+      padding: 24,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    markdownModalContent: {
+      maxHeight: '80%',
+    },
+    markdownModalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontFamily: 'AlbertSans_600SemiBold',
+      marginBottom: 16,
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      fontFamily: 'AlbertSans_400Regular',
+      marginBottom: 20,
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
-      marginLeft: 12,
+    },
+    modalButtonCancel: {
+      backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    },
+    modalButtonConfirm: {
+      backgroundColor: colors.tint,
+    },
+    modalButtonTextCancel: {
+      fontSize: 16,
+      fontFamily: 'AlbertSans_500Medium',
+      color: colors.text,
+    },
+    modalButtonTextConfirm: {
+      fontSize: 16,
+      fontFamily: 'AlbertSans_500Medium',
+      color: '#FFFFFF',
+    },
+    markdownContainer: {
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      maxHeight: 400,
+    },
+    markdownText: {
+      fontSize: 14,
+      fontFamily: 'SpaceMono',
+      lineHeight: 20,
+    },
+    markdownInput: {
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      minHeight: 400,
+      maxHeight: 400,
+      fontSize: 14,
+      fontFamily: 'SpaceMono',
+      lineHeight: 20,
+    },
+    markdownModalActions: {
+      flexDirection: 'row',
+      gap: 12,
+      justifyContent: 'flex-end',
+    },
+    copyButton: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    modalButtonSecondary: {
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      flexDirection: 'row',
+      gap: 8,
+      paddingHorizontal: 20,
+    },
+    modalButtonTextSecondary: {
+      fontSize: 16,
+      fontFamily: 'AlbertSans_500Medium',
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    actionButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: colors.surface,
     },
     editorContainer: {
@@ -447,7 +990,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: colors.background,
     },
     bottomContainer: {
-      backgroundColor: colors.background, // Changed from colors.surface to match status bar
+      backgroundColor: colors.background,
       borderTopWidth: 1,
       borderTopColor: colors.border,
       shadowColor: colors.text,
@@ -457,19 +1000,61 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       elevation: 8,
     },
     bottomToolbar: {
+      backgroundColor: colors.background,
+      borderTopWidth: 1,
+      borderTopColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      paddingBottom: 16,
+    },
+    toolbarInner: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      backgroundColor: colors.dark,
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
+      gap: 12,
+    },
+    toolbarGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+      borderRadius: 14,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    },
+    toolbarButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 10,
+      backgroundColor: 'transparent',
+    },
+    toolbarButtonActive: {
+      backgroundColor: colorScheme === 'dark' ? 'rgba(20, 184, 166, 0.15)' : 'rgba(20, 184, 166, 0.1)',
+    },
+    toolbarDivider: {
+      width: 1,
+      height: 20,
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+      marginHorizontal: 4,
+    },
+    primaryActionButton: {
+      width: 52,
+      height: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 16,
+      backgroundColor: colors.tint,
+      shadowColor: colors.tint,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    primaryActionButtonActive: {
+      backgroundColor: colors.textSecondary,
+      shadowColor: colors.textSecondary,
     },
     leftToolbarButtons: {
       flexDirection: 'row',

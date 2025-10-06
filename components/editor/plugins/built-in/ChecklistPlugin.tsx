@@ -395,47 +395,29 @@ export class ChecklistPlugin implements BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
+    // Return only the default actions (duplicate and delete)
+    // Note: ChecklistPlugin implements BlockPlugin but doesn't extend it
     const actions: any[] = [];
-    const isChecked = block.meta?.checked || false;
-    const level = block.meta?.level || 0;
-
-    // Add checklist-specific actions
-    actions.unshift({
-      id: 'toggle-checked',
-      label: isChecked ? 'Uncheck Item' : 'Check Item',
-      icon: isChecked ? 'square' : 'check-square',
-      handler: (block: EditorBlock) => {
+    
+    actions.push({
+      id: 'duplicate',
+      label: 'Duplicate',
+      icon: 'copy',
+      handler: (block: EditorBlock, context: any) => {
+        context.duplicateBlock();
       }
     });
-
-    if (level > 0) {
-      actions.unshift({
-        id: 'decrease-indent',
-        label: 'Decrease Indent',
-        icon: 'outdent',
-        handler: (block: EditorBlock) => {
-        }
-      });
-    }
-
-    if (level < 5) {
-      actions.unshift({
-        id: 'increase-indent',
-        label: 'Increase Indent',
-        icon: 'indent',
-        handler: (block: EditorBlock) => {
-        }
-      });
-    }
-
-    actions.unshift({
-      id: 'convert-to-list',
-      label: 'Convert to List',
-      icon: 'list',
-      handler: (block: EditorBlock) => {
+    
+    actions.push({
+      id: 'delete',
+      label: 'Delete',
+      icon: 'trash',
+      style: 'destructive',
+      handler: (block: EditorBlock, context: any) => {
+        context.deleteBlock();
       }
     });
-
+    
     return actions;
   }
 

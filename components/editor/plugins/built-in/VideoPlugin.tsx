@@ -472,28 +472,27 @@ export class VideoPlugin implements BlockPlugin {
   }
 
   public getActions(block: EditorBlock) {
+    // Return only the default actions (duplicate and delete)
     const actions: any[] = [];
     
-    // Add video-specific actions
-    actions.unshift({
-      id: 'edit-url',
-      label: 'Edit URL',
-      icon: 'edit',
-      handler: (block: EditorBlock) => {
-        console.log('Edit video URL:', block.id);
+    actions.push({
+      id: 'duplicate',
+      label: 'Duplicate',
+      icon: 'copy',
+      handler: (block: EditorBlock, context: any) => {
+        context.duplicateBlock();
       }
     });
     
-    if (block.meta?.url) {
-      actions.unshift({
-        id: 'open-video',
-        label: 'Open Video',
-        icon: 'external-link',
-        handler: (block: EditorBlock) => {
-          console.log('Open video:', block.meta?.url);
-        }
-      });
-    }
+    actions.push({
+      id: 'delete',
+      label: 'Delete',
+      icon: 'trash',
+      style: 'destructive',
+      handler: (block: EditorBlock, context: any) => {
+        context.deleteBlock();
+      }
+    });
     
     return actions;
   }

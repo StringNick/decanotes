@@ -78,7 +78,14 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
 
     protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
       if (controller.handleEnter) {
-        return controller.handleEnter(block);
+        const result = controller.handleEnter(block);
+        // Filter out EnhancedKeyboardResult since this method doesn't support it
+        if (result && typeof result === 'object' && ('newBlocks' in result || 'updates' in result || 'focusBlockId' in result)) {
+          // For now, just return null if it's an EnhancedKeyboardResult
+          // TODO: Enhance this method to support EnhancedKeyboardResult
+          return null;
+        }
+        return result as EditorBlock | EditorBlock[] | null;
       }
       return super.handleEnter(block);
     }

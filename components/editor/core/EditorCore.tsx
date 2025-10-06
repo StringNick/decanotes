@@ -32,6 +32,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // Refs
     const scrollViewRef = useRef<ScrollView>(null);
     const editorRef = useRef<View>(null);
+    const blockRefsMap = useRef<Map<string, any>>(new Map());
+    const shouldFocusLastBlock = useRef(false);
     
     // Configuration with defaults
     const editorConfig: EditorConfig = {
@@ -196,15 +198,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // Handle clicking on empty space to create new paragraph
     const handleEmptySpacePress = useCallback(() => {
       // Create a new paragraph block at the end
-      const blockId = `block_${Date.now()}`;
       createBlock('paragraph', '', blocks.length);
-      
-      // Focus the new block after a short delay
-      setTimeout(() => {
-        selectBlock(blockId);
-        focusBlock(blockId);
-      }, 100);
-    }, [createBlock, selectBlock, focusBlock, blocks.length]);
+      // Mark that we should focus the last block after it's created
+      shouldFocusLastBlock.current = true;
+    }, [createBlock, blocks.length]);
 
     // Handle block operations with proper callbacks
     const handleBlockChange = (blockId: string, updates: Partial<EditorBlock>) => {
@@ -436,19 +433,51 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     };
 
     // Focus and scroll operations
-    const scrollToBlock = (blockId: string) => {
-      // Implementation would depend on block positioning
-      // This is a placeholder
-      console.log('Scroll to block:', blockId);
-    };
+    const scrollToBlock = useCallback((blockId: string) => {
+      const blockRef = blockRefsMap.current.get(blockId);
+      if (blockRef && scrollViewRef.current) {
+        // Measure the block's position and scroll to it
+        blockRef.measureLayout(
+          editorRef.current,
+          (x: number, y: number, width: number, height: number) => {
+            scrollViewRef.current?.scrollTo({
+              y: Math.max(0, y - 100), // Offset for better visibility
+              animated: true
+            });
+          },
+          (error: any) => {
+            console.warn('Failed to measure block position:', error);
+          }
+        );
+      }
+    }, []);
+    
+    // Focus block with input focus
+    const focusBlockInput = useCallback((blockId: string) => {
+      const blockRef = blockRefsMap.current.get(blockId);
+      if (blockRef?.focus) {
+        // Slight delay to ensure the block is rendered
+        setTimeout(() => {
+          blockRef.focus();
+        }, 50);
+      }
+    }, []);
 
     // Expose API through ref
     useImperativeHandle(ref, () => ({
       // Base MarkdownEditorRef methods
       getMarkdown: () => getMarkdown(),
       focus: () => {
-        // TODO: Implement focus functionality
-        console.warn('focus not yet implemented');
+        // Focus the currently focused block, or focus the last block
+        if (focusedBlockId) {
+          focusBlockInput(focusedBlockId);
+          scrollToBlock(focusedBlockId);
+        } else if (blocks.length > 0) {
+          const lastBlockId = blocks[blocks.length - 1].id;
+          focusBlock(lastBlockId);
+          focusBlockInput(lastBlockId);
+          scrollToBlock(lastBlockId);
+        }
       },
       insertBlock: (type: EditorBlockType, index?: number) => {
         createBlock(type, '', index);
@@ -574,7 +603,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       markdownPlugins,
       focusEditor,
       blurEditor,
-      scrollToBlock
+      scrollToBlock,
+      focusBlockInput
     ]);
 
     // Render toolbar
@@ -668,6 +698,13 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               onBlockMove={handleBlockMove}
               dragHandleProps={getDragHandleProps(block.id)}
               blockProps={getBlockProps(block.id, index)}
+              onBlockRefReady={(ref) => {
+                if (ref) {
+                  blockRefsMap.current.set(block.id, ref);
+                } else {
+                  blockRefsMap.current.delete(block.id);
+                }
+              }}
             />
           </View>
           
@@ -679,10 +716,29 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       );
     };
 
+    // Effect to focus newly created blocks
+    useEffect(() => {
+      if (focusedBlockId && blocks.find(b => b.id === focusedBlockId)) {
+        focusBlockInput(focusedBlockId);
+        scrollToBlock(focusedBlockId);
+      }
+    }, [focusedBlockId]);
+    
+    // Effect to auto-focus last block when created via empty space press
+    useEffect(() => {
+      if (shouldFocusLastBlock.current && blocks.length > 0) {
+        const lastBlock = blocks[blocks.length - 1];
+        shouldFocusLastBlock.current = false;
+        // Focus the last block
+        focusBlock(lastBlock.id);
+        selectBlock(lastBlock.id);
+      }
+    }, [blocks, focusBlock, selectBlock]);
+
     return (
       <View 
         style={[styles.container, style]} 
-        ref={keyboardRef}
+        ref={editorRef}
         testID="editor-core"
         {...props}
       >
@@ -693,14 +749,17 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           style={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          <View style={styles.blocksContainer}>
+            {blocks.map(renderBlock)}
+          </View>
+          
+          {/* Clickable empty space to create new block */}
           <TouchableOpacity
-            style={styles.editorContent}
+            style={styles.emptySpace}
             onPress={handleEmptySpacePress}
             activeOpacity={1}
           >
-            {blocks.map(renderBlock)}
-            {/* Empty space for clicking */}
-            <View style={styles.emptySpace} />
+            <Text style={styles.emptySpaceHint}>Tap here to add a new block...</Text>
           </TouchableOpacity>
         </ScrollView>
         
@@ -843,9 +902,19 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: '100%'
   },
+  blocksContainer: {
+    flex: 1
+  },
   emptySpace: {
     minHeight: 200,
-    flex: 1
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  emptySpaceHint: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic'
   }
 });
 

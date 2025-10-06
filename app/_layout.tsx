@@ -1,3 +1,5 @@
+import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
+import { StorageProvider } from '@/contexts/StorageContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
     AlbertSans_400Regular,
@@ -28,14 +30,20 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="editor" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <StorageProvider>
+        <CustomThemeProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="editor" options={{ headerShown: false }} />
+              <Stack.Screen name="auth" options={{ headerShown: false }} />
+              <Stack.Screen name="settings" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </CustomThemeProvider>
+      </StorageProvider>
     </SafeAreaProvider>
   );
 }

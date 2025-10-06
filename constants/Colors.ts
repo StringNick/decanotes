@@ -1,98 +1,116 @@
 /**
- * Wordsy design system color palette
- * Based on the provided design system with purple, teal, blue, and dark colors
+ * DecaNotes Color System
+ * Simplified colors using the new design system
  */
 
-// Primary colors from design system
-const purple = '#bd44ff';
-const teal = '#0bcdb6';
-const blue = '#67d4fc';
-const dark = '#313131';
+import { Colors as DSColors } from './DesignSystem';
 
 export const Colors = {
   light: {
-    // Primary text colors
-    text: '#000000',
-    textSecondary: '#666666',
-    textTertiary: '#999999',
+    // Text colors
+    text: DSColors.text.light.primary,
+    textSecondary: DSColors.text.light.secondary,
+    textTertiary: DSColors.text.light.tertiary,
     
     // Backgrounds
-    background: '#FFFFFF',
-    backgroundSecondary: '#F8F9FA',
-    surface: '#F8F9FA',
+    background: DSColors.background.light.primary,
+    backgroundSecondary: DSColors.background.light.secondary,
+    backgroundTertiary: DSColors.background.light.tertiary,
+    surface: DSColors.background.light.tertiary,
     
     // Borders
-    border: '#E5E5E7',
-    borderLight: '#F0F0F0',
+    border: DSColors.neutral.gray200,
+    borderLight: DSColors.neutral.gray100,
     
     // Brand colors
-    primary: purple,
-    teal: teal,
-    blue: blue,
-    dark: dark,
+    primary: DSColors.primary.purple,
+    teal: DSColors.primary.teal,
+    blue: DSColors.primary.blue,
+    dark: DSColors.primary.dark,
     
     // Interactive elements
-    tint: teal,
-    accent: blue,
+    tint: DSColors.primary.teal,
+    accent: DSColors.primary.blue,
     
     // Semantic colors
-    success: '#34C759',
-    error: '#FF3B30',
+    success: DSColors.semantic.success,
+    error: DSColors.semantic.error,
     
     // Icon colors
-    icon: '#666666',
-    tabIconDefault: '#FFFFFF',
-    tabIconSelected: teal,
+    icon: DSColors.text.light.secondary,
+    tabIconDefault: DSColors.text.light.inverse,
+    tabIconSelected: DSColors.primary.teal,
     
     // Card backgrounds
-    cardTodo: blue,
-    cardContent: '#FFFFFF',
-    cardLocked: '#F8F9FA',
+    cardTodo: DSColors.notes.light.default,
+    cardContent: DSColors.notes.light.default,
+    cardLocked: DSColors.background.light.secondary,
     
     // Button backgrounds
-    buttonPrimary: dark,
-    buttonFloating: teal,
+    buttonPrimary: DSColors.primary.dark,
+    buttonFloating: DSColors.primary.teal,
     
-    // Gradients (for use in LinearGradient components)
-    gradientOnboarding: [purple, blue],
-    gradientCard: [teal, blue],
+    // Additional editor colors
+    textMuted: DSColors.text.light.muted,
+    accentLight: 'rgba(139, 95, 191, 0.1)',
+    accent2: DSColors.primary.blue,
+    accent3: DSColors.primary.teal,
+    errorLight: 'rgba(239, 68, 68, 0.1)',
+    borderFocus: DSColors.primary.purple,
   },
   dark: {
-    // For dark mode, we'll use inverted colors but maintain the brand identity
-    text: '#FFFFFF',
-    textSecondary: '#CCCCCC',
-    textTertiary: '#999999',
+    text: DSColors.text.dark.primary,
+    textSecondary: DSColors.text.dark.secondary,
+    textTertiary: DSColors.text.dark.tertiary,
     
-    background: '#1A1A1A',
-    backgroundSecondary: '#2A2A2A',
-    surface: '#2A2A2A',
+    background: DSColors.background.dark.primary,
+    backgroundSecondary: DSColors.background.dark.secondary,
+    backgroundTertiary: DSColors.background.dark.tertiary,
+    surface: DSColors.background.dark.tertiary,
     
-    border: '#3A3A3A',
-    borderLight: '#2A2A2A',
+    border: DSColors.neutral.gray700,
+    borderLight: DSColors.neutral.gray800,
     
-    primary: purple,
-    teal: teal,
-    blue: blue,
-    dark: '#4A4A4A',
+    primary: DSColors.primary.purple,
+    teal: DSColors.primary.teal,
+    blue: DSColors.primary.blue,
+    dark: DSColors.neutral.gray700,
     
-    tint: teal,
-    accent: blue,
+    tint: DSColors.primary.teal,
+    accent: DSColors.primary.blue,
     
-    success: '#34C759',
-    error: '#FF3B30',
+    success: DSColors.semantic.success,
+    error: DSColors.semantic.error,
     
-    icon: '#CCCCCC',
-    tabIconDefault: '#FFFFFF',
-    tabIconSelected: teal,
+    icon: DSColors.text.dark.secondary,
+    tabIconDefault: DSColors.text.dark.inverse,
+    tabIconSelected: DSColors.primary.teal,
     
-    cardTodo: blue,
-    cardContent: '#2A2A2A',
-    cardLocked: '#2A2A2A',
+    cardTodo: DSColors.notes.dark.default,
+    cardContent: DSColors.notes.dark.default,
+    cardLocked: DSColors.background.dark.secondary,
     
-    buttonPrimary: dark,
-    buttonFloating: teal,
+    buttonPrimary: DSColors.primary.dark,
+    buttonFloating: DSColors.primary.teal,
     
-    gradientOnboarding: [purple, blue],
-    gradientCard: [teal, blue],
+    // Additional editor colors
+    textMuted: DSColors.text.dark.muted,
+    accentLight: 'rgba(139, 95, 191, 0.2)',
+    accent2: DSColors.primary.blue,
+    accent3: DSColors.primary.teal,
+    errorLight: 'rgba(239, 68, 68, 0.2)',
+    borderFocus: DSColors.primary.purple,
+  },
+};
+
+// Separate gradients object to avoid type conflicts with useThemeColor
+export const Gradients = {
+  light: {
+    onboarding: [DSColors.primary.purple, DSColors.primary.blue],
+    card: [DSColors.primary.teal, DSColors.primary.blue],
+  },
+  dark: {
+    onboarding: [DSColors.primary.purple, DSColors.primary.blue],
+    card: [DSColors.primary.teal, DSColors.primary.blue],
   },
 };

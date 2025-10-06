@@ -35,9 +35,6 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-    "assetBundlePatterns": [
-      "assets/editor-js/**/*"
-    ],
     "plugins": [
       "expo-router",
       [
@@ -49,18 +46,16 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      [
-        "expo-asset",
-        {
-          "assets": [
-            "./assets/editor-js/**/*"
-          ]
-        }
-      ],
       "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f0fb912e-3238-4a0f-a5c2-b99b2d2cd990"
+      }
     }
   }
 }

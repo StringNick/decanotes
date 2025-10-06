@@ -1,5 +1,5 @@
-import React, { memo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -13,7 +13,7 @@ let headingCursorPositions: { [blockId: string]: number } = {};
 /**
  * Heading block component with modern dark theme support
  */
-const HeadingComponent: React.FC<BlockComponentProps> = memo(({
+const HeadingComponent = forwardRef<TextInput, BlockComponentProps>(({  
   block,
   isSelected,
   isFocused,
@@ -24,13 +24,17 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
   onKeyPress,
   theme,
   readOnly
-}) => {
+}, ref) => {
+  const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   const level = block.meta?.level || 1;
   const headingStyle = getHeadingStyle(level, colorScheme ?? 'light');
   const [cursorPosition, setCursorPosition] = useState(0);
+  
+  // Expose the TextInput methods through ref
+  useImperativeHandle(ref, () => inputRef.current as TextInput);
 
   const handleTextChange = (text: string) => {
     onBlockChange({ content: text });
@@ -84,6 +88,7 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
         </View>
         {isFocused || !readOnly ? (
           <FormattedTextInput
+            ref={inputRef}
             value={block.content}
             onChangeText={handleTextChange}
             onSelectionChange={handleSelectionChange}
@@ -117,17 +122,9 @@ const HeadingComponent: React.FC<BlockComponentProps> = memo(({
       </View>
     </View>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison function to prevent unnecessary re-renders
-  return (
-    prevProps.block.id === nextProps.block.id &&
-    prevProps.block.content === nextProps.block.content &&
-    prevProps.block.meta?.level === nextProps.block.meta?.level &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.isFocused === nextProps.isFocused &&
-    prevProps.readOnly === nextProps.readOnly
-  );
 });
+
+HeadingComponent.displayName = 'HeadingComponent';
 
 // Export function to get cursor position for a block
 export const getHeadingCursorPosition = (blockId: string): number => {

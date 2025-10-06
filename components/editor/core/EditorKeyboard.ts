@@ -74,8 +74,28 @@ export function useEditorKeyboard({
             actions.addBlock(block, blockIndex + index);
           });
         } else if (typeof result === 'object') {
-          // Handle single block update
-          actions.updateBlock(editingBlock.id, result);
+          // Check if it's an EnhancedKeyboardResult
+          if ('newBlocks' in result || 'updates' in result || 'focusBlockId' in result) {
+            // Handle EnhancedKeyboardResult
+            if (result.newBlocks) {
+              const blockIndex = blocks.findIndex(b => b.id === editingBlock.id);
+              actions.deleteBlock(editingBlock.id);
+              result.newBlocks.forEach((block, index) => {
+                actions.addBlock(block, blockIndex + index);
+              });
+            }
+            if (result.updates) {
+              result.updates.forEach(({ blockId, updates }) => {
+                actions.updateBlock(blockId, updates);
+              });
+            }
+            if (result.focusBlockId) {
+              actions.selectBlock(result.focusBlockId);
+            }
+          } else {
+            // Handle single block update
+            actions.updateBlock(editingBlock.id, result as Partial<EditorBlock>);
+          }
         }
         return true;
       }

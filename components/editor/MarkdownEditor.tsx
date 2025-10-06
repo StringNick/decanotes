@@ -33,6 +33,7 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       plugins = [],
       config = {},
       onContentChange,
+      onBlocksChange,
       onSelectionChange,
       onError,
       style,
@@ -289,7 +290,10 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       if (onContentChange) {
         onContentChange(state.blocks);
       }
-    }, [state.blocks, onContentChange]);
+      if (onBlocksChange) {
+        onBlocksChange(state.blocks);
+      }
+    }, [state.blocks, onContentChange, onBlocksChange]);
 
     // Handle selection changes
     useEffect(() => {
