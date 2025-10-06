@@ -3,6 +3,7 @@ import { DesignSystem } from '@/constants/DesignSystem';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -20,7 +21,7 @@ import type { StorageBackendType } from '@/types/storage';
 type AuthMethod = StorageBackendType;
 
 export default function AuthScreen() {
-  const { signIn } = useStorage();
+  const { signIn, savedBackendType, needsCredentials } = useStorage();
   const [activeMethod, setActiveMethod] = useState<AuthMethod>('local');
   
   // Renterd fields
@@ -32,6 +33,33 @@ export default function AuthScreen() {
   const [ipfsApiKey, setIpfsApiKey] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
+
+  // Set active method based on saved backend type
+  React.useEffect(() => {
+    if (savedBackendType) {
+      setActiveMethod(savedBackendType);
+    }
+  }, [savedBackendType]);
+
+  // Load saved host for Renterd if exists
+  React.useEffect(() => {
+    const loadSavedConfig = async () => {
+      if (needsCredentials && savedBackendType === 'renterd') {
+        const configJson = await AsyncStorage.getItem('@decanotes:backend_config');
+        if (configJson) {
+          try {
+            const config = JSON.parse(configJson);
+            if (config.host) {
+              setRenterdHost(config.host);
+            }
+          } catch (e) {
+            console.error('Failed to load saved config:', e);
+          }
+        }
+      }
+    };
+    loadSavedConfig();
+  }, [needsCredentials, savedBackendType]);
 
   const handleLocalStorageAuth = async () => {
     setIsLoading(true);
@@ -88,8 +116,15 @@ export default function AuthScreen() {
           <View style={styles.header}>
             <Text style={styles.appTitle}>DecaNotes</Text>
             <Text style={styles.subtitle}>
-              Secure, decentralized note-taking
+              {needsCredentials ? 'Enter your credentials' : 'Secure, decentralized note-taking'}
             </Text>
+            {needsCredentials && savedBackendType && (
+              <View style={styles.infoBox}>
+                <Text style={styles.infoText}>
+                  Using {savedBackendType === 'renterd' ? 'Sia Renterd' : 'IPFS'}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.authContainer}>
@@ -405,5 +440,16 @@ const styles = StyleSheet.create({
   },
   soonText: {
     ...DesignSystem.createTextStyle('xs', 'semibold', '#92400E'),
+  },
+  infoBox: {
+    marginTop: DesignSystem.Spacing.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: DesignSystem.Spacing.base,
+    paddingVertical: DesignSystem.Spacing.sm,
+    borderRadius: DesignSystem.BorderRadius.md,
+  },
+  infoText: {
+    ...DesignSystem.createTextStyle('sm', 'medium', '#FFFFFF'),
+    textAlign: 'center',
   },
 });

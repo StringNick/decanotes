@@ -16,7 +16,7 @@ const AnimatedFlatList = Animated.createAnimatedComponent(Animated.FlatList);
 export default function HomeScreen() {
   const router = useRouter();
   const { effectiveTheme } = useTheme();
-  const { notes, loadNotes, deleteNote, authState } = useStorage();
+  const { notes, loadNotes, deleteNote, authState, needsCredentials } = useStorage();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   
@@ -29,15 +29,15 @@ export default function HomeScreen() {
 
   // Load notes on mount and when auth changes
   useEffect(() => {
-    if (authState.isAuthenticated) {
+    if (needsCredentials || !authState.isAuthenticated) {
+      // Redirect to auth if not authenticated or needs credentials
+      router.replace('/auth');
+    } else if (authState.isAuthenticated) {
       loadNotes().catch(error => {
         console.error('Failed to load notes:', error);
       });
-    } else {
-      // Redirect to auth if not authenticated
-      router.replace('/auth');
     }
-  }, [authState.isAuthenticated]);
+  }, [authState.isAuthenticated, needsCredentials]);
 
   const handleNotePress = (noteId: string) => {
     // Navigate to editor with note data

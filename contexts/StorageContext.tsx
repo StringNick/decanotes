@@ -6,11 +6,15 @@ import { RenterdBackend } from '@/services/storage/RenterdBackend';
 import { IPFSBackend } from '@/services/storage/IPFSBackend';
 
 const AUTH_STATE_KEY = '@decanotes:auth_state';
+const BACKEND_TYPE_KEY = '@decanotes:backend_type';
+const BACKEND_CONFIG_KEY = '@decanotes:backend_config'; // Only for non-sensitive config
 
 interface StorageContextType {
   // Auth state
   authState: AuthState;
   isLoading: boolean;
+  needsCredentials: boolean; // True if backend needs credentials on startup
+  savedBackendType: StorageBackendType | null; // The saved backend type
   
   // Notes state
   notes: Note[];
@@ -41,6 +45,8 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [needsCredentials, setNeedsCredentials] = useState(false);
+  const [savedBackendType, setSavedBackendType] = useState<StorageBackendType | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -53,20 +59,35 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
 
   const loadAuthState = async () => {
     try {
-      const authStateJson = await AsyncStorage.getItem(AUTH_STATE_KEY);
-      if (authStateJson) {
-        const savedAuthState: AuthState = JSON.parse(authStateJson);
+      // Load saved backend type
+      const backendTypeStr = await AsyncStorage.getItem(BACKEND_TYPE_KEY);
+      
+      if (backendTypeStr) {
+        const backendType = backendTypeStr as StorageBackendType;
+        setSavedBackendType(backendType);
         
-        if (savedAuthState.isAuthenticated && savedAuthState.config) {
-          // Recreate backend
-          const newBackend = createBackend(savedAuthState.config.type);
-          await newBackend.initialize(savedAuthState.config);
-          setBackend(newBackend);
-          setAuthState(savedAuthState);
-          
-          // Load notes
-          const loadedNotes = await newBackend.getNotes();
-          setNotes(loadedNotes);
+        // Check if this backend needs credentials
+        if (requiresCredentials(backendType)) {
+          // Don't auto-login, wait for user to enter credentials
+          setNeedsCredentials(true);
+        } else {
+          // Auto-login for non-secure backends (like local storage)
+          const configJson = await AsyncStorage.getItem(BACKEND_CONFIG_KEY);
+          if (configJson) {
+            const config: StorageConfig = JSON.parse(configJson);
+            const newBackend = createBackend(backendType);
+            await newBackend.initialize(config);
+            setBackend(newBackend);
+            setAuthState({
+              isAuthenticated: true,
+              backendType,
+              config,
+            });
+            
+            // Load notes
+            const loadedNotes = await newBackend.getNotes();
+            setNotes(loadedNotes);
+          }
         }
       }
     } catch (error) {
@@ -74,6 +95,11 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const requiresCredentials = (backendType: StorageBackendType): boolean => {
+    // Returns true for backends that require sensitive credentials
+    return backendType === 'renterd' || backendType === 'ipfs';
   };
 
   const createBackend = (type: StorageBackendType): StorageBackend => {
@@ -103,14 +129,29 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to connect to storage backend');
       }
       
-      // Save auth state
+      // Save backend type (always)
+      await AsyncStorage.setItem(BACKEND_TYPE_KEY, backendType);
+      
+      // Save config only for non-secure backends
+      if (!requiresCredentials(backendType)) {
+        await AsyncStorage.setItem(BACKEND_CONFIG_KEY, JSON.stringify(config));
+      } else {
+        // For secure backends, only save non-sensitive config
+        const safeConfig = getSafeConfig(config);
+        if (safeConfig) {
+          await AsyncStorage.setItem(BACKEND_CONFIG_KEY, JSON.stringify(safeConfig));
+        }
+      }
+      
+      // Update auth state
       const newAuthState: AuthState = {
         isAuthenticated: true,
         backendType,
         config,
       };
-      await AsyncStorage.setItem(AUTH_STATE_KEY, JSON.stringify(newAuthState));
       
+      setSavedBackendType(backendType);
+      setNeedsCredentials(false);
       setBackend(newBackend);
       setAuthState(newAuthState);
       
@@ -125,6 +166,25 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const getSafeConfig = (config: StorageConfig): Partial<StorageConfig> | null => {
+    // Return config without sensitive fields
+    if (config.type === 'renterd') {
+      return {
+        type: 'renterd',
+        host: config.host,
+        // Don't save password
+      } as Partial<StorageConfig>;
+    }
+    if (config.type === 'ipfs') {
+      return {
+        type: 'ipfs',
+        node: config.node,
+        // Don't save apiKey
+      } as Partial<StorageConfig>;
+    }
+    return null;
+  };
+
   const signOut = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -134,11 +194,14 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         await backend.disconnect();
       }
       
-      // Clear auth state
-      await AsyncStorage.removeItem(AUTH_STATE_KEY);
+      // Clear all auth data
+      await AsyncStorage.removeItem(BACKEND_TYPE_KEY);
+      await AsyncStorage.removeItem(BACKEND_CONFIG_KEY);
       
       setBackend(null);
       setAuthState({ isAuthenticated: false });
+      setSavedBackendType(null);
+      setNeedsCredentials(false);
       setNotes([]);
       setCurrentNote(null);
       setHasUnsavedChanges(false);
@@ -262,6 +325,8 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
   const value: StorageContextType = {
     authState,
     isLoading,
+    needsCredentials,
+    savedBackendType,
     notes,
     currentNote,
     hasUnsavedChanges,
