@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { forwardRef, memo, useImperativeHandle, useRef } from 'react';
+import { StyleSheet, TextInput, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -12,7 +12,7 @@ import { BlockPlugin } from '../BlockPlugin';
 /**
  * Paragraph block component with modern dark theme support
  */
-const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
+const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
   block,
   onUpdate,
   onBlockChange,
@@ -21,10 +21,14 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
   isSelected,
   isEditing,
   style
-}) => {
+}, ref) => {
+  const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
+  
+  // Expose the TextInput methods through ref
+  useImperativeHandle(ref, () => inputRef.current as TextInput);
 
   // Get the plugin instance and controller
   const pluginInstance = new ParagraphPlugin();
@@ -50,6 +54,7 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
       {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
         <View style={[styles.container, style]}>
           <FormattedTextInput
+            ref={inputRef}
             value={block.content}
             onChangeText={handleTextChange}
             onFocus={onFocus}
@@ -73,16 +78,9 @@ const ParagraphComponent: React.FC<BlockComponentProps> = memo(({
       )}
     </KeyboardHandler>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison function to prevent unnecessary re-renders
-  return (
-    prevProps.block.id === nextProps.block.id &&
-    prevProps.block.content === nextProps.block.content &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.isEditing === nextProps.isEditing &&
-    prevProps.style === nextProps.style
-  );
 });
+
+ParagraphComponent.displayName = 'ParagraphComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];

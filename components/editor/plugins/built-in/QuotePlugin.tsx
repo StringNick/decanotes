@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -11,7 +11,7 @@ import { BlockPlugin } from '../BlockPlugin';
 /**
  * Quote block component with modern dark theme support
  */
-const QuoteComponent: React.FC<BlockComponentProps> = memo(({
+const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({  
   block,
   onUpdate,
   onFocus,
@@ -19,10 +19,14 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
   isSelected,
   isEditing,
   style
-}) => {
+}, ref) => {
+  const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
+  
+  // Expose the TextInput methods through ref
+  useImperativeHandle(ref, () => inputRef.current as TextInput);
 
   const handleTextChange = (text: string) => {
     onUpdate?.({
@@ -47,6 +51,7 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
         
         <View style={styles.content}>
           <FormattedTextInput
+            ref={inputRef}
             value={block.content}
             onChangeText={handleTextChange}
             onFocus={onFocus}
@@ -75,18 +80,9 @@ const QuoteComponent: React.FC<BlockComponentProps> = memo(({
       </View>
     </View>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison function to prevent unnecessary re-renders
-  return (
-    prevProps.block.id === nextProps.block.id &&
-    prevProps.block.content === nextProps.block.content &&
-    prevProps.block.meta?.author === nextProps.block.meta?.author &&
-    prevProps.block.meta?.source === nextProps.block.meta?.source &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.isEditing === nextProps.isEditing &&
-    prevProps.style === nextProps.style
-  );
 });
+
+QuoteComponent.displayName = 'QuoteComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];

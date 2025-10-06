@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
@@ -26,7 +26,7 @@ interface FormattedTextInputProps {
  * A text input component that shows formatted text when not editing
  * and raw markdown when editing
  */
-export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
+export const FormattedTextInput = forwardRef<TextInput, FormattedTextInputProps>(({
   value,
   onChangeText,
   onFocus,
@@ -42,11 +42,15 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
   textAlignVertical = 'top',
   scrollEnabled = false,
   preventNewlines = false
-}) => {
+}, ref) => {
   const [internalEditing, setInternalEditing] = useState(false);
+  const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
+  
+  // Expose the TextInput methods through ref
+  useImperativeHandle(ref, () => inputRef.current as TextInput);
   
   // Use isEditing prop if provided, otherwise use internal state
   const showEditor = isEditing || internalEditing;
@@ -82,6 +86,7 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
   if (showEditor) {
     return (
       <TextInput
+        ref={inputRef}
         style={[
           styles.textInput,
           isSelected && styles.selected,
@@ -129,7 +134,9 @@ export const FormattedTextInput: React.FC<FormattedTextInputProps> = ({
       )}
     </TouchableOpacity>
   );
-};
+});
+
+FormattedTextInput.displayName = 'FormattedTextInput';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];

@@ -1,20 +1,20 @@
 import { Colors } from '@/constants/Colors';
+import { useStorage } from '@/contexts/StorageContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import type { Note } from '@/types/storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { CheckSquare, Code, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Type, Undo2, X, Save, Copy, FileText } from 'lucide-react-native';
-import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { Animated, FlatList, Keyboard, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { CheckSquare, Code, Copy, FileText, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Type, Undo2, X } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
 import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
-import { useStorage } from '@/contexts/StorageContext';
-import type { Note } from '@/types/storage';
 
 
 const initialMarkdown = `# Welcome to DecanNotes Editor
@@ -171,7 +171,7 @@ export default function EditorScreen() {
   const params = useLocalSearchParams<{ noteId?: string }>();
   const colorScheme = useColorScheme();
   const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges } = useStorage();
-  
+
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [showBlockComponents, setShowBlockComponents] = useState(false);
@@ -223,7 +223,7 @@ export default function EditorScreen() {
         clearUnsavedChanges();
       }, 500);
     };
-    
+
     loadExistingNote();
   }, [params.noteId]);
 
@@ -235,20 +235,7 @@ export default function EditorScreen() {
     };
   }, []);
 
-  // Handle adding blocks
-  const handleAddBlock = useCallback((blockType: EditorBlockType) => {
-    if (editorRef.current) {
-      editorRef.current.insertBlock(blockType);
-      // Focus the newly added block
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.focus();
-        }
-      }, 100);
-    }
-    hideBlockComponents();
-    Keyboard.dismiss();
-  }, []);
+
 
   // Show block components with animation
   const showBlockComponentsWithAnimation = useCallback(() => {
@@ -273,18 +260,35 @@ export default function EditorScreen() {
     });
   }, [blockComponentsAnim]);
 
+  // Handle adding blocks
+  const handleAddBlock = useCallback((blockType: EditorBlockType) => {
+    if (editorRef.current) {
+
+      // Insert the new block
+      editorRef.current.insertBlock(blockType);
+
+      // Focus the newly added block after a short delay
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+        }
+      }, 150);
+    }
+    hideBlockComponents();
+  }, [hideBlockComponents]);
+  
   // Handle block changes
   const handleBlockChange = useCallback((blocks: EditorBlock[]) => {
     setBlocks(blocks);
-    
+
     // Don't mark as changed during initial load
     if (isInitialLoad.current) {
       return;
     }
-    
+
     // Check if blocks actually changed by comparing with initial blocks
     const hasActualChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocksRef.current);
-    
+
     if (hasActualChanges) {
       markAsChanged();
     }
@@ -293,7 +297,7 @@ export default function EditorScreen() {
   // Save note handler
   const handleSaveNote = useCallback(async () => {
     if (isSaving) return;
-    
+
     setIsSaving(true);
     try {
       // Generate note preview from blocks
@@ -415,14 +419,14 @@ export default function EditorScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar 
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
-        backgroundColor={colors.background} 
+      <StatusBar
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
       />
       {/* Compact Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => {
               if (hasUnsavedChanges) {
@@ -432,8 +436,8 @@ export default function EditorScreen() {
                   [
                     { text: 'Discard', style: 'destructive', onPress: () => router.back() },
                     { text: 'Cancel', style: 'cancel' },
-                    { 
-                      text: 'Save', 
+                    {
+                      text: 'Save',
                       onPress: async () => {
                         await handleSaveNote();
                         router.back();
@@ -448,7 +452,7 @@ export default function EditorScreen() {
           >
             <Ionicons name="arrow-back" size={16} color={colors.text} />
           </TouchableOpacity>
-          
+
           <View style={styles.titleContainer}>
             <Text style={styles.pageTitle}>{noteTitle}</Text>
             {hasUnsavedChanges && (
@@ -457,10 +461,10 @@ export default function EditorScreen() {
               </View>
             )}
           </View>
-          
+
           <View style={styles.headerActions}>
             {hasUnsavedChanges && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.actionButton, styles.saveButton]}
                 onPress={handleSaveNote}
                 disabled={isSaving}
@@ -472,19 +476,19 @@ export default function EditorScreen() {
                 )}
               </TouchableOpacity>
             )}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={handleRename}
             >
               <Ionicons name="pencil" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={handleGetRawMarkdown}
             >
               <FileText size={16} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={handleCopyMarkdown}
             >
@@ -524,46 +528,54 @@ export default function EditorScreen() {
         </View>
       )}
 
-      {/* Minimal Bottom Toolbar */}
+      {/* Modern Bottom Toolbar */}
       <View style={styles.bottomToolbar}>
-        <View style={styles.leftToolbarButtons}>
-          <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={handleUndo}
-        >
-          <Undo2 size={20} color={colors.background} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={handleRedo}
-        >
-          <Redo2 size={20} color={colors.background} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={showBlockComponentsWithAnimation}
-        >
-          <Plus size={20} color={colors.background} />
-        </TouchableOpacity>
+        <View style={styles.toolbarInner}>
+          {/* History Controls Group */}
+          <View style={styles.toolbarGroup}>
+            <TouchableOpacity
+              style={styles.toolbarButton}
+              onPress={handleUndo}
+              activeOpacity={0.7}
+            >
+              <Undo2 size={20} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={() => setShowFormattingToolbar(!showFormattingToolbar)}
-        >
-          <Ionicons name="text" size={20} color={colors.background} />
-        </TouchableOpacity>
-        </View>
-        
-        {showBlockComponents && (
-          <TouchableOpacity 
-            style={styles.iconButton}
-            onPress={hideBlockComponents}
+            <View style={styles.toolbarDivider} />
+
+            <TouchableOpacity
+              style={styles.toolbarButton}
+              onPress={handleRedo}
+              activeOpacity={0.7}
+            >
+              <Redo2 size={20} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Primary Action - Add Block */}
+          <TouchableOpacity
+            style={[styles.primaryActionButton, showBlockComponents && styles.primaryActionButtonActive]}
+            onPress={showBlockComponents ? hideBlockComponents : showBlockComponentsWithAnimation}
+            activeOpacity={0.8}
           >
-            <X size={20} color={colors.background} />
+            {showBlockComponents ? (
+              <X size={22} color={colors.background} strokeWidth={2.5} />
+            ) : (
+              <Plus size={22} color={colors.background} strokeWidth={2.5} />
+            )}
           </TouchableOpacity>
-        )}
+
+          {/* Formatting Control */}
+          <View style={styles.toolbarGroup}>
+            <TouchableOpacity
+              style={[styles.toolbarButton, showFormattingToolbar && styles.toolbarButtonActive]}
+              onPress={() => setShowFormattingToolbar(!showFormattingToolbar)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="text" size={20} color={showFormattingToolbar ? colors.tint : colors.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       {/* Formatting Toolbar */}
@@ -591,19 +603,19 @@ export default function EditorScreen() {
             showsVerticalScrollIndicator={false}
             columnWrapperStyle={styles.blockPanelRow}
             renderItem={({ item, index }) => {
-               const IconComponent = item.icon;
-               return (
-                 <TouchableOpacity
-                   style={styles.blockPanelItem}
-                   onPress={() => handleAddBlock(item.type)}
-                 >
-                   <View style={styles.blockPanelIconContainer}>
-                     <IconComponent size={18} color={colors.text} />
-                   </View>
-                   <Text style={styles.blockPanelLabel}>{item.label}</Text>
-                 </TouchableOpacity>
-               );
-             }}
+              const IconComponent = item.icon;
+              return (
+                <TouchableOpacity
+                  style={styles.blockPanelItem}
+                  onPress={() => handleAddBlock(item.type)}
+                >
+                  <View style={styles.blockPanelIconContainer}>
+                    <IconComponent size={18} color={colors.text} />
+                  </View>
+                  <Text style={styles.blockPanelLabel}>{item.label}</Text>
+                </TouchableOpacity>
+              );
+            }}
             keyExtractor={(item, index) => index.toString()}
           />
         </View>
@@ -620,7 +632,7 @@ export default function EditorScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Rename Note</Text>
             <TextInput
-              style={[styles.modalInput, { 
+              style={[styles.modalInput, {
                 color: colors.text,
                 borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
                 backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
@@ -686,7 +698,7 @@ export default function EditorScreen() {
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -852,7 +864,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: colors.background,
     },
     bottomContainer: {
-      backgroundColor: colors.background, // Changed from colors.surface to match status bar
+      backgroundColor: colors.background,
       borderTopWidth: 1,
       borderTopColor: colors.border,
       shadowColor: colors.text,
@@ -862,19 +874,61 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       elevation: 8,
     },
     bottomToolbar: {
+      backgroundColor: colors.background,
+      borderTopWidth: 1,
+      borderTopColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      paddingBottom: 16,
+    },
+    toolbarInner: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      backgroundColor: colors.dark,
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
+      gap: 12,
+    },
+    toolbarGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+      borderRadius: 14,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    },
+    toolbarButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 10,
+      backgroundColor: 'transparent',
+    },
+    toolbarButtonActive: {
+      backgroundColor: colorScheme === 'dark' ? 'rgba(20, 184, 166, 0.15)' : 'rgba(20, 184, 166, 0.1)',
+    },
+    toolbarDivider: {
+      width: 1,
+      height: 20,
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+      marginHorizontal: 4,
+    },
+    primaryActionButton: {
+      width: 52,
+      height: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 16,
+      backgroundColor: colors.tint,
+      shadowColor: colors.tint,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    primaryActionButtonActive: {
+      backgroundColor: colors.textSecondary,
+      shadowColor: colors.textSecondary,
     },
     leftToolbarButtons: {
       flexDirection: 'row',

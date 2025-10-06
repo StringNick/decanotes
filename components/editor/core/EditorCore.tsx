@@ -32,6 +32,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // Refs
     const scrollViewRef = useRef<ScrollView>(null);
     const editorRef = useRef<View>(null);
+    const blockRefsMap = useRef<Map<string, any>>(new Map());
     
     // Configuration with defaults
     const editorConfig: EditorConfig = {
@@ -436,19 +437,51 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     };
 
     // Focus and scroll operations
-    const scrollToBlock = (blockId: string) => {
-      // Implementation would depend on block positioning
-      // This is a placeholder
-      console.log('Scroll to block:', blockId);
-    };
+    const scrollToBlock = useCallback((blockId: string) => {
+      const blockRef = blockRefsMap.current.get(blockId);
+      if (blockRef && scrollViewRef.current) {
+        // Measure the block's position and scroll to it
+        blockRef.measureLayout(
+          editorRef.current,
+          (x: number, y: number, width: number, height: number) => {
+            scrollViewRef.current?.scrollTo({
+              y: Math.max(0, y - 100), // Offset for better visibility
+              animated: true
+            });
+          },
+          (error: any) => {
+            console.warn('Failed to measure block position:', error);
+          }
+        );
+      }
+    }, []);
+    
+    // Focus block with input focus
+    const focusBlockInput = useCallback((blockId: string) => {
+      const blockRef = blockRefsMap.current.get(blockId);
+      if (blockRef?.focus) {
+        // Slight delay to ensure the block is rendered
+        setTimeout(() => {
+          blockRef.focus();
+        }, 50);
+      }
+    }, []);
 
     // Expose API through ref
     useImperativeHandle(ref, () => ({
       // Base MarkdownEditorRef methods
       getMarkdown: () => getMarkdown(),
       focus: () => {
-        // TODO: Implement focus functionality
-        console.warn('focus not yet implemented');
+        // Focus the currently focused block, or focus the last block
+        if (focusedBlockId) {
+          focusBlockInput(focusedBlockId);
+          scrollToBlock(focusedBlockId);
+        } else if (blocks.length > 0) {
+          const lastBlockId = blocks[blocks.length - 1].id;
+          focusBlock(lastBlockId);
+          focusBlockInput(lastBlockId);
+          scrollToBlock(lastBlockId);
+        }
       },
       insertBlock: (type: EditorBlockType, index?: number) => {
         createBlock(type, '', index);
@@ -574,7 +607,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       markdownPlugins,
       focusEditor,
       blurEditor,
-      scrollToBlock
+      scrollToBlock,
+      focusBlockInput
     ]);
 
     // Render toolbar
@@ -668,6 +702,13 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               onBlockMove={handleBlockMove}
               dragHandleProps={getDragHandleProps(block.id)}
               blockProps={getBlockProps(block.id, index)}
+              onBlockRefReady={(ref) => {
+                if (ref) {
+                  blockRefsMap.current.set(block.id, ref);
+                } else {
+                  blockRefsMap.current.delete(block.id);
+                }
+              }}
             />
           </View>
           
@@ -679,10 +720,18 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       );
     };
 
+    // Effect to focus newly created blocks
+    useEffect(() => {
+      if (focusedBlockId && blocks.find(b => b.id === focusedBlockId)) {
+        focusBlockInput(focusedBlockId);
+        scrollToBlock(focusedBlockId);
+      }
+    }, [focusedBlockId]);
+
     return (
       <View 
         style={[styles.container, style]} 
-        ref={keyboardRef}
+        ref={editorRef}
         testID="editor-core"
         {...props}
       >
