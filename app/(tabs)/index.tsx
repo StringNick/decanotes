@@ -2,9 +2,10 @@ import { NoteCard } from '@/components/NoteCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import DesignSystem from '@/constants/DesignSystem';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useStorage } from '@/contexts/StorageContext';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
-import { Animated, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { Animated, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,48 +13,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 // Create Animated FlatList
 const AnimatedFlatList = Animated.createAnimatedComponent(Animated.FlatList);
 
-// Mock notes data - in real app this would come from a database
-const mockNotes = [
-  { 
-    id: '1', 
-    title: 'Meeting Notes', 
-    lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    preview: 'Discussed project timeline and deliverables for the upcoming sprint. Key points include...',
-    color: 'cream' as const,
-  },
-  { 
-    id: '2', 
-    title: 'Project Ideas', 
-    lastModified: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    preview: 'New app concept for productivity and task management. Features should include...',
-    color: 'sage' as const,
-  },
-  { 
-    id: '3', 
-    title: 'Shopping List', 
-    lastModified: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-    preview: 'Groceries for this week including organic vegetables, fruits, and proteins...',
-    color: 'sky' as const,
-  },
-  { 
-    id: '4', 
-    title: 'Travel Planning', 
-    lastModified: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
-    preview: 'Trip to Japan - research hotels, flights, and activities. Don\'t forget to check visa requirements...',
-    color: 'lavender' as const,
-  },
-  { 
-    id: '5', 
-    title: 'Book Notes', 
-    lastModified: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
-    preview: 'Key insights from "Atomic Habits" by James Clear. The power of small changes...',
-    color: 'peach' as const,
-  },
-];
-
 export default function HomeScreen() {
   const router = useRouter();
   const { effectiveTheme } = useTheme();
+  const { notes, loadNotes, deleteNote, authState } = useStorage();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   
@@ -64,9 +27,24 @@ export default function HomeScreen() {
   const fabScale = useRef(new Animated.Value(1)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
 
+  // Load notes on mount and when auth changes
+  useEffect(() => {
+    if (authState.isAuthenticated) {
+      loadNotes().catch(error => {
+        console.error('Failed to load notes:', error);
+      });
+    } else {
+      // Redirect to auth if not authenticated
+      router.replace('/auth');
+    }
+  }, [authState.isAuthenticated]);
+
   const handleNotePress = (noteId: string) => {
     // Navigate to editor with note data
-    router.push('/editor');
+    router.push({
+      pathname: '/editor',
+      params: { noteId },
+    });
   };
 
   const handleNewNote = () => {
@@ -87,11 +65,43 @@ export default function HomeScreen() {
   };
 
   const handleOptionsPress = (noteId: string) => {
-    // Show note options (share, delete, etc.)
-    console.log('Options for note:', noteId);
+    Alert.alert(
+      'Note Options',
+      'What would you like to do?',
+      [
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => handleDeleteNote(noteId),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
   };
 
-  const filteredNotes = mockNotes.filter(note => {
+  const handleDeleteNote = async (noteId: string) => {
+    Alert.alert(
+      'Delete Note',
+      'Are you sure you want to delete this note?',
+      [
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteNote(noteId);
+            } catch (error) {
+              console.error('Failed to delete note:', error);
+              Alert.alert('Error', 'Failed to delete note');
+            }
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const filteredNotes = notes.filter(note => {
     const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          note.preview.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -103,7 +113,7 @@ export default function HomeScreen() {
     return matchesSearch;
   });
 
-  const renderNoteItem = ({ item }: { item: typeof mockNotes[0] }) => (
+  const renderNoteItem = ({ item }: { item: typeof notes[0] }) => (
     <NoteCard
       key={item.id}
       id={item.id}
@@ -187,6 +197,7 @@ export default function HomeScreen() {
       <View style={styles.filterTabs}>
         {['All', 'Recent', 'Favorites'].map((filter) => {
           const isActive = activeFilter === filter;
+          const isComingSoon = filter === 'Recent' || filter === 'Favorites';
           return (
             <TouchableOpacity 
               key={filter} 
@@ -196,9 +207,17 @@ export default function HomeScreen() {
                   backgroundColor: isActive
                     ? (isDark ? colors.text.primary : colors.text.primary)
                     : 'transparent',
-                }
+                },
+                isComingSoon && styles.disabledFilterTab,
               ]}
-              onPress={() => setActiveFilter(filter)}
+              onPress={() => {
+                if (isComingSoon) {
+                  Alert.alert('Coming Soon', `${filter} filter will be available soon!`);
+                } else {
+                  setActiveFilter(filter);
+                }
+              }}
+              disabled={isComingSoon && isActive}
             >
               <Text style={[
                 styles.filterTabText,
@@ -210,6 +229,11 @@ export default function HomeScreen() {
               ]}>
                 {filter}
               </Text>
+              {isComingSoon && (
+                <View style={styles.soonBadgeSmall}>
+                  <Text style={styles.soonTextSmall}>Soon</Text>
+                </View>
+              )}
             </TouchableOpacity>
           );
         })}
@@ -361,9 +385,16 @@ const styles = StyleSheet.create({
     gap: DesignSystem.Spacing.sm,
   },
   filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DesignSystem.Spacing.xs,
     paddingHorizontal: DesignSystem.Spacing.base,
     paddingVertical: DesignSystem.Spacing.xs,
     borderRadius: DesignSystem.BorderRadius.lg,
+    position: 'relative',
+  },
+  disabledFilterTab: {
+    opacity: 0.7,
   },
   filterTabText: {
     ...DesignSystem.createTextStyle('sm', 'medium'),
@@ -420,5 +451,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...DesignSystem.Shadows.lg,
+  },
+  soonBadgeSmall: {
+    backgroundColor: '#FCD34D',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  soonTextSmall: {
+    fontSize: 9,
+    fontFamily: DesignSystem.Typography.fonts.semibold,
+    color: '#92400E',
   },
 });

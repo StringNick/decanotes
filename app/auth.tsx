@@ -14,42 +14,63 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useStorage } from '@/contexts/StorageContext';
+import type { StorageBackendType } from '@/types/storage';
 
-type AuthMethod = 'seed' | 'ipfs';
+type AuthMethod = StorageBackendType;
 
 export default function AuthScreen() {
-  const [activeMethod, setActiveMethod] = useState<AuthMethod>('seed');
-  const [seedPhrase, setSeedPhrase] = useState('');
-  const [address, setAddress] = useState('');
-  const [ipfsHash, setIpfsHash] = useState('');
+  const { signIn } = useStorage();
+  const [activeMethod, setActiveMethod] = useState<AuthMethod>('local');
+  
+  // Renterd fields
+  const [renterdHost, setRenterdHost] = useState('');
+  const [renterdPassword, setRenterdPassword] = useState('');
+  
+  // IPFS fields (for future)
+  const [ipfsNode, setIpfsNode] = useState('');
+  const [ipfsApiKey, setIpfsApiKey] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSeedAuth = async () => {
-    if (!seedPhrase.trim() || !address.trim()) {
-      Alert.alert('Error', 'Please enter both seed phrase and address');
+  const handleLocalStorageAuth = async () => {
+    setIsLoading(true);
+    try {
+      await signIn('local', { type: 'local' });
+      router.replace('/(tabs)');
+    } catch (error) {
+      console.error('Local storage auth failed:', error);
+      Alert.alert('Error', 'Failed to initialize local storage');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRenterdAuth = async () => {
+    if (!renterdHost.trim() || !renterdPassword.trim()) {
+      Alert.alert('Error', 'Please enter both host and password');
       return;
     }
 
     setIsLoading(true);
-    // Simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await signIn('renterd', { 
+        type: 'renterd', 
+        host: renterdHost, 
+        password: renterdPassword 
+      });
       router.replace('/(tabs)');
-    }, 1500);
+    } catch (error) {
+      console.error('Renterd auth failed:', error);
+      Alert.alert('Error', 'Failed to connect to Renterd. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleIpfsAuth = async () => {
-    if (!ipfsHash.trim()) {
-      Alert.alert('Error', 'Please enter IPFS hash');
-      return;
-    }
-
-    setIsLoading(true);
-    // Simulate IPFS authentication
-    setTimeout(() => {
-      setIsLoading(false);
-      router.replace('/(tabs)');
-    }, 1500);
+    // IPFS not yet implemented
+    Alert.alert('Coming Soon', 'IPFS backend will be available soon!');
   };
 
   return (
@@ -76,15 +97,15 @@ export default function AuthScreen() {
               <TouchableOpacity
                 style={[
                   styles.methodButton,
-                  activeMethod === 'seed' && styles.activeMethodButton,
+                  activeMethod === 'local' && styles.activeMethodButton,
                 ]}
-                onPress={() => setActiveMethod('seed')}
+                onPress={() => setActiveMethod('local')}
               >
                 <IconSymbol
-                  name="key.fill"
-                  size={20}
+                  name="folder.fill"
+                  size={18}
                   color={
-                    activeMethod === 'seed'
+                    activeMethod === 'local'
                       ? '#FFFFFF'
                       : '#6B7280'
                   }
@@ -92,25 +113,25 @@ export default function AuthScreen() {
                 <Text
                   style={[
                     styles.methodText,
-                    activeMethod === 'seed' && styles.activeMethodText,
+                    activeMethod === 'local' && styles.activeMethodText,
                   ]}
                 >
-                  Seed Phrase
+                  Local{"\n"}Storage
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.methodButton,
-                  activeMethod === 'ipfs' && styles.activeMethodButton,
+                  activeMethod === 'renterd' && styles.activeMethodButton,
                 ]}
-                onPress={() => setActiveMethod('ipfs')}
+                onPress={() => setActiveMethod('renterd')}
               >
                 <IconSymbol
-                  name="globe"
-                  size={20}
+                  name="network"
+                  size={18}
                   color={
-                    activeMethod === 'ipfs'
+                    activeMethod === 'renterd'
                       ? '#FFFFFF'
                       : '#6B7280'
                   }
@@ -118,89 +139,132 @@ export default function AuthScreen() {
                 <Text
                   style={[
                     styles.methodText,
-                    activeMethod === 'ipfs' && styles.activeMethodText,
+                    activeMethod === 'renterd' && styles.activeMethodText,
                   ]}
                 >
-                  IPFS
+                  Sia{"\n"}Renterd
                 </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.methodButton,
+                  styles.disabledMethodButton,
+                  activeMethod === 'ipfs' && styles.activeMethodButton,
+                ]}
+                onPress={() => setActiveMethod('ipfs')}
+              >
+                <View style={styles.methodButtonContent}>
+                  <IconSymbol
+                    name="globe"
+                    size={18}
+                    color={
+                      activeMethod === 'ipfs'
+                        ? '#FFFFFF'
+                        : '#6B7280'
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.methodText,
+                      activeMethod === 'ipfs' && styles.activeMethodText,
+                    ]}
+                  >
+                    IPFS
+                  </Text>
+                </View>
+                <View style={styles.soonBadge}>
+                  <Text style={styles.soonText}>Soon</Text>
+                </View>
               </TouchableOpacity>
             </View>
 
             <View style={styles.formContainer}>
-              {activeMethod === 'seed' ? (
+              {activeMethod === 'local' ? (
                 <>
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Seed Phrase</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Enter your 12-24 word seed phrase"
-                      placeholderTextColor="#9CA3AF"
-                      value={seedPhrase}
-                      onChangeText={setSeedPhrase}
-                      multiline
-                      textAlignVertical="top"
-                      numberOfLines={3}
-                      secureTextEntry
-                    />
-                  </View>
-
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Wallet Address</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="0x..."
-                      placeholderTextColor="#9CA3AF"
-                      value={address}
-                      onChangeText={setAddress}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
+                  <Text style={styles.helperText}>
+                    Store your notes locally on this device. Your notes will be
+                    saved securely on your device only.
+                  </Text>
 
                   <TouchableOpacity
                     style={[
                       styles.authButton,
-                      (!seedPhrase.trim() || !address.trim() || isLoading) &&
-                        styles.disabledButton,
+                      isLoading && styles.disabledButton,
                     ]}
-                    onPress={handleSeedAuth}
-                    disabled={!seedPhrase.trim() || !address.trim() || isLoading}
+                    onPress={handleLocalStorageAuth}
+                    disabled={isLoading}
                   >
                     <Text style={styles.authButtonText}>
-                      {isLoading ? 'Authenticating...' : 'Connect Wallet'}
+                      {isLoading ? 'Initializing...' : 'Use Local Storage'}
                     </Text>
                   </TouchableOpacity>
                 </>
-              ) : (
+              ) : activeMethod === 'renterd' ? (
                 <>
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>IPFS Hash</Text>
+                    <Text style={styles.inputLabel}>Renterd Host</Text>
                     <TextInput
                       style={styles.textInput}
-                      placeholder="QmXoYpizjW3WknFiJnKLwHCnL..."
+                      placeholder="https://renterd.example.com"
                       placeholderTextColor="#9CA3AF"
-                      value={ipfsHash}
-                      onChangeText={setIpfsHash}
+                      value={renterdHost}
+                      onChangeText={setRenterdHost}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                  </View>
+
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Password</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Your Renterd password"
+                      placeholderTextColor="#9CA3AF"
+                      value={renterdPassword}
+                      onChangeText={setRenterdPassword}
+                      secureTextEntry
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
                   </View>
 
                   <Text style={styles.helperText}>
-                    Connect using your IPFS identity hash to access your
-                    decentralized notes.
+                    Connect to your Sia Renterd instance to store notes
+                    on the decentralized Sia network.
                   </Text>
 
                   <TouchableOpacity
                     style={[
                       styles.authButton,
-                      (!ipfsHash.trim() || isLoading) && styles.disabledButton,
+                      (!renterdHost.trim() || !renterdPassword.trim() || isLoading) &&
+                        styles.disabledButton,
                     ]}
-                    onPress={handleIpfsAuth}
-                    disabled={!ipfsHash.trim() || isLoading}
+                    onPress={handleRenterdAuth}
+                    disabled={!renterdHost.trim() || !renterdPassword.trim() || isLoading}
                   >
                     <Text style={styles.authButtonText}>
-                      {isLoading ? 'Connecting...' : 'Connect IPFS'}
+                      {isLoading ? 'Connecting...' : 'Connect to Renterd'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.helperText}>
+                    IPFS backend will be available soon! Connect to IPFS
+                    for decentralized storage.
+                  </Text>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.authButton,
+                      styles.disabledButton,
+                    ]}
+                    disabled
+                  >
+                    <Text style={styles.authButtonText}>
+                      Coming Soon
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -257,21 +321,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     borderRadius: DesignSystem.BorderRadius.lg,
     padding: DesignSystem.Spacing.xs,
+    gap: DesignSystem.Spacing.xs,
   },
   methodButton: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: DesignSystem.Spacing.md,
+    paddingHorizontal: DesignSystem.Spacing.xs,
     borderRadius: DesignSystem.BorderRadius.md,
+    position: 'relative',
+    minHeight: 60,
+  },
+  methodButtonContent: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: DesignSystem.Spacing.xs,
+  },
+  disabledMethodButton: {
+    opacity: 0.6,
   },
   activeMethodButton: {
     backgroundColor: '#1A1A1A',
   },
   methodText: {
-    ...DesignSystem.createTextStyle('md', 'medium'),
-    marginLeft: DesignSystem.Spacing.sm,
+    ...DesignSystem.createTextStyle('xs', 'medium'),
+    marginTop: DesignSystem.Spacing.xs,
+    textAlign: 'center',
+    flexShrink: 1,
+    lineHeight: 14,
   },
   activeMethodText: {
     color: '#FFFFFF',
@@ -313,5 +393,17 @@ const styles = StyleSheet.create({
     ...DesignSystem.createTextStyle('sm', 'primary', '#FFFFFF'),
     opacity: 0.8,
     textAlign: 'center',
+  },
+  soonBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: '#FCD34D',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: DesignSystem.BorderRadius.sm,
+  },
+  soonText: {
+    ...DesignSystem.createTextStyle('xs', 'semibold', '#92400E'),
   },
 });

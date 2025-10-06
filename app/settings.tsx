@@ -1,6 +1,7 @@
 import { IconSymbol, IconSymbolName } from '@/components/ui/IconSymbol';
 import DesignSystem from '@/constants/DesignSystem';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useStorage } from '@/contexts/StorageContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -77,11 +78,13 @@ function SettingItem({
 
 export default function SettingsScreen() {
   const { theme, effectiveTheme, setTheme } = useTheme();
+  const { authState, signOut, sync } = useStorage();
   const isDark = effectiveTheme === 'dark';
   const colors = DesignSystem.getThemeColors(isDark);
 
   const [syncEnabled, setSyncEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const handleThemeChange = (value: boolean) => {
     setTheme(value ? 'dark' : 'light');
@@ -94,32 +97,58 @@ export default function SettingsScreen() {
   const handleSignOut = () => {
     Alert.alert(
       'Sign Out',
-      'Are you sure you want to sign out? You\'ll need your credentials to sign back in.',
+      'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: () => router.replace('/auth'),
+          onPress: async () => {
+            try {
+              await signOut();
+              router.replace('/auth');
+            } catch (error) {
+              console.error('Sign out failed:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
         },
       ]
     );
   };
 
+  const handleSyncNow = async () => {
+    setIsSyncing(true);
+    try {
+      await sync();
+      Alert.alert('Success', 'Notes synced successfully!');
+    } catch (error) {
+      console.error('Sync failed:', error);
+      Alert.alert('Error', 'Failed to sync notes.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const handleExportData = () => {
     Alert.alert(
       'Export Data',
-      'Your notes will be exported to IPFS and you\'ll receive a shareable hash.',
+      'Export functionality will be available soon.',
       [{ text: 'OK' }]
     );
   };
 
-  const handleBackup = () => {
-    Alert.alert(
-      'Backup Notes',
-      'Your notes will be securely backed up to your connected wallet.',
-      [{ text: 'OK' }]
-    );
+  const getBackendDisplayName = () => {
+    switch (authState.backendType) {
+      case 'local':
+        return 'Local Storage';
+      case 'renterd':
+        return 'Sia Renterd';
+      case 'ipfs':
+        return 'IPFS';
+      default:
+        return 'Unknown';
+    }
   };
 
   return (
@@ -171,40 +200,34 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>STORAGE BACKEND</Text>
+          <View style={styles.sectionContent}>
+            <SettingItem
+              icon="server.rack"
+              title="Current Backend"
+              subtitle={getBackendDisplayName()}
+              colors={colors}
+              showChevron={false}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>SYNC & STORAGE</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="icloud"
-              title="Auto Sync"
-              subtitle="Automatically sync notes to IPFS"
+              icon="arrow.clockwise"
+              title="Sync Now"
+              subtitle={isSyncing ? "Syncing..." : "Manually sync your notes"}
               colors={colors}
-              rightElement={
-                <Switch
-                  value={syncEnabled}
-                  onValueChange={setSyncEnabled}
-                  trackColor={{
-                    false: isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300,
-                    true: DesignSystem.Colors.primary.teal,
-                  }}
-                  thumbColor={isDark ? DesignSystem.Colors.neutral.white : DesignSystem.Colors.neutral.white}
-                  ios_backgroundColor={isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300}
-                />
-              }
-              showChevron={false}
+              onPress={isSyncing ? undefined : handleSyncNow}
             />
             <SettingItem
               icon="square.and.arrow.up"
               title="Export Data"
-              subtitle="Export all notes to IPFS"
+              subtitle="Export all notes"
               colors={colors}
               onPress={handleExportData}
-            />
-            <SettingItem
-              icon="shield"
-              title="Backup Notes"
-              subtitle="Backup to connected wallet"
-              colors={colors}
-              onPress={handleBackup}
             />
           </View>
         </View>

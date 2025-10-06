@@ -1,16 +1,20 @@
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { CheckSquare, Code, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Type, Undo2, X } from 'lucide-react-native';
-import React, { useCallback, useRef, useState } from 'react';
-import { Animated, FlatList, Keyboard, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { CheckSquare, Code, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Type, Undo2, X, Save, Copy, FileText } from 'lucide-react-native';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
+import { Animated, FlatList, Keyboard, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Crypto from 'expo-crypto';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
 import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
+import { useStorage } from '@/contexts/StorageContext';
+import type { Note } from '@/types/storage';
 
 
 const initialMarkdown = `# Welcome to DecanNotes Editor
@@ -164,17 +168,72 @@ Enjoy creating with DecanNotes! 🚀`;
 
 export default function EditorScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ noteId?: string }>();
   const colorScheme = useColorScheme();
+  const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges } = useStorage();
+  
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [showBlockComponents, setShowBlockComponents] = useState(false);
   const [showFormattingToolbar, setShowFormattingToolbar] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [noteTitle, setNoteTitle] = useState('Untitled');
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [tempTitle, setTempTitle] = useState('');
+  const [showMarkdownModal, setShowMarkdownModal] = useState(false);
+  const [rawMarkdown, setRawMarkdown] = useState('');
+  const isInitialLoad = useRef(true);
+  const initialBlocksRef = useRef<EditorBlock[]>([]);
+  const isTitleManuallySet = useRef(false);
   const blockComponentsAnim = useRef(new Animated.Value(0)).current;
 
-  // Mock page data - in real app this would come from navigation params
-  const pageTitle = "Untitled";
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
+
+  // Load note if noteId is provided
+  useEffect(() => {
+    const loadExistingNote = async () => {
+      if (params.noteId) {
+        try {
+          const note = await loadNote(params.noteId);
+          if (note) {
+            setBlocks(note.content);
+            const title = note.title || 'Untitled';
+            setNoteTitle(title);
+            initialBlocksRef.current = note.content;
+            // If note has a title, consider it manually set
+            if (title && title !== 'Untitled') {
+              isTitleManuallySet.current = true;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load note:', error);
+          Alert.alert('Error', 'Failed to load note');
+        }
+      } else {
+        // New note - no initial content
+        initialBlocksRef.current = [];
+        isTitleManuallySet.current = false;
+      }
+      setIsLoading(false);
+      // Mark as loaded after a short delay to allow editor to initialize
+      setTimeout(() => {
+        isInitialLoad.current = false;
+        clearUnsavedChanges();
+      }, 500);
+    };
+    
+    loadExistingNote();
+  }, [params.noteId]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      setCurrentNote(null);
+      clearUnsavedChanges();
+    };
+  }, []);
 
   // Handle adding blocks
   const handleAddBlock = useCallback((blockType: EditorBlockType) => {
@@ -217,7 +276,65 @@ export default function EditorScreen() {
   // Handle block changes
   const handleBlockChange = useCallback((blocks: EditorBlock[]) => {
     setBlocks(blocks);
-  }, []);
+    
+    // Don't mark as changed during initial load
+    if (isInitialLoad.current) {
+      return;
+    }
+    
+    // Check if blocks actually changed by comparing with initial blocks
+    const hasActualChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocksRef.current);
+    
+    if (hasActualChanges) {
+      markAsChanged();
+    }
+  }, [markAsChanged]);
+
+  // Save note handler
+  const handleSaveNote = useCallback(async () => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      // Generate note preview from blocks
+      const preview = blocks
+        .filter(b => b.type === 'paragraph' || b.type === 'heading')
+        .slice(0, 3)
+        .map(b => b.content)
+        .join(' ')
+        .substring(0, 150);
+
+      // Use current noteTitle if manually set, otherwise extract from content
+      let title = noteTitle;
+      if (!isTitleManuallySet.current && (!title || title === 'Untitled')) {
+        // Auto-extract title from first heading or use first paragraph
+        const titleBlock = blocks.find(b => b.type === 'heading' && b.meta?.level === 1);
+        title = titleBlock?.content || blocks[0]?.content || 'Untitled';
+        setNoteTitle(title);
+      }
+
+      const note: Note = {
+        id: currentNote?.id || Crypto.randomUUID(),
+        title,
+        content: blocks,
+        preview: preview || 'Empty note',
+        color: currentNote?.color || 'default',
+        createdAt: currentNote?.createdAt || new Date(),
+        updatedAt: new Date(),
+        lastModified: new Date(),
+      };
+
+      await saveNote(note);
+      // Update initial blocks reference after successful save
+      initialBlocksRef.current = blocks;
+      Alert.alert('Success', 'Note saved successfully!');
+    } catch (error) {
+      console.error('Failed to save note:', error);
+      Alert.alert('Error', 'Failed to save note');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [blocks, currentNote, saveNote, isSaving, noteTitle]);
 
   // Handle undo
   const handleUndo = useCallback(() => {
@@ -238,6 +355,48 @@ export default function EditorScreen() {
     console.log('Formatting action:', actionId);
     // TODO: Implement formatting actions
   }, []);
+
+  // Handle rename
+  const handleRename = useCallback(() => {
+    setTempTitle(noteTitle);
+    setShowRenameModal(true);
+  }, [noteTitle]);
+
+  const handleConfirmRename = useCallback(() => {
+    if (tempTitle.trim()) {
+      setNoteTitle(tempTitle.trim());
+      isTitleManuallySet.current = true; // Mark title as manually set
+      // Only mark as changed if not in initial load
+      if (!isInitialLoad.current) {
+        markAsChanged();
+      }
+    }
+    setShowRenameModal(false);
+  }, [tempTitle, markAsChanged]);
+
+  // Get raw markdown
+  const handleGetRawMarkdown = useCallback(() => {
+    if (editorRef.current) {
+      const markdown = editorRef.current.getMarkdown();
+      setRawMarkdown(markdown);
+      setShowMarkdownModal(true);
+    }
+  }, []);
+
+  // Copy markdown to clipboard
+  const handleCopyMarkdown = useCallback(async () => {
+    if (editorRef.current) {
+      const markdown = editorRef.current.getMarkdown();
+      await Clipboard.setStringAsync(markdown);
+      Alert.alert('Copied!', 'Markdown copied to clipboard');
+    }
+  }, []);
+
+  const handleCopyFromModal = useCallback(async () => {
+    await Clipboard.setStringAsync(rawMarkdown);
+    Alert.alert('Copied!', 'Markdown copied to clipboard');
+    setShowMarkdownModal(false);
+  }, [rawMarkdown]);
 
   // Block types for the menu - Notion-style
   const blockTypes: Array<{ type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: any }> = [
@@ -265,51 +424,105 @@ export default function EditorScreen() {
         <View style={styles.headerRow}>
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => {
+              if (hasUnsavedChanges) {
+                Alert.alert(
+                  'Unsaved Changes',
+                  'You have unsaved changes. Do you want to save before leaving?',
+                  [
+                    { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                      text: 'Save', 
+                      onPress: async () => {
+                        await handleSaveNote();
+                        router.back();
+                      }
+                    },
+                  ]
+                );
+              } else {
+                router.back();
+              }
+            }}
           >
             <Ionicons name="arrow-back" size={16} color={colors.text} />
           </TouchableOpacity>
           
           <View style={styles.titleContainer}>
-            <Text style={styles.pageTitle}>{pageTitle}</Text>
-            <TouchableOpacity style={styles.statusDotContainer}>
-              <View style={styles.statusDot} />
-            </TouchableOpacity>
+            <Text style={styles.pageTitle}>{noteTitle}</Text>
+            {hasUnsavedChanges && (
+              <View style={styles.unsavedIndicator}>
+                <View style={styles.unsavedDot} />
+              </View>
+            )}
           </View>
           
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="share-outline" size={16} color={colors.textSecondary} />
+            {hasUnsavedChanges && (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.saveButton]}
+                onPress={handleSaveNote}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color={colors.background} />
+                ) : (
+                  <Save size={16} color={colors.background} />
+                )}
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleRename}
+            >
+              <Ionicons name="pencil" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSecondary} />
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleGetRawMarkdown}
+            >
+              <FileText size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleCopyMarkdown}
+            >
+              <Copy size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
       {/* Editor */}
-      <View style={styles.editorContainer}>
-        <MarkdownEditor
-          ref={editorRef}
-          initialMarkdown={initialMarkdown}
-          placeholder="Start writing..."
-          onBlocksChange={handleBlockChange}
-          theme={getEditorTheme(colorScheme || 'light')}
-          config={{
-            toolbar: { enabled: false },
-            theme: {
-              colors: {
-                background: colors.background,
-                text: colors.text,
-                border: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                primary: colors.tint,
-                secondary: colors.icon
+      {isLoading ? (
+        <View style={[styles.editorContainer, styles.loadingContainer]}>
+          <ActivityIndicator size="large" color={colors.text} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading note...</Text>
+        </View>
+      ) : (
+        <View style={styles.editorContainer}>
+          <MarkdownEditor
+            ref={editorRef}
+            initialMarkdown={initialMarkdown}
+            placeholder="Start writing..."
+            onBlocksChange={handleBlockChange}
+            theme={getEditorTheme(colorScheme || 'light')}
+            config={{
+              toolbar: { enabled: false },
+              theme: {
+                colors: {
+                  background: colors.background,
+                  text: colors.text,
+                  border: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  primary: colors.tint,
+                  secondary: colors.icon
+                }
               }
-            }
-          }}
-        />
-      </View>
+            }}
+          />
+        </View>
+      )}
 
       {/* Minimal Bottom Toolbar */}
       <View style={styles.bottomToolbar}>
@@ -395,6 +608,78 @@ export default function EditorScreen() {
           />
         </View>
       )}
+
+      {/* Rename Modal */}
+      <Modal
+        visible={showRenameModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRenameModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Rename Note</Text>
+            <TextInput
+              style={[styles.modalInput, { 
+                color: colors.text,
+                borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+              }]}
+              value={tempTitle}
+              onChangeText={setTempTitle}
+              placeholder="Enter note title"
+              placeholderTextColor={colors.textSecondary}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowRenameModal(false)}
+              >
+                <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleConfirmRename}
+              >
+                <Text style={styles.modalButtonTextConfirm}>Rename</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Raw Markdown Modal */}
+      <Modal
+        visible={showMarkdownModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMarkdownModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.markdownModalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.markdownModalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Raw Markdown</Text>
+              <TouchableOpacity onPress={() => setShowMarkdownModal(false)}>
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.markdownContainer, {
+              backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+              borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            }]}>
+              <Text style={[styles.markdownText, { color: colors.text }]}>{rawMarkdown}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalButtonConfirm, styles.copyButton]}
+              onPress={handleCopyFromModal}
+            >
+              <Copy size={16} color="#FFFFFF" />
+              <Text style={styles.modalButtonTextConfirm}>Copy to Clipboard</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -444,14 +729,110 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       color: colors.text,
       letterSpacing: -0.3,
     },
-    statusDotContainer: {
+    unsavedIndicator: {
       padding: 4,
     },
-    statusDot: {
+    unsavedDot: {
       width: 6,
       height: 6,
       borderRadius: 3,
-      backgroundColor: colors.success,
+      backgroundColor: '#FCD34D',
+    },
+    saveButton: {
+      backgroundColor: colors.tint,
+    },
+    loadingContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 16,
+    },
+    loadingText: {
+      fontSize: 16,
+      fontFamily: 'AlbertSans_500Medium',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalContent: {
+      width: '100%',
+      maxWidth: 400,
+      borderRadius: 16,
+      padding: 24,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    markdownModalContent: {
+      maxHeight: '80%',
+    },
+    markdownModalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontFamily: 'AlbertSans_600SemiBold',
+      marginBottom: 16,
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      fontFamily: 'AlbertSans_400Regular',
+      marginBottom: 20,
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalButtonCancel: {
+      backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    },
+    modalButtonConfirm: {
+      backgroundColor: colors.tint,
+    },
+    modalButtonTextCancel: {
+      fontSize: 16,
+      fontFamily: 'AlbertSans_500Medium',
+      color: colors.text,
+    },
+    modalButtonTextConfirm: {
+      fontSize: 16,
+      fontFamily: 'AlbertSans_500Medium',
+      color: '#FFFFFF',
+    },
+    markdownContainer: {
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 16,
+      maxHeight: 400,
+    },
+    markdownText: {
+      fontSize: 14,
+      fontFamily: 'SpaceMono',
+      lineHeight: 20,
+    },
+    copyButton: {
+      flexDirection: 'row',
+      gap: 8,
     },
     headerActions: {
       flexDirection: 'row',
