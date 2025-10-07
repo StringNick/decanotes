@@ -121,7 +121,7 @@ export const FormattedTextInput = forwardRef<TextInput, FormattedTextInputProps>
     >
       {value ? (
         <FormattedText 
-          text={value} 
+          text={value}
           style={[styles.formattedText, style]}
           isEditing={false}
         />
@@ -140,30 +140,26 @@ FormattedTextInput.displayName = 'FormattedTextInput';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     textInput: {
       fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       color: colors.text,
       minHeight: 40,
-      borderRadius: 8,
       backgroundColor: 'transparent',
-      paddingHorizontal: 4,
-      paddingVertical: 4,
+      paddingHorizontal: 0,
+      paddingVertical: 0,
     },
     formattedContainer: {
-      paddingHorizontal: 4,
-      paddingVertical: 8,
+      paddingHorizontal: 0,
+      paddingVertical: 0,
       minHeight: 40,
-      borderRadius: 8,
       backgroundColor: 'transparent',
       justifyContent: 'center',
     },
     formattedText: {
       fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       color: colors.text,
     },
@@ -171,14 +167,10 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       color: colors.textSecondary,
     },
     selected: {
-      backgroundColor: colors.blue + '20',
-      borderColor: colors.teal,
-      borderWidth: 1,
+      backgroundColor: 'transparent',
     },
     editing: {
-      backgroundColor: colors.surface,
-      borderWidth: 0,
-      elevation: 0,
+      backgroundColor: 'transparent',
     },
   });
 };

@@ -189,12 +189,11 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     checkmark: {
       color: colors.background,
       fontSize: 12,
-      fontFamily: 'AlbertSans_700Bold',
+      fontWeight: '700',
     },
     textInput: {
       flex: 1,
       fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       color: colors.text,
       paddingVertical: 0,

@@ -166,14 +166,13 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     bullet: {
       fontSize: 16,
       color: colors.accent,
-      fontFamily: 'AlbertSans_600SemiBold',
+      fontWeight: '600',
       minWidth: 20,
       textAlign: 'center',
     },
     textInput: {
       flex: 1,
       fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       color: colors.text,
       paddingVertical: 0,

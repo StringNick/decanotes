@@ -71,25 +71,26 @@ const getSegmentStyle = (type: FormattedTextSegment['type'], styles: any) => {
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     text: {
       fontSize: 16,
       lineHeight: 24,
       color: colors.text,
+      // Use system font for formatted text to ensure bold/italic work properly
     },
     normal: {
-      // fontWeight: 'normal',
-      // fontStyle: 'normal',
+      fontWeight: '400',
     },
     bold: {
-      fontWeight: 'bold',
+      fontWeight: '700',
     },
     italic: {
       fontStyle: 'italic',
+      fontWeight: '400',
     },
     boldItalic: {
-      fontWeight: 'bold',
+      fontWeight: '700',
       fontStyle: 'italic',
     },
     code: {
@@ -100,6 +101,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingVertical: 2,
       borderRadius: 3,
       fontSize: 14,
+      fontWeight: '400',
     },
   });
 };

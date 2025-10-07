@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
 import { EditorBlock } from '../../../types/editor';
@@ -45,49 +45,11 @@ export function BlockRenderer({
   blockProps,
   onBlockRefReady
 }: BlockRendererProps) {
-  const [showActions, setShowActions] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const animatedValue = useRef(new Animated.Value(0)).current;
   const blockRef = useRef<View>(null);
   const blockComponentRef = useRef<any>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
-  
-  // Animation for selection
-  useEffect(() => {
-    Animated.timing(animatedValue, {
-      toValue: isSelected ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false
-    }).start();
-  }, [isSelected, animatedValue]);
-  
-  // Handle block selection
-  const handleBlockPress = useCallback(() => {
-    if (!isSelected) {
-      onBlockSelect(block.id);
-    } else if (!isEditing) {
-      onBlockEdit(block.id);
-    }
-  }, [block.id, isSelected, isEditing, onBlockSelect, onBlockEdit]);
-  
-
-  
-  // Handle block actions
-  const handleAction = useCallback((actionId: string) => {
-    const actions = blockPlugin.getActions?.(block) || [];
-    const action = actions.find((a: any) => a.id === actionId);
-    
-    if (action) {
-      action.handler(block, {
-        updateBlock: (updates: any) => onBlockChange(block.id, updates),
-        deleteBlock: () => onBlockDelete(block.id),
-        duplicateBlock: () => onBlockDuplicate(block.id),
-        moveBlock: (direction: any) => onBlockMove(block.id, direction)
-      });
-    }
-  }, [block, blockPlugin, onBlockChange, onBlockDelete, onBlockDuplicate, onBlockMove]);
   
   // Effect to register block ref
   useEffect(() => {
@@ -100,14 +62,14 @@ export function BlockRenderer({
       }
     };
   }, [onBlockRefReady]);
-  
+
   // Get block component props (memoized to prevent unnecessary re-renders)
   const blockComponentProps: BlockComponentProps = useMemo(() => ({
     block,
     isSelected,
     isEditing,
     onBlockChange: (updates) => onBlockChange(block.id, updates),
-    onAction: handleAction,
+    onAction: () => {},
     config,
     ref: blockComponentRef,
     onFocus: () => {
@@ -116,107 +78,25 @@ export function BlockRenderer({
       onBlockEdit(block.id);
     },
     onBlur: () => {},
-  }), [block, isSelected, isEditing, handleAction, config, onBlockChange, onBlockSelect, onBlockEdit]);
-  
+  }), [block, isSelected, isEditing, config, onBlockChange, onBlockSelect, onBlockEdit]);
+
   // Render the block component
   const BlockComponent = blockPlugin.component;
   
-  // Get block actions
-  const blockActions = blockPlugin.getActions?.(block) || [];
-  
-  // Calculate styles
-  const borderColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['transparent', config.theme?.colors?.primary || '#007AFF']
-  });
-  
-  const backgroundColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['transparent', config.theme?.colors?.primaryLight || '#E3F2FD']
-  });
-  
   return (
-    <Animated.View
+    <View
       ref={blockRef}
       style={[
         styles.blockContainer,
-        {
-          borderColor,
-          backgroundColor
-        },
         blockProps?.style
       ]}
       {...blockProps}
     >
-      {/* Drag Handle */}
-      {config.dragAndDrop?.enabled && isSelected && (
-        <TouchableOpacity
-          style={styles.dragHandle}
-          {...dragHandleProps}
-        >
-          <Ionicons
-            name="reorder-two"
-            size={16}
-            color={config.theme?.colors?.secondary || '#666'}
-          />
-        </TouchableOpacity>
-      )}
-      
       {/* Block Content */}
-      <TouchableOpacity
-        style={styles.blockContent}
-        onPress={handleBlockPress}
-        onLongPress={() => setShowActions(true)}
-        activeOpacity={0.7}
-        testID={`block-container-${block.id}`}
-      >
+      <View style={styles.blockContent}>
         <BlockComponent {...blockComponentProps} />
-      </TouchableOpacity>
-      
-      {/* Block Actions - Always show when selected, position based on block index */}
-      {isSelected && blockActions.length > 0 && (
-        <View style={[
-          styles.actionsContainer, 
-          { backgroundColor: colors.surface },
-          // For first block (index 0), position below instead of above
-          index === 0 ? styles.actionsContainerBelow : {}
-        ]}>
-          {blockActions.map((action: any) => (
-            <TouchableOpacity
-              key={action.id}
-              style={[
-                styles.actionButton,
-                action.style === 'destructive' && styles.destructiveAction
-              ]}
-              onPress={() => {
-                handleAction(action.id);
-                setShowActions(false);
-              }}
-            >
-              {action.icon && (
-                <Ionicons
-                  name={action.icon as any}
-                  size={16}
-                  color={
-                    action.style === 'destructive'
-                      ? '#FF3B30'
-                      : config.theme?.colors?.primary || '#007AFF'
-                  }
-                />
-              )}
-              <Text
-                style={[
-                  styles.actionText,
-                  action.style === 'destructive' && styles.destructiveActionText
-                ]}
-              >
-                {action.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-      
+      </View>
+
       {/* Block Info */}
       {config.debug && isSelected && (
         <View style={styles.debugInfo}>
@@ -230,7 +110,7 @@ export function BlockRenderer({
           )}
         </View>
       )}
-      
+
       {/* Error Boundary */}
       {blockPlugin.hasError && (
         <View style={styles.errorContainer}>
@@ -240,7 +120,7 @@ export function BlockRenderer({
           </Text>
         </View>
       )}
-    </Animated.View>
+    </View>
   );
 }
 
@@ -323,80 +203,17 @@ export function SafeBlockRenderer(props: BlockRendererProps) {
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     blockContainer: {
-      marginVertical: 4,
-      borderWidth: 1,
-      borderRadius: 12,
-      position: 'relative',
+      marginVertical: 2,
       backgroundColor: 'transparent',
-      borderColor: 'transparent',
     },
-    
-    dragHandle: {
-      position: 'absolute',
-      left: -30,
-      top: '50%',
-      transform: [{ translateY: -8 }],
-      width: 20,
-      height: 16,
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 10
-    },
-    
+
     blockContent: {
       flex: 1,
     },
-    
-    actionsContainer: {
-      position: 'absolute',
-      top: -50,
-      right: 0,
-      flexDirection: 'row',
-      backgroundColor: colors.dark,
-      borderRadius: 12,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
-      zIndex: 20,
-      paddingHorizontal: 4,
-      paddingVertical: 4,
-    },
-    
-    actionsContainerBelow: {
-      top: 'auto',
-      bottom: -50,
-    },
-    
-    actionButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 8,
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      marginHorizontal: 2,
-    },
-    
-    destructiveAction: {
-      backgroundColor: colors.error + '10' // 10% opacity
-    },
-    
-    actionText: {
-      fontSize: 12,
-      marginLeft: 4,
-      color: colors.background,
-      fontFamily: 'AlbertSans_500Medium',
-    },
-    
-    destructiveActionText: {
-      color: colors.error
-    },
-    
+
     debugInfo: {
       position: 'absolute',
       bottom: -60,
@@ -407,13 +224,13 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 4,
       zIndex: 15
     },
-    
+
     debugText: {
       fontSize: 10,
       color: colorScheme === 'dark' ? colors.text : 'white',
       fontFamily: 'monospace'
     },
-    
+
     errorContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -422,14 +239,14 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 4,
       margin: 4
     },
-    
+
     errorText: {
       fontSize: 12,
       color: colors.error,
       marginLeft: 8,
       flex: 1
     },
-    
+
     errorBoundary: {
       padding: 16,
       backgroundColor: colors.error + '10',
@@ -437,28 +254,28 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       margin: 8
     },
-    
+
     errorBoundaryTitle: {
       fontSize: 16,
       fontWeight: 'bold',
       color: colors.error,
       marginTop: 8
     },
-    
+
     errorBoundaryMessage: {
       fontSize: 14,
       color: colors.textSecondary,
       textAlign: 'center',
       marginTop: 4
     },
-    
+
     errorBoundaryDetails: {
       fontSize: 12,
       color: colors.textSecondary,
       marginTop: 8,
       fontFamily: 'monospace'
     },
-    
+
     errorBoundaryButton: {
       backgroundColor: colors.accent,
       paddingHorizontal: 16,
@@ -466,7 +283,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 6,
       marginTop: 12
     },
-    
+
     errorBoundaryButtonText: {
       color: 'white',
       fontSize: 14,

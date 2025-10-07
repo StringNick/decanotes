@@ -10,7 +10,7 @@ import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
 
 /**
- * Paragraph block component with modern dark theme support
+ * Paragraph block component with minimalist design
  */
 const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
   block,
@@ -19,14 +19,18 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
   onFocus,
   onBlur,
   isSelected,
+  isFocused,
   isEditing,
   style
 }, ref) => {
   const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  
+
+  // Explicitly determine if we should show editor or formatted view
+  const shouldShowEditor = Boolean(isFocused || isEditing);
+  const styles = getStyles(colorScheme ?? 'light', shouldShowEditor);
+
   // Expose the TextInput methods through ref
   useImperativeHandle(ref, () => inputRef.current as TextInput);
 
@@ -63,16 +67,12 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
             placeholder="Type something..."
             placeholderTextColor={colors.textSecondary}
             isSelected={isSelected}
-            isEditing={isEditing}
+            isEditing={shouldShowEditor}
             multiline
             textAlignVertical="top"
             scrollEnabled={false}
             preventNewlines={preventNewlines}
-            style={[
-              styles.textInput,
-              isSelected && styles.selected,
-              isEditing && styles.editing
-            ]}
+            style={styles.textInput}
           />
         </View>
       )}
@@ -82,35 +82,32 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
 
 ParagraphComponent.displayName = 'ParagraphComponent';
 
-const getStyles = (colorScheme: 'light' | 'dark') => {
+const getStyles = (colorScheme: 'light' | 'dark', isEditing: boolean) => {
   const colors = Colors[colorScheme];
-  
+  const isDark = colorScheme === 'dark';
+
+  // Subtle border color that's only visible when editing
+  const borderOpacity = isEditing ? 0.2 : 0;
+  const borderColor = isDark
+    ? `rgba(100, 181, 246, ${borderOpacity})`
+    : `rgba(33, 150, 243, ${borderOpacity})`;
+
   return StyleSheet.create({
     container: {
-      paddingHorizontal: 4,
+      marginVertical: 2,
+      paddingLeft: 8,
+      paddingRight: 4,
       paddingVertical: 2,
+      borderLeftWidth: 2,
+      borderLeftColor: borderColor,
+      backgroundColor: 'transparent',
     },
     textInput: {
+      width: '100%',
       fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
       color: colors.text,
       lineHeight: 24,
       backgroundColor: 'transparent',
-    },
-    selected: {
-      backgroundColor: colors.blue + '20',
-      borderColor: colors.teal,
-      borderWidth: 1,
-    },
-    editing: {
-      backgroundColor: colors.surface,
-      borderColor: colors.accent,
-      borderWidth: 2,
-      shadowColor: colors.accent,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 2,
     },
   });
 };

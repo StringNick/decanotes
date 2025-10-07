@@ -320,7 +320,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     typeLabel: {
       fontSize: 11,
-      fontFamily: 'AlbertSans_500Medium',
+      fontWeight: '500',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
@@ -356,7 +356,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     typeText: {
       fontSize: 11,
-      fontFamily: 'AlbertSans_500Medium',
+      fontWeight: '500',
       textTransform: 'uppercase',
       letterSpacing: 0.3,
     },
@@ -373,17 +373,16 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     title: {
       fontSize: 14,
-      fontFamily: 'AlbertSans_600SemiBold',
+      fontWeight: '600',
     },
     titleInput: {
       fontSize: 14,
-      fontFamily: 'AlbertSans_600SemiBold',
+      fontWeight: '600',
       paddingVertical: 4,
       paddingHorizontal: 0,
     },
     contentInput: {
       fontSize: 15,
-      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 22,
       minHeight: 44,
       textAlignVertical: 'top',

@@ -193,49 +193,44 @@ QuoteComponent.displayName = 'QuoteComponent';
 const getStyles = (colorScheme: 'light' | 'dark', depth: number = 1) => {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
-  
+
   // Calculate indentation based on depth
   const indentation = (depth - 1) * 12;
-  
+
   return StyleSheet.create({
     container: {
-      marginVertical: 8,
+      marginVertical: 4,
       marginLeft: indentation,
     },
     quoteContainer: {
       flexDirection: 'row',
       backgroundColor: 'transparent',
-      borderLeftWidth: 0,
-      borderRadius: 12,
-      padding: 12,
-      paddingLeft: 16,
-      borderWidth: 0,
-      position: 'relative',
+      paddingVertical: 2,
+      paddingLeft: 8,
+      paddingRight: 4,
     },
     selected: {
-      backgroundColor: isDark ? 'rgba(100, 181, 246, 0.08)' : 'rgba(33, 150, 243, 0.06)',
+      backgroundColor: 'transparent',
     },
     editing: {
-      backgroundColor: isDark ? 'rgba(100, 181, 246, 0.12)' : 'rgba(33, 150, 243, 0.08)',
+      backgroundColor: 'transparent',
     },
     quoteMarkMinimal: {
-      marginRight: 12,
+      marginRight: 8,
       alignItems: 'center',
       justifyContent: 'center',
-      width: 4,
+      width: 2,
     },
     quoteBarMinimal: {
-      width: 3,
+      width: 2,
       height: '100%',
       minHeight: 24,
-      borderRadius: 2,
     },
     content: {
       flex: 1,
     },
     textInput: {
       fontSize: 16,
-      fontFamily: 'AlbertSans_400Regular',
       lineHeight: 24,
       color: colors.text,
       fontStyle: 'normal',
@@ -255,7 +250,6 @@ const getStyles = (colorScheme: 'light' | 'dark', depth: number = 1) => {
       color: colors.textSecondary,
       fontWeight: '500',
       fontStyle: 'normal',
-      fontFamily: 'AlbertSans_500Medium',
     },
     source: {
       fontSize: 12,

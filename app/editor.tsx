@@ -6,8 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { CheckSquare, Code, Copy, FileText, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Type, Undo2, X } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { CheckSquare, Code, Copy, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Type, Undo2, X } from 'lucide-react-native';
+import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MarkdownEditor from '../components/editor/MarkdownEditor';
@@ -279,7 +279,7 @@ export default function EditorScreen() {
     }
     hideBlockComponents();
   }, [hideBlockComponents]);
-  
+
   // Handle block changes
   const handleBlockChange = useCallback((blocks: EditorBlock[]) => {
     setBlocks(blocks);
@@ -405,14 +405,14 @@ export default function EditorScreen() {
     await Clipboard.setStringAsync(isEditingMarkdown ? editedMarkdown : rawMarkdown);
     Alert.alert('Copied!', 'Markdown copied to clipboard');
   }, [rawMarkdown, editedMarkdown, isEditingMarkdown]);
-  
+
   // Apply edited markdown
   const handleApplyMarkdown = useCallback(() => {
     if (editorRef.current && editedMarkdown !== rawMarkdown) {
       try {
         // Apply the markdown to the editor
         editorRef.current.setMarkdown(editedMarkdown);
-        
+
         // Get the updated blocks from the editor after parsing
         setTimeout(() => {
           if (editorRef.current) {
@@ -420,7 +420,7 @@ export default function EditorScreen() {
             setBlocks(updatedBlocks);
           }
         }, 100);
-        
+
         setRawMarkdown(editedMarkdown);
         setIsEditingMarkdown(false);
         markAsChanged();
@@ -433,13 +433,13 @@ export default function EditorScreen() {
       setIsEditingMarkdown(false);
     }
   }, [editedMarkdown, rawMarkdown, markAsChanged]);
-  
+
   // Start editing markdown
   const handleEditMarkdown = useCallback(() => {
     setEditedMarkdown(rawMarkdown);
     setIsEditingMarkdown(true);
   }, [rawMarkdown]);
-  
+
   // Cancel editing markdown
   const handleCancelEditMarkdown = useCallback(() => {
     setEditedMarkdown(rawMarkdown);
@@ -544,25 +544,27 @@ export default function EditorScreen() {
         </View>
       ) : (
         <View style={styles.editorContainer}>
-          <MarkdownEditor
-            ref={editorRef}
-            initialBlocks={blocks}
-            placeholder="Start writing..."
-            onBlocksChange={handleBlockChange}
-            theme={getEditorTheme(colorScheme || 'light')}
-            config={{
-              toolbar: { enabled: false },
-              theme: {
-                colors: {
-                  background: colors.background,
-                  text: colors.text,
-                  border: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                  primary: colors.tint,
-                  secondary: colors.icon
+          <StrictMode>
+            <MarkdownEditor
+              ref={editorRef}
+              initialBlocks={blocks}
+              placeholder="Start writing..."
+              onBlocksChange={handleBlockChange}
+              theme={getEditorTheme(colorScheme || 'light')}
+              config={{
+                toolbar: { enabled: false },
+                theme: {
+                  colors: {
+                    background: colors.background,
+                    text: colors.text,
+                    border: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    primary: colors.tint,
+                    secondary: colors.icon
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </StrictMode>
         </View>
       )}
 
@@ -728,7 +730,7 @@ export default function EditorScreen() {
                 <X size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
-            
+
             {isEditingMarkdown ? (
               <TextInput
                 style={[styles.markdownInput, {
@@ -752,7 +754,7 @@ export default function EditorScreen() {
                 <Text style={[styles.markdownText, { color: colors.text }]}>{rawMarkdown}</Text>
               </View>
             )}
-            
+
             <View style={styles.markdownModalActions}>
               {isEditingMarkdown ? (
                 <>
