@@ -86,6 +86,9 @@ export type EditorMode = 'edit' | 'raw' | 'preview';
 
 export type MarkdownEditorRef = {
   getMarkdown: () => string;
+  setMarkdown: (markdown: string) => void;
+  getBlocks: () => EditorBlock[];
+  setBlocks: (blocks: EditorBlock[]) => void;
   focus: () => void;
   insertBlock: (type: EditorBlockType, index?: number) => void;
   deleteBlock: (id: string) => void;

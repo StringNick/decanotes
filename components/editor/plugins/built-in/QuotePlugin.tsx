@@ -288,7 +288,7 @@ export class QuotePlugin extends BlockPlugin {
   readonly settings = {
     allowedParents: ['root', 'callout'] as EditorBlockType[],
     validation: {
-      maxDepth: 5
+      maxLength: 10000
     },
     defaultMeta: {
       depth: 1

@@ -470,6 +470,12 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     useImperativeHandle(ref, () => ({
       // Base MarkdownEditorRef methods
       getMarkdown: () => getMarkdown(),
+      setMarkdown: (markdown: string) => setMarkdown(markdown),
+      getBlocks: () => blocks,
+      setBlocks: (newBlocks: EditorBlock[]) => {
+        // TODO: Implement setBlocks
+        // Not yet implemented
+      },
       focus: () => {
         // Focus the currently focused block, or focus the last block
         if (focusedBlockId) {
@@ -535,11 +541,6 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       exportToMarkdown: () => getMarkdown(),
       importFromMarkdown: (markdown: string) => setMarkdown(markdown),
       exportToPlainText: () => blocks.map(b => b.content).join('\n'),
-      getBlocks: () => blocks,
-      setBlocks: (newBlocks: EditorBlock[]) => {
-        // TODO: Implement setBlocks
-        // Not yet implemented
-      },
       
       // Editor state
       getEditorState: () => state,

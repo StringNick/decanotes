@@ -131,20 +131,42 @@ export const KeyboardHandler: React.FC<KeyboardHandlerProps> = ({
     }
 
     // Handle Backspace key
-    if (key === 'Backspace' && cursorPosition === 0) {
+    // Trigger handler at cursor position 0, or if content is empty (for deletion)
+    const isContentEmpty = block.content.trim() === '';
+    const shouldHandleBackspace = cursorPosition === 0 || isContentEmpty;
+
+    if (key === 'Backspace' && shouldHandleBackspace) {
       if (controller?.handleBackspace) {
         const result = controller.handleBackspace(block);
-        
+
+        // If result is explicitly null and content is empty, delete the block
+        if (result === null && isContentEmpty) {
+          if (event.preventDefault) event.preventDefault();
+
+          // Delete the block
+          editor.deleteBlock(block.id);
+
+          // Focus previous block
+          if (currentBlockIndex > 0) {
+            const prevBlock = blocks[currentBlockIndex - 1];
+            if (prevBlock) {
+              editor.focusBlock(prevBlock.id);
+            }
+          }
+
+          return;
+        }
+
         if (result) {
           if (event.preventDefault) event.preventDefault();
-          
+
           if (typeof result === 'object' && result !== null) {
             // Update the block
             editor.updateBlock(block.id, result);
           } else {
             // Delete the block
             editor.deleteBlock(block.id);
-            
+
             // Focus previous block
             if (currentBlockIndex > 0) {
               const prevBlock = blocks[currentBlockIndex - 1];
@@ -153,7 +175,7 @@ export const KeyboardHandler: React.FC<KeyboardHandlerProps> = ({
               }
             }
           }
-          
+
           return;
         }
       }

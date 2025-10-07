@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -24,6 +24,7 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
   style
 }, ref) => {
   const inputRef = useRef<TextInput>(null);
+  const [cursorPosition, setCursorPosition] = useState(0);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
@@ -37,6 +38,13 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
   // Get the plugin instance and controller
   const pluginInstance = new ParagraphPlugin();
   const controller = pluginInstance.controller;
+
+  const handleSelectionChange = (event: any) => {
+    const selection = event.nativeEvent.selection;
+    if (selection) {
+      setCursorPosition(selection.start);
+    }
+  };
 
   const handleTextChange = (text: string) => {
     if (onBlockChange) {
@@ -53,7 +61,7 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
     <KeyboardHandler
       block={block}
       controller={controller}
-      cursorPosition={0}
+      cursorPosition={cursorPosition}
     >
       {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
         <View style={[styles.container, style]}>
@@ -63,6 +71,7 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
             onChangeText={handleTextChange}
             onFocus={onFocus}
             onBlur={onBlur}
+            onSelectionChange={handleSelectionChange}
             onKeyPress={onKeyPress}
             placeholder="Type something..."
             placeholderTextColor={colors.textSecondary}
@@ -174,12 +183,14 @@ export class ParagraphPlugin extends BlockPlugin {
   }
 
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
-    // If paragraph is empty and backspace is pressed, convert to previous block type
+    // If paragraph is empty and backspace is pressed, delete the block
+    // We return null to let the KeyboardHandler handle block deletion
     if (block.content.trim() === '') {
-      return null; // Let editor handle deletion
+      return null; // Let KeyboardHandler handle block deletion
     }
-    
-    return block;
+
+    // Return null to let default behavior handle non-empty paragraphs
+    return null;
   }
 
   protected transformContent(content: string): string {
