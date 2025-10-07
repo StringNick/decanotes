@@ -9,6 +9,7 @@ export { ImagePlugin } from './ImagePlugin';
 export { VideoPlugin } from './VideoPlugin';
 export { CalloutPlugin } from './CalloutPlugin';
 export { DividerPlugin } from './DividerPlugin';
+export { TablePlugin } from './TablePlugin';
 
 // Export plugin collections
 export const BUILT_IN_BLOCK_PLUGINS = [
@@ -21,7 +22,8 @@ export const BUILT_IN_BLOCK_PLUGINS = [
   'image',
   'video',
   'callout',
-  'divider'
+  'divider',
+  'table'
 ] as const;
 
 export const BUILT_IN_MARKDOWN_PLUGINS = [

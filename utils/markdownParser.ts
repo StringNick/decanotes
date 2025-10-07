@@ -151,6 +151,69 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
       continue;
     }
 
+    // tables (markdown table format)
+    if (trimmedLine.startsWith('|')) {
+      // Check if this is the start of a table
+      if (!currentBlock || currentBlock.type !== 'table') {
+        if (currentBlock) blocks.push(currentBlock);
+        
+        // Look ahead to collect all table lines
+        const tableLines: string[] = [line];
+        let j = i + 1;
+        while (j < lines.length && lines[j].trim().startsWith('|')) {
+          tableLines.push(lines[j]);
+          j++;
+        }
+        i = j - 1; // Update loop counter
+
+        // Parse table
+        if (tableLines.length >= 2) {
+          // Helper function to parse table row
+          const parseTableRow = (line: string): string[] => {
+            return line
+              .split('|')
+              .slice(1, -1)  // Remove first and last empty elements
+              .map(cell => cell.trim());
+          };
+
+          // Parse header row
+          const headers = parseTableRow(tableLines[0]);
+
+          // Parse alignment row (should contain dashes and optional colons)
+          const alignmentCells = parseTableRow(tableLines[1]);
+          const alignments = alignmentCells.map(cell => {
+            // Check colons position for alignment
+            const startsWithColon = cell.startsWith(':');
+            const endsWithColon = cell.endsWith(':');
+
+            if (startsWithColon && endsWithColon) return 'center';
+            if (endsWithColon) return 'right';
+            if (startsWithColon) return 'left';
+            return 'left';  // default
+          }) as ('left' | 'center' | 'right')[];
+
+          // Validate that second row is actually an alignment row
+          const isValidAlignmentRow = alignmentCells.every(cell =>
+            /^:?-+:?$/.test(cell)
+          );
+
+          if (isValidAlignmentRow && headers.length > 0) {
+            // Parse data rows
+            const rows = tableLines.slice(2).map(line => parseTableRow(line));
+
+            blocks.push({
+              id: generateId(),
+              type: 'table',
+              content: '',
+              meta: { headers, rows, alignments }
+            });
+            currentBlock = null;
+          }
+        }
+      }
+      continue;
+    }
+
     // plain paragraph (default)
     if (!currentBlock) {
       currentBlock = { id: generateId(), type: 'paragraph', content: line };
@@ -211,6 +274,44 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
       case 'image': {
         const caption = block.meta?.caption ? ` "${block.meta.caption}"` : '';
         md = `![${block.meta?.alt || ''}](${block.content}${caption})`;
+        break;
+      }
+      case 'table': {
+        const headers = block.meta?.headers || [];
+        const rows = block.meta?.rows || [];
+        const alignments = block.meta?.alignments || [];
+
+        if (headers.length === 0) {
+          md = '';
+          break;
+        }
+
+        const lines: string[] = [];
+
+        // Header row
+        lines.push(`| ${headers.join(' | ')} |`);
+
+        // Alignment row
+        const alignmentRow = headers.map((_, index) => {
+          const alignment = alignments[index] || 'left';
+          switch (alignment) {
+            case 'center':
+              return ':---:';
+            case 'right':
+              return '---:';
+            default:
+              return '---';
+          }
+        });
+        lines.push(`| ${alignmentRow.join(' | ')} |`);
+
+        // Data rows
+        rows.forEach((row: string[]) => {
+          const cells = headers.map((_, index) => row[index] || '');
+          lines.push(`| ${cells.join(' | ')} |`);
+        });
+
+        md = lines.join('\n');
         break;
       }
       default:

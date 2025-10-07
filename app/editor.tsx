@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { CheckSquare, Code, Copy, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Type, Undo2, X } from 'lucide-react-native';
+import { CheckSquare, Code, Copy, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Table, Type, Undo2, X } from 'lucide-react-native';
 import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -167,6 +167,77 @@ Enjoy creating with DecanNotes! 🚀`; */
 
 // Import built-in plugins
 
+/**
+ * Helper function to detect and convert table markdown in paragraph blocks
+ */
+function convertTableMarkdownToBlocks(blocks: EditorBlock[]): EditorBlock[] {
+  return blocks.map(block => {
+    // Only process paragraph blocks
+    if (block.type !== 'paragraph') {
+      return block;
+    }
+
+    const content = block.content.trim();
+    const lines = content.split('\n');
+
+    // Check if all lines start with | (table syntax)
+    const isTableMarkdown = lines.length >= 2 && lines.every(line => line.trim().startsWith('|'));
+
+    if (isTableMarkdown) {
+      // Helper function to parse table row
+      const parseTableRow = (line: string): string[] => {
+        return line
+          .split('|')
+          .slice(1, -1)  // Remove first and last empty elements
+          .map(cell => cell.trim());
+      };
+
+      // Parse header row
+      const headers = parseTableRow(lines[0]);
+
+      // Parse alignment row (should contain dashes and optional colons)
+      if (lines.length >= 2) {
+        const alignmentCells = parseTableRow(lines[1]);
+
+        // Validate that second row is an alignment row
+        const isValidAlignmentRow = alignmentCells.every(cell =>
+          /^:?-+:?$/.test(cell)
+        );
+
+        if (isValidAlignmentRow && headers.length > 0) {
+          const alignments = alignmentCells.map(cell => {
+            const startsWithColon = cell.startsWith(':');
+            const endsWithColon = cell.endsWith(':');
+
+            if (startsWithColon && endsWithColon) return 'center';
+            if (endsWithColon) return 'right';
+            if (startsWithColon) return 'left';
+            return 'left';  // default
+          }) as ('left' | 'center' | 'right')[];
+
+          // Parse data rows
+          const rows = lines.slice(2).map(line => parseTableRow(line));
+
+          // Return a table block
+          return {
+            id: block.id, // Keep the same ID
+            type: 'table' as EditorBlockType,
+            content: '',
+            meta: {
+              headers,
+              rows,
+              alignments
+            }
+          };
+        }
+      }
+    }
+
+    // Return the block unchanged if it's not table markdown
+    return block;
+  });
+}
+
 export default function EditorScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ noteId?: string }>();
@@ -201,10 +272,12 @@ export default function EditorScreen() {
         try {
           const note = await loadNote(params.noteId);
           if (note) {
-            setBlocks(note.content);
+            // Convert any paragraph blocks containing table markdown to table blocks
+            const processedBlocks = convertTableMarkdownToBlocks(note.content);
+            setBlocks(processedBlocks);
             const title = note.title || 'Untitled';
             setNoteTitle(title);
-            initialBlocksRef.current = note.content;
+            initialBlocksRef.current = processedBlocks;
             // If note has a title, consider it manually set
             if (title && title !== 'Untitled') {
               isTitleManuallySet.current = true;
@@ -459,6 +532,7 @@ export default function EditorScreen() {
     { type: 'divider', icon: Minus, label: 'Divider' },
     { type: 'code', icon: Code, label: 'Code' },
     { type: 'callout', icon: Lightbulb, label: 'Callout' },
+    { type: 'table', icon: Table, label: 'Table' },
   ];
 
   return (

@@ -257,7 +257,42 @@ class MarkdownRegistry {
       
       case 'divider':
         return '---';
-      
+
+      case 'table': {
+        const headers = block.meta?.headers || [];
+        const rows = block.meta?.rows || [];
+        const alignments = block.meta?.alignments || [];
+
+        if (headers.length === 0) return '';
+
+        const lines: string[] = [];
+
+        // Header row
+        lines.push(`| ${headers.join(' | ')} |`);
+
+        // Alignment row
+        const alignmentRow = headers.map((_, index) => {
+          const alignment = alignments[index] || 'left';
+          switch (alignment) {
+            case 'center':
+              return ':---:';
+            case 'right':
+              return '---:';
+            default:
+              return '---';
+          }
+        });
+        lines.push(`| ${alignmentRow.join(' | ')} |`);
+
+        // Data rows
+        rows.forEach((row: string[]) => {
+          const cells = headers.map((_, index) => row[index] || '');
+          lines.push(`| ${cells.join(' | ')} |`);
+        });
+
+        return lines.join('\n');
+      }
+
       case 'paragraph':
       default:
         return block.content;
@@ -326,9 +361,12 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
   let codeBlockContent = '';
 
   // Get plugins that can parse markdown (have parseMarkdown method)
-  const markdownCapablePlugins = plugins.filter(plugin => 
+  const markdownCapablePlugins = plugins.filter(plugin =>
     plugin.type === 'block' && typeof plugin.parseMarkdown === 'function'
   ).sort((a, b) => (b.markdownSyntax?.priority || 0) - (a.markdownSyntax?.priority || 0));
+
+  // Get table plugin specifically
+  const tablePlugin = markdownCapablePlugins.find(p => p.blockType === 'table');
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -365,6 +403,39 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
     if (inCodeBlock) {
       codeBlockContent += (codeBlockContent ? '\n' : '') + line;
       continue;
+    }
+
+    // Handle tables (multi-line blocks starting with |)
+    if (line.trim().startsWith('|') && tablePlugin) {
+      if (currentBlock.trim()) {
+        blocks.push({
+          id: generateId(),
+          type: 'paragraph',
+          content: currentBlock.trim()
+        });
+        currentBlock = '';
+      }
+
+      // Collect all consecutive table lines
+      const tableLines = [line];
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim().startsWith('|')) {
+        tableLines.push(lines[j]);
+        j++;
+      }
+      i = j - 1; // Update loop counter
+
+      // Try to parse the complete table
+      try {
+        const tableMarkdown = tableLines.join('\n');
+        const tableBlock = tablePlugin.parseMarkdown(tableMarkdown);
+        if (tableBlock) {
+          blocks.push(tableBlock);
+          continue;
+        }
+      } catch (error) {
+        console.warn('Failed to parse table:', error);
+      }
     }
 
     // Try to parse with plugin parsers

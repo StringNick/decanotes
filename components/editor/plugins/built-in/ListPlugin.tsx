@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -39,9 +39,11 @@ const ListComponent: React.FC<BlockComponentProps> = ({
 
   const [cursorPosition, setCursorPosition] = useState(0);
 
-  // Get the plugin instance and controller
-  const pluginInstance = new ListPlugin();
-  const controller = pluginInstance.controller;
+  // Get the plugin instance and controller (memoized to prevent recreation on every render)
+  const controller = useMemo(() => {
+    const pluginInstance = new ListPlugin();
+    return pluginInstance.controller;
+  }, []);
 
   const handleTextChange = (text: string) => {
     onBlockChange({ content: text });
@@ -143,19 +145,12 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 8,
     },
     selected: {
-      // backgroundColor: colors.blue + '20',
-      // borderWidth: 2,
-      // borderColor: colors.teal,
+      // Minimal visual feedback for selection
     },
     editing: {
       backgroundColor: colors.surface,
       borderColor: colors.teal,
       borderWidth: 1,
-      shadowColor: colors.teal,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 1,
     },
     bulletContainer: {
       width: 28,
@@ -230,18 +225,9 @@ export class ListPlugin implements BlockPlugin {
   };
 
   protected handleKeyPress(event: any, block: EditorBlock): boolean | void {
-    // Handle Tab for indentation
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      const currentLevel = block.meta?.level || 0;
-      const newLevel = event.shiftKey
-        ? Math.max(0, currentLevel - 1)
-        : Math.min(5, currentLevel + 1);
-
-      this.updateBlockLevel(block, newLevel);
-      return true;
-    }
-
+    // Note: Tab indentation is not currently supported due to architectural limitations
+    // handleKeyPress can only return boolean, not updated blocks
+    // Tab functionality would need to be implemented at the component level
     return false;
   }
 
@@ -274,7 +260,7 @@ export class ListPlugin implements BlockPlugin {
 
     // For ordered lists, we need to update the numbering of subsequent items
     if (listType === 'ordered' && allBlocks && currentIndex !== undefined) {
-      const updates: Array<{ blockId: string; updates: Partial<EditorBlock> }> = [];
+      const updates: { blockId: string; updates: Partial<EditorBlock> }[] = [];
       
       // Find all subsequent list items at the same level and update their indices
       for (let i = currentIndex + 2; i < allBlocks.length; i++) {
@@ -381,13 +367,6 @@ export class ListPlugin implements BlockPlugin {
     });
     
     return actions;
-  }
-
-  /**
-   * Update list item level
-   */
-  private updateBlockLevel(block: EditorBlock, level: number) {
-    console.log(`Update block ${block.id} to level ${level}`);
   }
 
   /**

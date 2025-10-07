@@ -12,7 +12,8 @@ export type EditorBlockType =
   | 'divider'
   | 'image'
   | 'video'
-  | 'callout';
+  | 'callout'
+  | 'table';
 
 export interface EditorBlock {
   id: string;
@@ -49,6 +50,11 @@ export interface EditorBlock {
     
     // Divider specific
     style?: 'solid' | 'dashed' | 'dotted';
+    
+    // Table specific
+    headers?: string[];
+    rows?: string[][];
+    alignments?: ('left' | 'center' | 'right')[];
     
     // General
     [key: string]: any; // Allow plugins to add custom meta

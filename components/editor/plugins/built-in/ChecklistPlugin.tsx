@@ -41,22 +41,6 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   const controller = pluginInstance.controller;
 
   const handleTextChange = (text: string) => {
-    // Check if this is a backspace at position 0 (content deletion at start)
-    // Only trigger when cursor was at position 0 and content is being deleted
-    if (text.length < block.content.length && cursorPosition === 0) {
-      // Convert checklist back to paragraph with markdown syntax
-      const checkedSymbol = isChecked ? 'x' : ' ';
-      const level = block.meta?.level || 0;
-      const indent = '  '.repeat(level);
-
-      onBlockChange({
-        type: 'paragraph' as EditorBlockType,
-        content: `${indent}- [${checkedSymbol}] ${block.content}`,
-        meta: {}
-      });
-      return;
-    }
-
     onBlockChange({ content: text });
   };
 
@@ -149,20 +133,12 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       minHeight: 39,
     },
     selected: {
-      // backgroundColor: colors.blue + '20',
-      // borderWidth: 1,
-      // borderColor: colors.teal,
-      // borderRadius: 8,
+      // Minimal visual feedback for selection
     },
     editing: {
       backgroundColor: colors.surface,
       borderColor: colors.teal,
-      borderWidth: 2,
-      // shadowColor: colors.teal,
-      // shadowOffset: { width: 0, height: 2 },
-      // shadowOpacity: 0.2,
-      // shadowRadius: 8,
-      // elevation: 3,
+      borderWidth: 1,
       borderRadius: 8,
     },
     checkboxContainer: {
@@ -173,8 +149,8 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       minHeight: 27,
     },
     checkbox: {
-      width: 15,
-      height: 15,
+      width: 20,
+      height: 20,
       borderWidth: 2,
       borderColor: colors.border,
       borderRadius: 6,
@@ -188,7 +164,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     checkmark: {
       color: colors.background,
-      fontSize: 12,
+      fontSize: 14,
       fontWeight: '700',
     },
     textInput: {
@@ -261,25 +237,9 @@ export class ChecklistPlugin implements BlockPlugin {
   };
 
   protected handleKeyPress(event: any, block: EditorBlock): boolean | void {
-    // Handle Tab for indentation
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      const currentLevel = block.meta?.level || 0;
-      const newLevel = event.shiftKey
-        ? Math.max(0, currentLevel - 1)
-        : Math.min(5, currentLevel + 1);
-
-      this.updateBlockLevel(block, newLevel);
-      return true;
-    }
-
-    // Handle Ctrl+Enter to toggle checked state
-    if (event.ctrlKey && event.key === 'Enter') {
-      event.preventDefault();
-      this.toggleChecked(block);
-      return true;
-    }
-
+    // Note: Tab indentation and Ctrl+Enter toggle are not currently supported
+    // due to architectural limitations. handleKeyPress can only return boolean,
+    // not updated blocks. These features would need to be implemented at the component level.
     return false;
   }
 
@@ -418,18 +378,6 @@ export class ChecklistPlugin implements BlockPlugin {
     });
     
     return actions;
-  }
-
-  /**
-   * Update checklist item level
-   */
-  private updateBlockLevel(block: EditorBlock, level: number) {
-  }
-
-  /**
-   * Toggle checked state
-   */
-  private toggleChecked(block: EditorBlock) {
   }
 
   /**

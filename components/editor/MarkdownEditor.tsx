@@ -20,6 +20,7 @@ import {
   ListPlugin,
   ParagraphPlugin,
   QuotePlugin,
+  TablePlugin,
   VideoPlugin
 } from './plugins/built-in';
 
@@ -367,6 +368,7 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
     pluginRegistry.register(new VideoPlugin()); // Class-based plugin
     pluginRegistry.register(new CalloutPlugin()); // Class-based plugin
     pluginRegistry.register(new ChecklistPlugin()); // Class-based plugin
+    pluginRegistry.register(new TablePlugin()); // Class-based plugin
 
     // Register custom plugins
     plugins.forEach(plugin => {
@@ -385,6 +387,7 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       new VideoPlugin(),
       new CalloutPlugin(),
       new ChecklistPlugin(),
+      new TablePlugin(),
       ...plugins
     ];
     
