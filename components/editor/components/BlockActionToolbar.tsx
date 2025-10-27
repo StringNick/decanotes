@@ -4,8 +4,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
 import { EditorBlock } from '../../../types/editor';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEditor } from '../core/EditorContext';
 import { getQuoteCursorState } from '../plugins/built-in/QuotePlugin';
+import { useKeyboardOffset } from '../../../hooks/useKeyboardOffset';
 
 type ToolbarAction = {
   id: string;
@@ -47,6 +49,8 @@ const normalizeQuoteDepths = (block: EditorBlock, lineCount: number): number[] =
 export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly }) => {
   const colorScheme = useColorScheme();
   const styles = useMemo(() => getStyles(colorScheme ?? 'light'), [colorScheme]);
+  const insets = useSafeAreaInsets();
+  const keyboardOffset = useKeyboardOffset();
 
   const {
     state,
@@ -305,46 +309,111 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
     handleHeadingLevelChange,
     handleListLevelChange,
     handleQuoteDepthChange,
+    handleToggleListType,
   ]);
 
   if (!isVisible || toolbarActions.length === 0) {
     return null;
   }
 
+  // Calculate actual KeyboardDock height dynamically
+  // Base height + action row + dividers + padding
+  const keyboardDockHeight = 56; // Measured height of KeyboardDock content
+  const baseOffset = insets.bottom + 8;
+
+  // When keyboard is open, position directly above KeyboardDock
+  const bottomOffset = keyboardOffset > 0
+    ? keyboardOffset + keyboardDockHeight  // No magic numbers - just actual height
+    : baseOffset;
+
+  // Get level/depth indicator
+  const getLevelIndicator = () => {
+    if (!activeBlock) return null;
+
+    switch (activeBlock.type) {
+      case 'heading':
+        return `H${activeBlock.meta?.level ?? 1}`;
+      case 'quote': {
+        const normalizedContent = (activeBlock.content ?? '').replace(/\r/g, '');
+        const lineCount = normalizedContent.length > 0 ? normalizedContent.split('\n').length : 1;
+        const lineDepths = normalizeQuoteDepths(activeBlock, lineCount);
+        const cursorInfo = getQuoteCursorState(activeBlock.id);
+        const targetIndex = Math.max(0, Math.min(cursorInfo?.lineIndex ?? 0, lineCount - 1));
+        const depth = lineDepths[targetIndex] ?? MIN_QUOTE_DEPTH;
+        return `>${depth}`;
+      }
+      case 'list':
+      case 'checklist':
+        return `L${activeBlock.meta?.level ?? 0}`;
+      default:
+        return null;
+    }
+  };
+
+  const levelIndicator = getLevelIndicator();
+  const deleteAction = toolbarActions.find(a => a.id === 'delete-block');
+  const otherActions = toolbarActions.filter(a => a.id !== 'delete-block');
+
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, { bottom: bottomOffset }]} pointerEvents="box-none">
       <View style={styles.inner}>
-        {toolbarActions.map((action) => (
+        {/* Level/Depth control buttons */}
+        <View style={styles.controlGroup}>
+          {otherActions.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={[
+                styles.button,
+                action.disabled && styles.buttonDisabled,
+              ]}
+              onPress={action.onPress}
+              activeOpacity={0.7}
+              disabled={action.disabled}
+              accessibilityLabel={action.label}
+            >
+              {action.icon ? (
+                <Ionicons
+                  name={action.icon as any}
+                  size={20}
+                  color={colorScheme === 'dark' ? '#FFFFFF' : '#0F172A'}
+                  style={{ opacity: action.disabled ? 0.4 : 1 }}
+                />
+              ) : (
+                <Text
+                  style={[
+                    styles.buttonText,
+                    action.disabled && styles.buttonTextDisabled,
+                  ]}
+                >
+                  {action.content}
+                </Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Level indicator in the middle */}
+        {levelIndicator && (
+          <View style={styles.levelIndicator}>
+            <Text style={styles.levelText}>{levelIndicator}</Text>
+          </View>
+        )}
+
+        {/* Delete button separated */}
+        {deleteAction && (
           <TouchableOpacity
-            key={action.id}
-            style={[
-              styles.button,
-              action.disabled && styles.buttonDisabled,
-            ]}
-            onPress={action.onPress}
+            style={styles.deleteButton}
+            onPress={deleteAction.onPress}
             activeOpacity={0.7}
-            disabled={action.disabled}
-            accessibilityLabel={action.label}
+            accessibilityLabel={deleteAction.label}
           >
-            {action.icon ? (
-              <Ionicons
-                name={action.icon as any}
-                size={20}
-                color={colorScheme === 'dark' ? '#FFFFFF' : '#0F172A'}
-                style={{ opacity: action.disabled ? 0.4 : 1 }}
-              />
-            ) : (
-              <Text
-                style={[
-                  styles.buttonText,
-                  action.disabled && styles.buttonTextDisabled,
-                ]}
-              >
-                {action.content}
-              </Text>
-            )}
+            <Ionicons
+              name={deleteAction.icon as any}
+              size={20}
+              color="#EF4444"
+            />
           </TouchableOpacity>
-        ))}
+        )}
       </View>
     </View>
   );
@@ -357,40 +426,70 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
   return StyleSheet.create({
     container: {
       position: 'absolute',
-      left: 16,
-      right: 16,
-      bottom: 16,
+      left: 0,   // Full width like KeyboardDock
+      right: 0,  // Full width like KeyboardDock
       zIndex: 50,
     },
     inner: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 14,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      justifyContent: 'space-between',
+      borderRadius: 0,
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 0,  // No padding - seamless connection with KeyboardDock
+      marginBottom: 0,
       backgroundColor: isDark
-        ? 'rgba(15, 23, 42, 0.92)'
-        : 'rgba(255, 255, 255, 0.95)',
-      shadowColor: '#000000',
-      shadowOpacity: isDark ? 0.4 : 0.1,
-      shadowOffset: { width: 0, height: 6 },
-      shadowRadius: 20,
-      elevation: 8,
+        ? 'rgba(30, 30, 30, 0.98)'
+        : 'rgba(209, 213, 219, 0.95)',
+      // No shadow - KeyboardDock has shadow for entire block
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: 0,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    },
+    controlGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: 8,
+      flex: 1,
     },
     button: {
-      width: 44,
-      height: 44,
-      borderRadius: 12,
+      width: 38,
+      height: 38,
+      borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: isDark
-        ? 'rgba(255, 255, 255, 0.08)'
-        : 'rgba(15, 23, 42, 0.06)',
+        ? 'rgba(255, 255, 255, 0.12)'
+        : 'rgba(15, 23, 42, 0.1)',
     },
     buttonDisabled: {
-      opacity: 0.4,
+      opacity: 0.35,
+    },
+    levelIndicator: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+      backgroundColor: isDark
+        ? 'rgba(167, 139, 250, 0.2)'   // Purple accent
+        : 'rgba(139, 92, 246, 0.15)',
+      marginHorizontal: 12,
+    },
+    levelText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: isDark ? '#C4B5FD' : '#7C3AED',
+      fontFamily: 'SpaceMono-Regular',  // Monospace for consistency
+    },
+    deleteButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isDark
+        ? 'rgba(239, 68, 68, 0.15)'
+        : 'rgba(239, 68, 68, 0.1)',
     },
     buttonText: {
       fontSize: 14,

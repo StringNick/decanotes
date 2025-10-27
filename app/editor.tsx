@@ -8,13 +8,15 @@ import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckSquare, Code, Copy, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Table, Type, Undo2, X } from 'lucide-react-native';
 import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
+import KeyboardDock from '../components/editor/components/KeyboardDock';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
 import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
+import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 
 
 // Demo markdown text (not used - we use initialBlocks from loaded notes instead)
@@ -260,10 +262,11 @@ export default function EditorScreen() {
   const isInitialLoad = useRef(true);
   const initialBlocksRef = useRef<EditorBlock[]>([]);
   const isTitleManuallySet = useRef(false);
-  const blockComponentsAnim = useRef(new Animated.Value(0)).current;
 
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
+  const insets = useSafeAreaInsets();
+  const keyboardOffset = useKeyboardOffset();
 
   // Load note if noteId is provided
   useEffect(() => {
@@ -318,25 +321,11 @@ export default function EditorScreen() {
   // Show block components with animation
   const showBlockComponentsWithAnimation = useCallback(() => {
     setShowBlockComponents(true);
-    Animated.spring(blockComponentsAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 100,
-      friction: 8,
-    }).start();
-  }, [blockComponentsAnim]);
+  }, []);
 
-  // Hide block components with animation
   const hideBlockComponents = useCallback(() => {
-    Animated.spring(blockComponentsAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 100,
-      friction: 8,
-    }).start(() => {
-      setShowBlockComponents(false);
-    });
-  }, [blockComponentsAnim]);
+    setShowBlockComponents(false);
+  }, []);
 
   // Handle adding blocks
   const handleAddBlock = useCallback((blockType: EditorBlockType) => {
@@ -537,6 +526,88 @@ export default function EditorScreen() {
     { type: 'table', icon: Table, label: 'Table' },
   ];
 
+  const blockDockSection = showBlockComponents ? (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.blockQuickContent}
+    >
+      {blockTypes.map((item, index) => {
+        const IconComponent = item.icon;
+        return (
+          <TouchableOpacity
+            key={`dock-block-${index}`}
+            style={styles.blockQuickChip}
+            onPress={() => handleAddBlock(item.type)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.blockQuickIcon}>
+              <IconComponent size={16} color={colors.tint} />
+            </View>
+            <Text style={styles.blockQuickLabel}>{item.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  ) : null;
+
+  const formattingDockSection = showFormattingToolbar ? (
+    <View style={styles.formattingToolbarCompact}>
+      <FormattingToolbar
+        actions={[
+          { id: 'bold', icon: 'text', label: 'Bold', isActive: false },
+          { id: 'italic', icon: 'text', label: 'Italic', isActive: false },
+          { id: 'underline', icon: 'text', label: 'Underline', isActive: false },
+          { id: 'code', icon: 'code', label: 'Code', isActive: false },
+        ]}
+        onActionPress={handleFormattingAction}
+      />
+    </View>
+  ) : null;
+
+  const actionDockSection = (
+    <>
+      <View style={styles.dockHistoryGroup}>
+        <TouchableOpacity
+          style={styles.dockButtonSurface}
+          onPress={handleUndo}
+          activeOpacity={0.7}
+        >
+          <Undo2 size={18} color={colors.text} strokeWidth={2} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.dockButtonSurface}
+          onPress={handleRedo}
+          activeOpacity={0.7}
+        >
+          <Redo2 size={18} color={colors.text} strokeWidth={2} />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity
+        style={[styles.dockPrimaryButton, showBlockComponents && styles.dockPrimaryButtonActive]}
+        onPress={showBlockComponents ? hideBlockComponents : showBlockComponentsWithAnimation}
+        activeOpacity={0.85}
+      >
+        {showBlockComponents ? (
+          <X size={20} color={colors.background} strokeWidth={2.3} />
+        ) : (
+          <Plus size={20} color={colors.background} strokeWidth={2.3} />
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.dockButtonSurface, showFormattingToolbar && styles.dockToggleActive]}
+        onPress={() => setShowFormattingToolbar(!showFormattingToolbar)}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="text" size={18} color={showFormattingToolbar ? colors.tint : colors.text} />
+      </TouchableOpacity>
+    </>
+  );
+
+  const dockVisible = true;
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar
@@ -644,98 +715,13 @@ export default function EditorScreen() {
         </View>
       )}
 
-      {/* Modern Bottom Toolbar */}
-      <View style={styles.bottomToolbar}>
-        <View style={styles.toolbarInner}>
-          {/* History Controls Group */}
-          <View style={styles.toolbarGroup}>
-            <TouchableOpacity
-              style={styles.toolbarButton}
-              onPress={handleUndo}
-              activeOpacity={0.7}
-            >
-              <Undo2 size={20} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-
-            <View style={styles.toolbarDivider} />
-
-            <TouchableOpacity
-              style={styles.toolbarButton}
-              onPress={handleRedo}
-              activeOpacity={0.7}
-            >
-              <Redo2 size={20} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Primary Action - Add Block */}
-          <TouchableOpacity
-            style={[styles.primaryActionButton, showBlockComponents && styles.primaryActionButtonActive]}
-            onPress={showBlockComponents ? hideBlockComponents : showBlockComponentsWithAnimation}
-            activeOpacity={0.8}
-          >
-            {showBlockComponents ? (
-              <X size={22} color={colors.background} strokeWidth={2.5} />
-            ) : (
-              <Plus size={22} color={colors.background} strokeWidth={2.5} />
-            )}
-          </TouchableOpacity>
-
-          {/* Formatting Control */}
-          <View style={styles.toolbarGroup}>
-            <TouchableOpacity
-              style={[styles.toolbarButton, showFormattingToolbar && styles.toolbarButtonActive]}
-              onPress={() => setShowFormattingToolbar(!showFormattingToolbar)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="text" size={20} color={showFormattingToolbar ? colors.tint : colors.text} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      {/* Formatting Toolbar */}
-      {showFormattingToolbar && (
-        <View style={styles.formattingToolbarContainer}>
-          <FormattingToolbar
-            actions={[
-              { id: 'bold', icon: 'text', label: 'Bold', isActive: false },
-              { id: 'italic', icon: 'text', label: 'Italic', isActive: false },
-              { id: 'underline', icon: 'text', label: 'Underline', isActive: false },
-              { id: 'code', icon: 'code', label: 'Code', isActive: false },
-            ]}
-            onActionPress={handleFormattingAction}
-          />
-        </View>
-      )}
-
-      {/* Block Components Selection Panel */}
-      {showBlockComponents && (
-        <View style={styles.blockComponentsPanel}>
-          <FlatList
-            data={blockTypes}
-            numColumns={2}
-            style={styles.blockPanelContent}
-            showsVerticalScrollIndicator={false}
-            columnWrapperStyle={styles.blockPanelRow}
-            renderItem={({ item, index }) => {
-              const IconComponent = item.icon;
-              return (
-                <TouchableOpacity
-                  style={styles.blockPanelItem}
-                  onPress={() => handleAddBlock(item.type)}
-                >
-                  <View style={styles.blockPanelIconContainer}>
-                    <IconComponent size={18} color={colors.text} />
-                  </View>
-                  <Text style={styles.blockPanelLabel}>{item.label}</Text>
-                </TouchableOpacity>
-              );
-            }}
-            keyExtractor={(item, index) => index.toString()}
-          />
-        </View>
-      )}
+      <KeyboardDock
+        keyboardHeight={keyboardOffset}
+        visible={dockVisible}
+        blockSection={blockDockSection}
+        formattingSection={formattingDockSection}
+        actionSection={actionDockSection}
+      />
 
       {/* Rename Modal */}
       <Modal
@@ -1067,150 +1053,70 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       flex: 1,
       backgroundColor: colors.background,
     },
-    bottomContainer: {
-      backgroundColor: colors.background,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 8,
+    blockQuickContent: {
+      paddingHorizontal: 12,
+      paddingRight: 6,
     },
-    bottomToolbar: {
-      backgroundColor: colors.background,
-      borderTopWidth: 1,
-      borderTopColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      paddingBottom: 16,
-    },
-    toolbarInner: {
+    blockQuickChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-    },
-    toolbarGroup: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-      borderRadius: 14,
-      padding: 4,
-      borderWidth: 1,
-      borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-    },
-    toolbarButton: {
-      width: 40,
-      height: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
+      paddingVertical: 6,
+      paddingHorizontal: 10,
       borderRadius: 10,
-      backgroundColor: 'transparent',
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.04)',
+      borderWidth: 1,
+      borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(15, 23, 42, 0.08)',
+      marginRight: 8,
     },
-    toolbarButtonActive: {
-      backgroundColor: colorScheme === 'dark' ? 'rgba(20, 184, 166, 0.15)' : 'rgba(20, 184, 166, 0.1)',
-    },
-    toolbarDivider: {
-      width: 1,
-      height: 20,
-      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
-      marginHorizontal: 4,
-    },
-    primaryActionButton: {
-      width: 52,
-      height: 52,
+    blockQuickIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 16,
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.1)',
+      marginRight: 6,
+    },
+    blockQuickLabel: {
+      fontSize: 12,
+      fontFamily: 'AlbertSans_500Medium',
+      color: colors.text,
+    },
+    formattingToolbarCompact: {
+      paddingHorizontal: 4,
+    },
+    dockHistoryGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    dockButtonSurface: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.06)',
+    },
+    dockToggleActive: {
+      backgroundColor: colorScheme === 'dark' ? 'rgba(20, 184, 166, 0.18)' : 'rgba(20, 184, 166, 0.15)',
+    },
+    dockPrimaryButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: colors.tint,
       shadowColor: colors.tint,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 4,
+      shadowOpacity: 0.24,
+      shadowRadius: 10,
+      elevation: 6,
     },
-    primaryActionButtonActive: {
+    dockPrimaryButtonActive: {
       backgroundColor: colors.textSecondary,
       shadowColor: colors.textSecondary,
-    },
-    leftToolbarButtons: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    iconButton: {
-      padding: 10,
-      minWidth: 44,
-      minHeight: 44,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 12,
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      marginRight: 8,
-    },
-
-    blockComponentsPanel: {
-      height: 320,
-      backgroundColor: colors.background, // Changed from colors.surface to match status bar
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
-      shadowColor: colors.text,
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    blockPanelHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    blockPanelTitle: {
-      fontSize: 18,
-      fontFamily: 'AlbertSans_600SemiBold',
-      color: colors.text,
-    },
-    blockPanelContent: {
-      flex: 1,
-      paddingHorizontal: 20,
-      paddingTop: 16,
-    },
-    blockPanelRow: {
-      justifyContent: 'space-between',
-      paddingHorizontal: 0,
-    },
-    blockPanelItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 16,
-      paddingHorizontal: 12,
-      marginBottom: 8,
-      backgroundColor: 'transparent',
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-      flex: 0.48,
-    },
-    blockPanelIconContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 12,
-    },
-    blockPanelLabel: {
-      fontSize: 16,
-      fontFamily: 'AlbertSans_500Medium',
-      color: colors.text,
-      flex: 1,
-    },
-    formattingToolbarContainer: {
-      paddingHorizontal: 20,
-      paddingBottom: 12,
     },
   });
 };
