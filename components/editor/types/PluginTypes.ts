@@ -89,7 +89,7 @@ export interface BlockComponentProps {
 // Enhanced result type for keyboard handlers that need to update multiple blocks
 export interface EnhancedKeyboardResult {
   newBlocks?: EditorBlock[];
-  updates?: Array<{ blockId: string; updates: Partial<EditorBlock> }>;
+  updates?: { blockId: string; updates: Partial<EditorBlock> }[];
   focusBlockId?: string;
 }
 

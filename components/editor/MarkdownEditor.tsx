@@ -342,6 +342,8 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
   }
 );
 
+EditorWithContext.displayName = 'EditorWithContext';
+
 /**
  * Main MarkdownEditor component with provider
  */

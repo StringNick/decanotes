@@ -1,17 +1,16 @@
 import { NoteCard } from '@/components/NoteCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import DesignSystem from '@/constants/DesignSystem';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useStorage } from '@/contexts/StorageContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import type { Note } from '@/types/storage';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState, useEffect } from 'react';
-import { Animated, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, FlatList, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 
-// Create Animated FlatList
-const AnimatedFlatList = Animated.createAnimatedComponent(Animated.FlatList);
+// Create Animated FlatList with proper typing
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<Note>);
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -37,7 +36,7 @@ export default function HomeScreen() {
         console.error('Failed to load notes:', error);
       });
     }
-  }, [authState.isAuthenticated, needsCredentials]);
+  }, [authState.isAuthenticated, needsCredentials, router, loadNotes]);
 
   const handleNotePress = (noteId: string) => {
     // Navigate to editor with note data
@@ -259,7 +258,7 @@ export default function HomeScreen() {
               styles.quickAddText,
               { color: DesignSystem.Colors.primary.teal }
             ]}>
-              Create "{searchQuery}"
+              Create &quot;{searchQuery}&quot;
             </Text>
           </TouchableOpacity>
         )}

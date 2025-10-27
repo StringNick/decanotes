@@ -1,8 +1,7 @@
 // Fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
-import { ComponentProps } from 'react';
+import { SymbolWeight } from 'expo-symbols';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
 /**
@@ -35,10 +34,12 @@ const MAPPING = {
   'plus': 'add',
   'minus': 'remove',
   'xmark': 'close',
+  'xmark.circle.fill': 'cancel',
   'checkmark': 'check',
   'pencil': 'edit',
   'trash': 'delete',
   'gear': 'settings',
+  'gearshape': 'settings',
   'gearshape.fill': 'settings',
   'magnifyingglass': 'search',
   'ellipsis': 'more-horiz',

@@ -1,10 +1,10 @@
-import React, { useState, memo } from 'react';
+import React, { memo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
-import { Colors } from '../../../../constants/Colors';
-import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 type DividerStyle = 'solid' | 'dashed' | 'dotted' | 'double' | 'gradient';
 
@@ -227,6 +227,7 @@ const DividerComponent: React.FC<BlockComponentProps> = memo(({
     prevProps.isEditing === nextProps.isEditing
   );
 });
+DividerComponent.displayName = 'DividerComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];

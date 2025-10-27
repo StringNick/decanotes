@@ -1,10 +1,10 @@
-import React, { useState, useRef, memo } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Alert, Dimensions } from 'react-native';
+import React, { memo, useState } from 'react';
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
-import { Colors } from '../../../../constants/Colors';
-import { useColorScheme } from '../../../../hooks/useColorScheme';
 
 /**
  * Image block component with modern dark theme support
@@ -196,6 +196,8 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
     prevProps.style === nextProps.style
   );
 });
+
+ImageComponent.displayName = 'ImageComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];

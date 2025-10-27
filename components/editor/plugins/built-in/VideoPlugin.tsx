@@ -1,11 +1,10 @@
-import React, { useState, memo } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
-import { BlockPlugin } from '../../types/PluginTypes';
-import { BlockComponentProps } from '../../types/PluginTypes';
-import { EditorBlock, EditorBlockType } from '../../../../types/editor';
-import { generateId } from '../../../../utils/markdownParser';
+import React, { memo, useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { generateId } from '../../../../utils/markdownParser';
+import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
 /**
  * Video block component with modern dark theme support
@@ -152,6 +151,8 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
     prevProps.readOnly === nextProps.readOnly
   );
 });
+
+VideoComponent.displayName = 'VideoComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];

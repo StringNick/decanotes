@@ -1,11 +1,10 @@
-import React, { useState, memo, useRef, useCallback } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity, ScrollView, NativeSyntheticEvent, TextInputContentSizeChangeEventData } from 'react-native';
-import { BlockPlugin } from '../../types/PluginTypes';
-import { BlockComponentProps } from '../../types/PluginTypes';
-import { EditorBlock, EditorBlockType } from '../../../../types/editor';
-import { generateId } from '../../../../utils/markdownParser';
+import React, { memo, useCallback, useState } from 'react';
+import { NativeSyntheticEvent, ScrollView, StyleSheet, Text, TextInput, TextInputContentSizeChangeEventData, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { generateId } from '../../../../utils/markdownParser';
+import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
 /**
  * Code block component with modern dark theme support
@@ -171,6 +170,8 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
     prevProps.readOnly === nextProps.readOnly
   );
 });
+
+CodeComponent.displayName = 'CodeComponent';
 
 const COMMON_LANGUAGES = [
   'text', 'javascript', 'typescript', 'python', 'java', 'cpp', 'c',

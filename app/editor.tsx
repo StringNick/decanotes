@@ -520,7 +520,7 @@ export default function EditorScreen() {
   }, [rawMarkdown]);
 
   // Block types for the menu - Notion-style
-  const blockTypes: Array<{ type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: any }> = [
+  const blockTypes: { type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: any }[] = [
     { type: 'paragraph', icon: Type, label: 'Text' },
     { type: 'heading', icon: Heading1, label: 'Heading 1', meta: { level: 1 } },
     { type: 'heading', icon: Heading2, label: 'Heading 2', meta: { level: 2 } },

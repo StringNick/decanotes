@@ -1,46 +1,36 @@
 // Export core editor components
-export { MarkdownEditor } from './MarkdownEditor';
-export { default as EditorProvider } from './core/EditorProvider';
-export { EditorCore } from './core/EditorCore';
 export { BlockRenderer } from './core/BlockRenderer';
+export { EditorCore } from './core/EditorCore';
+export { default as EditorProvider } from './core/EditorProvider';
+export { MarkdownEditor } from './MarkdownEditor';
 
 // Export hooks
+export { useEditor, useEditorActions, useEditorPlugins } from './core/EditorContext';
+export { useEditorDragDrop } from './core/EditorDragDrop';
 export { useEditorState } from './core/EditorState';
 export { useEditorKeyboard } from './EditorKeyboard';
-export { useEditorDragDrop } from './core/EditorDragDrop';
-export { useEditor, useEditorActions, useEditorPlugins } from './core/EditorContext';
 
 // Export plugin system
-export { BlockPlugin } from './plugins/BlockPlugin';
-export { MarkdownPlugin } from './plugins/MarkdownPlugin';
+export { BlockPlugin as BlockPluginBase } from './plugins/BlockPlugin';
+export { MarkdownPlugin as MarkdownPluginBase } from './plugins/MarkdownPlugin';
 export { PluginRegistry } from './plugins/PluginRegistry';
 
 // Export built-in plugins
 export {
-  ParagraphPlugin,
-  HeadingPlugin,
-  CodePlugin,
-  QuotePlugin,
-  ListPlugin,
-  ChecklistPlugin,
-  ImagePlugin,
-  VideoPlugin,
-  CalloutPlugin,
-  DividerPlugin
+    CalloutPlugin, ChecklistPlugin, CodePlugin, DividerPlugin, HeadingPlugin, ImagePlugin, ListPlugin, ParagraphPlugin, QuotePlugin, VideoPlugin
 } from './plugins/built-in';
 
 // Export types
 export * from './types/EditorTypes';
-export * from './types/PluginTypes';
+export type {
+    BasePlugin, BlockAction, BlockActionHandlerContext, BlockComponentProps, BlockController, BlockPlugin as BlockPluginDefinition, BlockSettings, CustomPluginOptions, EditorContext, EnhancedKeyboardResult, MarkdownParser, MarkdownPlugin as MarkdownPluginDefinition, MarkdownSerializer, MarkdownSyntax, PluginConfig, PluginRegistryInterface, ToolbarConfig,
+    ToolbarVariant, ValidationResult
+} from './types/PluginTypes';
 
 // Export utilities
-export { createCustomPlugin, createSimpleTextPlugin, createComponentPlugin } from './utils/PluginFactory';
-export { 
-  registerMarkdownSyntax, 
-  parseMarkdownToBlocks, 
-  serializeBlocksToMarkdown,
-  getMarkdownRegistry,
-  createSimpleMarkdownPlugin
-} from './utils/MarkdownRegistry';
 export { createKeyboardShortcut, getShortcutDescription } from './EditorKeyboard';
+export {
+    createSimpleMarkdownPlugin, getMarkdownRegistry, parseMarkdownToBlocks, registerMarkdownSyntax, serializeBlocksToMarkdown
+} from './utils/MarkdownRegistry';
+export { createComponentPlugin, createCustomPlugin, createSimpleTextPlugin } from './utils/PluginFactory';
 

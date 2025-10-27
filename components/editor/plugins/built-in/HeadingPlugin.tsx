@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { NativeSyntheticEvent, StyleSheet, Text, TextInput, TextInputKeyPressEventData, View } from 'react-native';
+import { NativeSyntheticEvent, StyleSheet, TextInput, TextInputKeyPressEventData, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';

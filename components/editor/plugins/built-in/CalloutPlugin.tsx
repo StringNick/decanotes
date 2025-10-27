@@ -291,6 +291,8 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
   );
 });
 
+CalloutComponent.displayName = 'CalloutComponent';
+
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
