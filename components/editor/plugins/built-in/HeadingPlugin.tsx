@@ -132,7 +132,7 @@ const getHeadingStyle = (level: number, colorScheme: 'light' | 'dark') => {
 };
 
 const getStyles = (colorScheme: 'light' | 'dark', level: number, isEditing: boolean) => {
-  const colors = Colors[colorScheme];
+  // const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
 
   // Subtle border color that's always present but more visible when editing

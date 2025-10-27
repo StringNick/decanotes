@@ -48,7 +48,7 @@ export function BlockRenderer({
   const blockRef = useRef<View>(null);
   const blockComponentRef = useRef<any>(null);
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  // const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   
   // Effect to register block ref

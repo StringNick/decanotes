@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Colors } from '../../../constants/Colors';
+// import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
 
 interface FormattingAction {
@@ -26,7 +26,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   style
 }) => {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  // const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   const isDark = colorScheme === 'dark';
 

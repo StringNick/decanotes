@@ -295,9 +295,9 @@ export class QuotePlugin extends BlockPlugin {
     }
   };
 
-  constructor() {
-    super();
-  }
+  // constructor() {
+  //   super();
+  // }
 
   protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
     const depth = block.meta?.depth || 1;

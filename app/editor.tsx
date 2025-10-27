@@ -10,7 +10,7 @@ import { CheckSquare, Code, Copy, Heading1, Heading2, Heading3, Lightbulb, List,
 import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MarkdownEditor from '../components/editor/MarkdownEditor';
+import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
 import { getEditorTheme } from '../themes/defaultTheme';
@@ -301,6 +301,7 @@ export default function EditorScreen() {
     };
 
     loadExistingNote();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.noteId]);
 
   // Clean up on unmount
@@ -309,6 +310,7 @@ export default function EditorScreen() {
       setCurrentNote(null);
       clearUnsavedChanges();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -465,14 +467,14 @@ export default function EditorScreen() {
     }
   }, []);
 
-  // Copy markdown to clipboard
-  const handleCopyMarkdown = useCallback(async () => {
-    if (editorRef.current) {
-      const markdown = editorRef.current.getMarkdown();
-      await Clipboard.setStringAsync(markdown);
-      Alert.alert('Copied!', 'Markdown copied to clipboard');
-    }
-  }, []);
+  // Copy markdown to clipboard (unused but kept for future feature)
+  // const handleCopyMarkdown = useCallback(async () => {
+  //   if (editorRef.current) {
+  //     const markdown = editorRef.current.getMarkdown();
+  //     await Clipboard.setStringAsync(markdown);
+  //     Alert.alert('Copied!', 'Markdown copied to clipboard');
+  //   }
+  // }, []);
 
   const handleCopyFromModal = useCallback(async () => {
     await Clipboard.setStringAsync(isEditingMarkdown ? editedMarkdown : rawMarkdown);

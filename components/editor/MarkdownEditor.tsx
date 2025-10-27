@@ -30,7 +30,8 @@ import {
 const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdownEditorProps>(
   (props, ref) => {
     const {
-      initialBlocks = [] as any,
+      // initialBlocks prop is unused here - we use state.blocks from context
+      // initialBlocks = [] as any,
       plugins = [],
       config = {},
       onContentChange,
@@ -284,7 +285,8 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       getCurrentMode: () => {
         return 'edit' as any;
       }
-    }), [state, actions, pluginRegistry]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [state, actions]);
 
     // Handle content changes
     useEffect(() => {

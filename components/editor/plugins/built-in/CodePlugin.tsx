@@ -25,7 +25,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   const [isLanguageEditing, setIsLanguageEditing] = useState(false);
-  const [contentHeight, setContentHeight] = useState(0);
+  // const [contentHeight, setContentHeight] = useState(0);
   const language = block.meta?.language || 'text';
   const showLineNumbers = block.meta?.showLineNumbers !== false;
 

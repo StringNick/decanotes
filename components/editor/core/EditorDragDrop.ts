@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
+// import { useRef } from 'react';
 import { EditorBlock } from '../../../types/editor';
 import { EditorConfig } from '../types/EditorTypes';
 import { BlockPlugin } from '../types/PluginTypes';
@@ -48,8 +49,8 @@ export function useEditorDragDrop({
   });
   
   const [dropZones, setDropZones] = useState<DropZone[]>([]);
-  const dragElementRef = useRef<HTMLElement | null>(null);
-  const dropIndicatorRef = useRef<HTMLElement | null>(null);
+  // const dragElementRef = useRef<HTMLElement | null>(null);
+  // const dropIndicatorRef = useRef<HTMLElement | null>(null);
   
   // Check if a block can be dragged
   const canDragBlock = useCallback((blockId: string) => {

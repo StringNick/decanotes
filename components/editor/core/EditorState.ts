@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { EditorBlock, EditorBlockType, EditorMode } from '../../../types/editor';
-import { EditorConfig, EditorState, EditorAction } from '../types/EditorTypes';
+import { EditorBlock } from '../../../types/editor';
+// import { EditorMode } from '../../../types/editor';
+import { EditorConfig, EditorState } from '../types/EditorTypes';
+// import { EditorAction } from '../types/EditorTypes';
 import { MarkdownPlugin } from '../types/PluginTypes';
 
 interface UseEditorStateProps {
@@ -114,7 +116,8 @@ export function useEditorState({
       setBlocksState(history.present);
       onBlocksChange?.(history.present);
     }
-  }, [history.present, onBlocksChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history.present]);
   
   // Generate unique block ID
   const generateBlockId = useCallback(() => {

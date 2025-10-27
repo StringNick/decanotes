@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { DesignSystem } from '@/constants/DesignSystem';
+import { Spacing, BorderRadius, createTextStyle, Shadows, Typography, Components } from '@/constants/DesignSystem';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -28,9 +28,9 @@ export default function AuthScreen() {
   const [renterdHost, setRenterdHost] = useState('');
   const [renterdPassword, setRenterdPassword] = useState('');
   
-  // IPFS fields (for future)
-  const [ipfsNode, setIpfsNode] = useState('');
-  const [ipfsApiKey, setIpfsApiKey] = useState('');
+  // IPFS fields (for future) - commented out until implemented
+  // const [ipfsNode, setIpfsNode] = useState('');
+  // const [ipfsApiKey, setIpfsApiKey] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
 
@@ -96,10 +96,10 @@ export default function AuthScreen() {
     }
   };
 
-  const handleIpfsAuth = async () => {
-    // IPFS not yet implemented
-    Alert.alert('Coming Soon', 'IPFS backend will be available soon!');
-  };
+  // IPFS handler - commented out until implemented
+  // const handleIpfsAuth = async () => {
+  //   Alert.alert('Coming Soon', 'IPFS backend will be available soon!');
+  // };
 
   return (
     <KeyboardAvoidingView
@@ -328,44 +328,44 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: DesignSystem.Spacing.xl,
+    padding: Spacing.xl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: DesignSystem.Spacing['4xl'],
+    marginBottom: Spacing['4xl'],
   },
   appTitle: {
-    ...DesignSystem.createTextStyle('5xl', 'bold', '#FFFFFF'),
-    marginBottom: DesignSystem.Spacing.sm,
+    ...createTextStyle('5xl', 'bold', '#FFFFFF'),
+    marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
-    ...DesignSystem.createTextStyle('lg', 'primary', '#FFFFFF'),
+    ...createTextStyle('lg', 'primary', '#FFFFFF'),
     opacity: 0.9,
     textAlign: 'center',
   },
   authContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: DesignSystem.BorderRadius['2xl'],
-    padding: DesignSystem.Spacing.xl,
-    ...DesignSystem.Shadows.xl,
+    borderRadius: BorderRadius['2xl'],
+    padding: Spacing.xl,
+    ...Shadows.xl,
   },
   methodSelector: {
     flexDirection: 'row',
-    marginBottom: DesignSystem.Spacing.xl,
+    marginBottom: Spacing.xl,
     backgroundColor: '#FAFAFA',
-    borderRadius: DesignSystem.BorderRadius.lg,
-    padding: DesignSystem.Spacing.xs,
-    gap: DesignSystem.Spacing.xs,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xs,
+    gap: Spacing.xs,
   },
   methodButton: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: DesignSystem.Spacing.md,
-    paddingHorizontal: DesignSystem.Spacing.xs,
-    borderRadius: DesignSystem.BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+    borderRadius: BorderRadius.md,
     position: 'relative',
     minHeight: 60,
   },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: DesignSystem.Spacing.xs,
+    gap: Spacing.xs,
   },
   disabledMethodButton: {
     opacity: 0.6,
@@ -382,8 +382,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
   },
   methodText: {
-    ...DesignSystem.createTextStyle('xs', 'medium'),
-    marginTop: DesignSystem.Spacing.xs,
+    ...createTextStyle('xs', 'medium'),
+    marginTop: Spacing.xs,
     textAlign: 'center',
     flexShrink: 1,
     lineHeight: 14,
@@ -392,40 +392,40 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   formContainer: {
-    gap: DesignSystem.Spacing.lg,
+    gap: Spacing.lg,
   },
   inputContainer: {
-    gap: DesignSystem.Spacing.sm,
+    gap: Spacing.sm,
   },
   inputLabel: {
-    ...DesignSystem.createTextStyle('md', 'semibold'),
+    ...createTextStyle('md', 'semibold'),
   },
   textInput: {
-    ...DesignSystem.Components.input.default,
+    ...Components.input.default,
     minHeight: 48,
   },
   helperText: {
-    ...DesignSystem.createTextStyle('sm', 'primary'),
+    ...createTextStyle('sm', 'primary'),
     textAlign: 'center',
-    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.relaxed,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.relaxed,
   },
   authButton: {
-    ...DesignSystem.Components.button.primary,
+    ...Components.button.primary,
     alignItems: 'center',
-    marginTop: DesignSystem.Spacing.md,
+    marginTop: Spacing.md,
   },
   disabledButton: {
     opacity: 0.5,
   },
   authButtonText: {
-    ...DesignSystem.createTextStyle('md', 'semibold', '#FFFFFF'),
+    ...createTextStyle('md', 'semibold', '#FFFFFF'),
   },
   footer: {
     alignItems: 'center',
-    marginTop: DesignSystem.Spacing.xl,
+    marginTop: Spacing.xl,
   },
   footerText: {
-    ...DesignSystem.createTextStyle('sm', 'primary', '#FFFFFF'),
+    ...createTextStyle('sm', 'primary', '#FFFFFF'),
     opacity: 0.8,
     textAlign: 'center',
   },
@@ -436,20 +436,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FCD34D',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: DesignSystem.BorderRadius.sm,
+    borderRadius: BorderRadius.sm,
   },
   soonText: {
-    ...DesignSystem.createTextStyle('xs', 'semibold', '#92400E'),
+    ...createTextStyle('xs', 'semibold', '#92400E'),
   },
   infoBox: {
-    marginTop: DesignSystem.Spacing.lg,
+    marginTop: Spacing.lg,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: DesignSystem.Spacing.base,
-    paddingVertical: DesignSystem.Spacing.sm,
-    borderRadius: DesignSystem.BorderRadius.md,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
   },
   infoText: {
-    ...DesignSystem.createTextStyle('sm', 'medium', '#FFFFFF'),
+    ...createTextStyle('sm', 'medium', '#FFFFFF'),
     textAlign: 'center',
   },
 });

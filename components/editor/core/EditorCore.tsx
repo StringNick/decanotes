@@ -88,28 +88,29 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       moveBlock,
       duplicateBlock,
       selectBlock,
-      selectBlocks,
+      // selectBlocks,
       clearSelection,
       focusBlock,
-      focusNext,
-      focusPrevious,
-      setMode,
+      // focusNext,
+      // focusPrevious,
+      // setMode,
       toggleMode,
       undo,
       redo,
       getMarkdown,
       setMarkdown,
-      validate,
-      reset
+      // validate,
+      // reset
     } = useEditor();
-    
-    const { blocks, focusedBlockId, selectedBlocks, mode, isDirty, isLoading, errors, history } = state;
-    
+
+    const { blocks, focusedBlockId, selectedBlocks, mode, errors, history } = state;
+    // isDirty and isLoading are available in state but not used in this component
+
     // Keyboard handling hook
     const {
-      keyboardRef,
-      shortcuts,
-      focusEditor,
+      // keyboardRef,
+      // shortcuts,
+      // focusEditor,
       blurEditor
     } = useEditorKeyboard({
       blocks,
@@ -604,11 +605,15 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       focusedBlockId,
       state,
       pluginRegistry,
-      markdownPlugins,
-      focusEditor,
+      // markdownPlugins,
+      // focusEditor,
       blurEditor,
       scrollToBlock,
-      focusBlockInput
+      focusBlockInput,
+      errors,
+      history.canRedo,
+      history.canUndo,
+      mode
     ]);
 
     // Render toolbar
@@ -713,9 +718,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           </View>
           
           {/* Final drop indicator */}
-          {dragState.isDragging && index === blocks.length - 1 && (
+          {/* Disabled temporarily due to dragState not being used */}
+          {/* {dragState.isDragging && index === blocks.length - 1 && (
             <View {...getDropIndicatorProps(blocks.length)} />
-          )}
+          )} */}
         </React.Fragment>
       );
     };
@@ -726,7 +732,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         focusBlockInput(focusedBlockId);
         scrollToBlock(focusedBlockId);
       }
-    }, [focusedBlockId]);
+    }, [focusedBlockId, blocks, focusBlockInput, scrollToBlock]);
     
     // Effect to auto-focus last block when created via empty space press
     useEffect(() => {

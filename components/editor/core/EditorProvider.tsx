@@ -378,7 +378,7 @@ export default function EditorProvider({
   const executePluginAction = useCallback((pluginId: string, actionId: string, data?: any) => {
     const plugin = pluginRegistry.getPlugin(pluginId);
     if (plugin && plugin.type === 'block') {
-      const blockPlugin = plugin as BlockPlugin;
+      // const blockPlugin = plugin as BlockPlugin;
       // Execute plugin action logic here
       console.log(`Executing action ${actionId} on plugin ${pluginId}`, data);
     }

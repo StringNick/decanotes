@@ -1,13 +1,13 @@
-import { ComponentType } from 'react';
+// import { ComponentType } from 'react';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { BlockPlugin } from '../plugins/BlockPlugin';
-import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
+// import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
 import {
   BlockComponentProps,
   CustomPluginOptions,
-  MarkdownSyntax,
-  ToolbarConfig,
-  BlockSettings
+  // MarkdownSyntax,
+  // ToolbarConfig,
+  // BlockSettings
 } from '../types/PluginTypes';
 
 /**
@@ -19,11 +19,11 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
     displayName,
     component,
     markdownPattern,
-    parser,
-    serializer,
-    controller = {},
-    toolbar = {},
-    settings = {}
+    // parser,
+    // serializer,
+    // controller = {},
+    // toolbar = {},
+    // settings = {}
   } = options;
 
   // Create a dynamic plugin class
@@ -182,7 +182,9 @@ export function createSimpleTextPlugin({
     isEditing,
     style
   }) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const React = require('react');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { View, TextInput, StyleSheet } = require('react-native');
 
     const styles = StyleSheet.create({

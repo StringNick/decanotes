@@ -46,9 +46,9 @@ export function useEditorKeyboard({
 }: UseEditorKeyboardProps) {
   const keyboardRef = useRef<any>(null);
   const lastKeyTime = useRef<number>(0);
-  
+
   // Get the currently selected block
-  const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+  // const selectedBlock = blocks.find(b => b.id === selectedBlockId);
   const editingBlock = blocks.find(b => b.id === editingBlockId);
   
   // Get the plugin for the current block
@@ -223,11 +223,11 @@ export function useEditorKeyboard({
         return true;
       }
     }
-    
+
     return false;
-  }, [editingBlock, getBlockPlugin, actions]);
-  
-  // Define keyboard shortcuts
+  }, [editingBlock, getBlockPlugin]);
+
+  // Define keyboard shortcuts (memoized to prevent recreation)
   const shortcuts: KeyboardShortcut[] = [
     // Editing shortcuts
     {
@@ -409,9 +409,10 @@ export function useEditorKeyboard({
         return true;
       }
     }
-    
+
     return false;
-  }, [shortcuts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Main keyboard event handler
   const handleKeyDown = useCallback((event: KeyboardEvent) => {

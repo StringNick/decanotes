@@ -1,6 +1,6 @@
 import { NoteCard } from '@/components/NoteCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import DesignSystem from '@/constants/DesignSystem';
+import { getThemeColors, Animations, Colors, Spacing, createTextStyle, Typography, BorderRadius, Shadows } from '@/constants/DesignSystem';
 import { useStorage } from '@/contexts/StorageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { Note } from '@/types/storage';
@@ -20,7 +20,7 @@ export default function HomeScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
   
   const isDark = effectiveTheme === 'dark';
-  const colors = DesignSystem.getThemeColors(isDark);
+  const colors = getThemeColors(isDark);
   
   // Animation values
   const fabScale = useRef(new Animated.Value(1)).current;
@@ -51,11 +51,11 @@ export default function HomeScreen() {
     Animated.sequence([
       Animated.spring(fabScale, {
         toValue: 0.9,
-        ...DesignSystem.Animations.spring.stiff,
+        ...Animations.spring.stiff,
       }),
       Animated.spring(fabScale, {
         toValue: 1,
-        ...DesignSystem.Animations.spring.bouncy,
+        ...Animations.spring.bouncy,
       }),
     ]).start();
     
@@ -119,7 +119,7 @@ export default function HomeScreen() {
       title={item.title}
       preview={item.preview}
       lastModified={item.lastModified}
-      color={item.color as keyof typeof DesignSystem.Colors.notes.light}
+      color={item.color as keyof typeof Colors.notes.light}
       onPress={() => handleNotePress(item.id)}
       onOptionsPress={() => handleOptionsPress(item.id)}
     />
@@ -243,8 +243,8 @@ export default function HomeScreen() {
             style={[
               styles.quickAddTab,
               { 
-                backgroundColor: DesignSystem.Colors.primary.teal + '20',
-                borderColor: DesignSystem.Colors.primary.teal,
+                backgroundColor: Colors.primary.teal + '20',
+                borderColor: Colors.primary.teal,
               }
             ]}
             onPress={handleNewNote}
@@ -252,11 +252,11 @@ export default function HomeScreen() {
             <IconSymbol 
               name="plus" 
               size={12} 
-              color={DesignSystem.Colors.primary.teal} 
+              color={Colors.primary.teal} 
             />
             <Text style={[
               styles.quickAddText,
-              { color: DesignSystem.Colors.primary.teal }
+              { color: Colors.primary.teal }
             ]}>
               Create &quot;{searchQuery}&quot;
             </Text>
@@ -339,39 +339,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: DesignSystem.Spacing.xl,
-    paddingTop: DesignSystem.Spacing.xl,
-    paddingBottom: DesignSystem.Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
   },
   headerLeft: {
     flex: 1,
   },
   headerTitle: {
-    ...DesignSystem.createTextStyle('3xl', 'bold'),
+    ...createTextStyle('3xl', 'bold'),
     marginBottom: 2,
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    ...DesignSystem.createTextStyle('sm', 'medium'),
+    ...createTextStyle('sm', 'medium'),
   },
   settingsButton: {
-    padding: DesignSystem.Spacing.sm,
+    padding: Spacing.sm,
   },
   searchContainer: {
-    paddingHorizontal: DesignSystem.Spacing.xl,
-    marginBottom: DesignSystem.Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: DesignSystem.Spacing.md,
-    paddingHorizontal: DesignSystem.Spacing.base,
-    paddingVertical: DesignSystem.Spacing.md,
-    borderRadius: DesignSystem.BorderRadius.lg,
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
   },
   searchInput: {
     flex: 1,
-    ...DesignSystem.createTextStyle('base', 'primary'),
+    ...createTextStyle('base', 'primary'),
     padding: 0,
   },
   clearButton: {
@@ -379,77 +379,77 @@ const styles = StyleSheet.create({
   },
   filterTabs: {
     flexDirection: 'row',
-    paddingHorizontal: DesignSystem.Spacing.xl,
-    paddingBottom: DesignSystem.Spacing.base,
-    gap: DesignSystem.Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.base,
+    gap: Spacing.sm,
   },
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: DesignSystem.Spacing.xs,
-    paddingHorizontal: DesignSystem.Spacing.base,
-    paddingVertical: DesignSystem.Spacing.xs,
-    borderRadius: DesignSystem.BorderRadius.lg,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.lg,
     position: 'relative',
   },
   disabledFilterTab: {
     opacity: 0.7,
   },
   filterTabText: {
-    ...DesignSystem.createTextStyle('sm', 'medium'),
+    ...createTextStyle('sm', 'medium'),
   },
   quickAddTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: DesignSystem.BorderRadius.xl,
-    paddingHorizontal: DesignSystem.Spacing.md,
-    paddingVertical: DesignSystem.Spacing.sm,
+    borderRadius: BorderRadius.xl,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderWidth: 1,
-    gap: DesignSystem.Spacing.xs,
+    gap: Spacing.xs,
     maxWidth: 200,
   },
   quickAddText: {
-    ...DesignSystem.createTextStyle('sm', 'medium'),
+    ...createTextStyle('sm', 'medium'),
     flex: 1,
   },
   notesList: {
     flex: 1,
   },
   notesListContent: {
-    paddingHorizontal: DesignSystem.Spacing.xl,
-    paddingBottom: DesignSystem.Spacing['4xl'], // Padding for FAB
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing['4xl'], // Padding for FAB
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: DesignSystem.Spacing['4xl'],
-    paddingHorizontal: DesignSystem.Spacing['2xl'],
-    gap: DesignSystem.Spacing.base,
+    paddingVertical: Spacing['4xl'],
+    paddingHorizontal: Spacing['2xl'],
+    gap: Spacing.base,
   },
   emptyTitle: {
-    ...DesignSystem.createTextStyle('xl', 'bold'),
-    marginBottom: DesignSystem.Spacing.sm,
+    ...createTextStyle('xl', 'bold'),
+    marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   emptySubtitle: {
-    ...DesignSystem.createTextStyle('md', 'medium'),
+    ...createTextStyle('md', 'medium'),
     textAlign: 'center',
-    lineHeight: DesignSystem.Typography.sizes.md * DesignSystem.Typography.lineHeights.relaxed,
+    lineHeight: Typography.sizes.md * Typography.lineHeights.relaxed,
     opacity: 0.7,
   },
   fabContainer: {
     position: 'absolute',
-    right: DesignSystem.Spacing.xl,
-    bottom: DesignSystem.Spacing['2xl'],
+    right: Spacing.xl,
+    bottom: Spacing['2xl'],
   },
   fab: {
     width: 56,
     height: 56,
-    borderRadius: DesignSystem.BorderRadius.full,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    ...DesignSystem.Shadows.lg,
+    ...Shadows.lg,
   },
   soonBadgeSmall: {
     backgroundColor: '#FCD34D',
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   },
   soonTextSmall: {
     fontSize: 9,
-    fontFamily: DesignSystem.Typography.fonts.semibold,
+    fontFamily: Typography.fonts.semibold,
     color: '#92400E',
   },
 });

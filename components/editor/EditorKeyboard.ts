@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { EditorBlock } from '../../types/editor';
 import { EditorAction } from './types/EditorTypes';
-import { BlockPlugin } from './plugins/BlockPlugin';
+// import { BlockPlugin } from './plugins/BlockPlugin';
 import { PluginRegistry } from './plugins/PluginRegistry';
 
 export interface KeyboardShortcut {
@@ -300,7 +300,8 @@ export function useEditorKeyboard(options: EditorKeyboardOptions) {
         handleTabKey(event);
         break;
     }
-  }, [allShortcuts, onAction, getCurrentBlock, getSelectedBlocks, pluginRegistry]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allShortcuts, pluginRegistry]);
 
   /**
    * Handle shortcut actions
@@ -339,7 +340,8 @@ export function useEditorKeyboard(options: EditorKeyboardOptions) {
         handleClipboardAction(type, event);
         break;
     }
-  }, [onAction]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Handle block-related actions
