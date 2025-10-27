@@ -1,10 +1,11 @@
-import React, { memo, useCallback, useState } from 'react';
-import { NativeSyntheticEvent, ScrollView, StyleSheet, Text, TextInput, TextInputContentSizeChangeEventData, TouchableOpacity, View } from 'react-native';
+import React, { memo, useCallback, useState, useEffect, useRef } from 'react';
+import { Animated, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TextInput, TextInputContentSizeChangeEventData, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+import { ANIMATION_CONFIG, getCodeFocusColors } from '../../styles/blockStyles';
 
 /**
  * Code block component with modern dark theme support
@@ -13,6 +14,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
   block,
   isSelected,
   isFocused,
+  isEditing,
   isDragging,
   onBlockChange,
   onFocus,
@@ -25,9 +27,24 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   const [isLanguageEditing, setIsLanguageEditing] = useState(false);
-  // const [contentHeight, setContentHeight] = useState(0);
   const language = block.meta?.language || 'text';
   const showLineNumbers = block.meta?.showLineNumbers !== false;
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  // Determine if block should show focused state
+  const shouldFocus = isFocused || isEditing;
+
+  // Animate focus state changes
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: shouldFocus ? 1 : 0,
+      duration: ANIMATION_CONFIG.duration,
+      useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+    }).start();
+  }, [shouldFocus, animatedValue]);
+
+  // Get animated colors
+  const focusColors = getCodeFocusColors(colorScheme ?? 'light', shouldFocus || false);
 
   const handleCodeChange = (text: string) => {
     onBlockChange({ content: text });
@@ -54,9 +71,12 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
     });
   };
 
-  const handleContentSizeChange = useCallback((e: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
-    setContentHeight(e.nativeEvent.contentSize.height);
-  }, []);
+  const handleContentSizeChange = useCallback(
+    (_e: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
+      // Content size tracking for future enhancements
+    },
+    []
+  );
 
   const getLineNumbers = () => {
     if (!showLineNumbers) return null;
@@ -73,8 +93,17 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
     ));
   };
 
+  // Animated background color
+  const animatedBackgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+      focusColors.backgroundColor,
+    ],
+  });
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { backgroundColor: animatedBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -84,7 +113,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
         >
           <Text style={styles.languageText}>{language}</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={styles.lineNumbersButton}
           onPress={toggleLineNumbers}
@@ -117,14 +146,10 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
       )}
 
       {/* Code editor */}
-      <ScrollView 
+      <ScrollView
         horizontal
         showsHorizontalScrollIndicator={true}
-        style={[
-          styles.codeContainer,
-          isSelected && styles.selected,
-          isFocused && styles.editing
-        ]}
+        style={styles.codeContainer}
       >
         <View style={styles.codeWrapper}>
           {showLineNumbers && (
@@ -132,7 +157,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
               {getLineNumbers()}
             </View>
           )}
-          
+
           <TextInput
             style={[
               styles.codeInput,
@@ -156,7 +181,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
           />
         </View>
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
@@ -166,6 +191,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
     prevProps.block.meta?.language === nextProps.block.meta?.language &&
     prevProps.block.meta?.showLineNumbers === nextProps.block.meta?.showLineNumbers &&
     prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isFocused === nextProps.isFocused &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.readOnly === nextProps.readOnly
   );
@@ -183,12 +209,13 @@ const COMMON_LANGUAGES = [
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
-  
+
   return StyleSheet.create({
     container: {
-      marginVertical: 12,
+      marginVertical: 8,
       borderRadius: 8,
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+      // Background will be animated
+      backgroundColor: 'transparent',
       overflow: 'hidden',
     },
     header: {
@@ -264,12 +291,6 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     codeContainer: {
       minHeight: 100,
       backgroundColor: 'transparent',
-    },
-    selected: {
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-    },
-    editing: {
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
     },
     codeWrapper: {
       position: 'relative',

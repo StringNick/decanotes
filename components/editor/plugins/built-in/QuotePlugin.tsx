@@ -1,5 +1,5 @@
-import React, { forwardRef, useImperativeHandle, useRef, useMemo, useState } from 'react';
-import { StyleSheet, Text, TextInput, View, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef, useMemo, useState, useEffect } from 'react';
+import { Animated, StyleSheet, Text, TextInput, View, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -7,6 +7,7 @@ import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
+import { ANIMATION_CONFIG, BLOCK_SPACING, getQuoteFocusColors } from '../../styles/blockStyles';
 
 /**
  * Quote block component with multi-line and depth support
@@ -18,6 +19,7 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
   onFocus,
   onBlur,
   isSelected,
+  isFocused,
   isEditing,
   style
 }, ref) => {
@@ -26,9 +28,22 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
   const colors = Colors[colorScheme ?? 'light'];
   const isDark = colorScheme === 'dark';
   const [cursorPosition, setCursorPosition] = useState(0);
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
   // Expose the TextInput methods through ref
   useImperativeHandle(ref, () => inputRef.current as TextInput);
+
+  // Determine if block should show focused state
+  const shouldFocus = isFocused || isEditing;
+
+  // Animate focus state changes
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: shouldFocus ? 1 : 0,
+      duration: ANIMATION_CONFIG.duration,
+      useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+    }).start();
+  }, [shouldFocus, animatedValue]);
 
   const handleSelectionChange = (event: any) => {
     setCursorPosition(event.nativeEvent.selection.start);
@@ -134,25 +149,40 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
   const depth = Math.min(Math.max(block.meta?.depth || 1, 1), 5); // Max depth of 5
   const author = block.meta?.author;
   const source = block.meta?.source;
-  
+
   // Memoize styles based on depth and theme
   const styles = useMemo(() => getStyles(colorScheme ?? 'light', depth), [colorScheme, depth]);
-  
-  // Calculate depth bar color - same for all depths
-  const barColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+
+  // Get animated colors
+  const focusColors = getQuoteFocusColors(colorScheme ?? 'light', shouldFocus || false);
+
+  // Animated bar color
+  const animatedBarColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+      focusColors.barColor,
+    ],
+  });
+
+  // Animated background color
+  const animatedBackgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
+  });
 
   return (
     <View style={[styles.container, style]}>
-      <View style={[
-        styles.quoteContainer,
-        isSelected && styles.selected,
-        isEditing && styles.editing
-      ]}>
+      <Animated.View
+        style={[styles.quoteContainer, { backgroundColor: animatedBackgroundColor }]}
+      >
         {/* Minimal vertical bar for all depths */}
         <View style={styles.quoteMarkMinimal}>
-          <View style={[styles.quoteBarMinimal, { backgroundColor: barColor }]} />
+          <Animated.View
+            style={[styles.quoteBarMinimal, { backgroundColor: animatedBarColor }]}
+          />
         </View>
-        
+
         <View style={styles.content}>
           <FormattedTextInput
             ref={inputRef}
@@ -171,19 +201,15 @@ const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
             scrollEnabled={false}
             style={styles.textInput}
           />
-          
+
           {(author || source) && (
             <View style={styles.attribution}>
-              {author && (
-                <Text style={styles.author}>— {author}</Text>
-              )}
-              {source && (
-                <Text style={styles.source}>{source}</Text>
-              )}
+              {author && <Text style={styles.author}>— {author}</Text>}
+              {source && <Text style={styles.source}>{source}</Text>}
             </View>
           )}
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 });
@@ -199,21 +225,15 @@ const getStyles = (colorScheme: 'light' | 'dark', depth: number = 1) => {
 
   return StyleSheet.create({
     container: {
-      marginVertical: 4,
+      marginVertical: BLOCK_SPACING.marginVertical,
       marginLeft: indentation,
     },
     quoteContainer: {
       flexDirection: 'row',
-      backgroundColor: 'transparent',
-      paddingVertical: 2,
-      paddingLeft: 8,
-      paddingRight: 4,
-    },
-    selected: {
-      backgroundColor: 'transparent',
-    },
-    editing: {
-      backgroundColor: 'transparent',
+      backgroundColor: 'transparent', // Will be overridden by animated value
+      paddingVertical: BLOCK_SPACING.paddingVertical,
+      paddingLeft: BLOCK_SPACING.paddingLeft,
+      paddingRight: BLOCK_SPACING.paddingRight,
     },
     quoteMarkMinimal: {
       marginRight: 8,
@@ -235,6 +255,8 @@ const getStyles = (colorScheme: 'light' | 'dark', depth: number = 1) => {
       color: colors.text,
       fontStyle: 'normal',
       minHeight: 24,
+      // NO padding - container handles all spacing
+      paddingHorizontal: 0,
       paddingVertical: 0,
       opacity: 0.9,
     },

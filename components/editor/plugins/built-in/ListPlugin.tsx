@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -7,6 +7,7 @@ import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { KeyboardHandler } from '../../core/KeyboardHandler';
 import { BlockComponentProps, BlockPlugin, EnhancedKeyboardResult } from '../../types/PluginTypes';
+import { ANIMATION_CONFIG, getFocusColors } from '../../styles/blockStyles';
 
 type ListType = 'ordered' | 'unordered';
 
@@ -27,6 +28,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   onFocus,
   onBlur,
   isSelected,
+  isFocused,
   isEditing,
   style
 }) => {
@@ -36,8 +38,24 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   const listType = (block.meta?.listType as ListType) || 'unordered';
   const level = block.meta?.level || 0;
   const index = block.meta?.index || 1;
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
   const [cursorPosition, setCursorPosition] = useState(0);
+
+  // Determine if block should show focused state
+  const shouldFocus = isFocused || isEditing;
+
+  // Animate focus state changes
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: shouldFocus ? 1 : 0,
+      duration: ANIMATION_CONFIG.duration,
+      useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+    }).start();
+  }, [shouldFocus, animatedValue]);
+
+  // Get animated colors
+  const focusColors = getFocusColors(colorScheme ?? 'light', shouldFocus || false);
 
   // Get the plugin instance and controller (memoized to prevent recreation on every render)
   const controller = useMemo(() => {
@@ -84,6 +102,12 @@ const ListComponent: React.FC<BlockComponentProps> = ({
     }
   };
 
+  // Animated background color
+  const animatedBackgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
+  });
+
   return (
     <KeyboardHandler
       block={block}
@@ -92,12 +116,12 @@ const ListComponent: React.FC<BlockComponentProps> = ({
     >
       {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
         <View style={[styles.container, style]}>
-          <View style={[
-            styles.listItem,
-            { marginLeft: level * 20 },
-            isSelected && styles.selected,
-            isEditing && styles.editing
-          ]}>
+          <Animated.View
+            style={[
+              styles.listItem,
+              { marginLeft: level * 20, backgroundColor: animatedBackgroundColor }
+            ]}
+          >
             <TouchableOpacity
               style={styles.bulletContainer}
               onPress={toggleListType}
@@ -122,7 +146,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
               preventNewlines={preventNewlines}
               style={styles.textInput}
             />
-          </View>
+          </Animated.View>
         </View>
       )}
     </KeyboardHandler>
@@ -131,7 +155,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     container: {
       marginVertical: 0,
@@ -143,14 +167,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingVertical: 6,
       paddingHorizontal: 8,
       borderRadius: 8,
-    },
-    selected: {
-      // Minimal visual feedback for selection
-    },
-    editing: {
-      backgroundColor: colors.surface,
-      borderColor: colors.teal,
-      borderWidth: 1,
+      backgroundColor: 'transparent', // Will be overridden by animated value
     },
     bulletContainer: {
       width: 28,

@@ -1,5 +1,5 @@
-import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react';
+import { Animated, StyleSheet, TextInput } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -8,6 +8,7 @@ import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { KeyboardHandler } from '../../core/KeyboardHandler';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
+import { ANIMATION_CONFIG, BLOCK_SPACING, getFocusColors } from '../../styles/blockStyles';
 
 /**
  * Paragraph block component with minimalist design
@@ -27,13 +28,26 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
   const [cursorPosition, setCursorPosition] = useState(0);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
   // Explicitly determine if we should show editor or formatted view
   const shouldShowEditor = Boolean(isFocused || isEditing);
-  const styles = getStyles(colorScheme ?? 'light', shouldShowEditor);
+  const styles = getStyles(colorScheme ?? 'light');
 
   // Expose the TextInput methods through ref
   useImperativeHandle(ref, () => inputRef.current as TextInput);
+
+  // Animate focus state changes
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: shouldShowEditor ? 1 : 0,
+      duration: ANIMATION_CONFIG.duration,
+      useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+    }).start();
+  }, [shouldShowEditor, animatedValue]);
+
+  // Get animated colors
+  const focusColors = getFocusColors(colorScheme ?? 'light', shouldShowEditor || false);
 
   // Get the plugin instance and controller
   const pluginInstance = new ParagraphPlugin();
@@ -57,6 +71,17 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
     }
   };
 
+  // Animated colors
+  const animatedBorderColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(0, 0, 0, 0)', focusColors.borderColor],
+  });
+
+  const animatedBackgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
+  });
+
   return (
     <KeyboardHandler
       block={block}
@@ -64,7 +89,16 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
       cursorPosition={cursorPosition}
     >
       {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
-        <View style={[styles.container, style]}>
+        <Animated.View
+          style={[
+            styles.container,
+            style,
+            {
+              borderLeftColor: animatedBorderColor,
+              backgroundColor: animatedBackgroundColor
+            }
+          ]}
+        >
           <FormattedTextInput
             ref={inputRef}
             value={block.content}
@@ -83,7 +117,7 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
             preventNewlines={preventNewlines}
             style={styles.textInput}
           />
-        </View>
+        </Animated.View>
       )}
     </KeyboardHandler>
   );
@@ -91,25 +125,20 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
 
 ParagraphComponent.displayName = 'ParagraphComponent';
 
-const getStyles = (colorScheme: 'light' | 'dark', isEditing: boolean) => {
+const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  const isDark = colorScheme === 'dark';
-
-  // Subtle border color that's only visible when editing
-  const borderOpacity = isEditing ? 0.2 : 0;
-  const borderColor = isDark
-    ? `rgba(100, 181, 246, ${borderOpacity})`
-    : `rgba(33, 150, 243, ${borderOpacity})`;
 
   return StyleSheet.create({
     container: {
-      marginVertical: 2,
-      paddingLeft: 8,
-      paddingRight: 4,
-      paddingVertical: 2,
-      borderLeftWidth: 2,
-      borderLeftColor: borderColor,
-      backgroundColor: 'transparent',
+      // Standard container spacing - handles ALL padding/margin
+      marginVertical: BLOCK_SPACING.marginVertical,
+      paddingLeft: BLOCK_SPACING.paddingLeft,
+      paddingRight: BLOCK_SPACING.paddingRight,
+      paddingVertical: BLOCK_SPACING.paddingVertical,
+      // Always have border, color will be animated
+      borderLeftWidth: BLOCK_SPACING.borderWidth,
+      borderLeftColor: 'rgba(0, 0, 0, 0)', // Will be overridden by animated value
+      backgroundColor: 'transparent', // Will be overridden by animated value
     },
     textInput: {
       width: '100%',
@@ -117,6 +146,9 @@ const getStyles = (colorScheme: 'light' | 'dark', isEditing: boolean) => {
       color: colors.text,
       lineHeight: 24,
       backgroundColor: 'transparent',
+      // NO padding - container handles all spacing
+      paddingHorizontal: 0,
+      paddingVertical: 0,
     },
   });
 };

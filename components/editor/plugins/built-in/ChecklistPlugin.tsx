@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -7,6 +7,7 @@ import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { KeyboardHandler } from '../../core/KeyboardHandler';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+import { ANIMATION_CONFIG, getFocusColors } from '../../styles/blockStyles';
 
 // Global cursor position tracking for checklist blocks
 const checklistCursorPositions: { [blockId: string]: number } = {};
@@ -25,6 +26,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   onFocus,
   onBlur,
   isSelected,
+  isFocused,
   isEditing,
   style
 }) => {
@@ -34,6 +36,22 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   const isChecked = block.meta?.checked || false;
   const level = block.meta?.level || 0;
   const [cursorPosition, setCursorPosition] = useState(0);
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  // Determine if block should show focused state
+  const shouldFocus = isFocused || isEditing;
+
+  // Animate focus state changes
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: shouldFocus ? 1 : 0,
+      duration: ANIMATION_CONFIG.duration,
+      useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+    }).start();
+  }, [shouldFocus, animatedValue]);
+
+  // Get animated colors
+  const focusColors = getFocusColors(colorScheme ?? 'light', shouldFocus || false);
 
   // Get the plugin instance and controller
   // Note: In a real implementation, this would be passed from BlockRenderer
@@ -62,6 +80,12 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
     });
   };
 
+  // Animated background color
+  const animatedBackgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
+  });
+
   return (
     <KeyboardHandler
       block={block}
@@ -70,12 +94,12 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
     >
       {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
         <View style={[styles.container, style]}>
-          <View style={[
-            styles.checklistItem,
-            { marginLeft: level * 20 },
-            isSelected && styles.selected,
-            isEditing && styles.editing
-          ]}>
+          <Animated.View
+            style={[
+              styles.checklistItem,
+              { marginLeft: level * 20, backgroundColor: animatedBackgroundColor }
+            ]}
+          >
             <TouchableOpacity
               style={styles.checkboxContainer}
               onPress={toggleChecked}
@@ -97,8 +121,8 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
               onFocus={onFocus}
               onBlur={onBlur}
               onKeyPress={onKeyPress}
-                          placeholder="Checklist item"
-            placeholderTextColor={colors.textSecondary}
+              placeholder="Checklist item"
+              placeholderTextColor={colors.textSecondary}
               isSelected={isSelected}
               isEditing={isEditing}
               multiline
@@ -110,7 +134,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
                 isChecked && styles.checkedText
               ]}
             />
-          </View>
+          </Animated.View>
         </View>
       )}
     </KeyboardHandler>
@@ -131,15 +155,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: 8,
       borderRadius: 8,
       minHeight: 39,
-    },
-    selected: {
-      // Minimal visual feedback for selection
-    },
-    editing: {
-      backgroundColor: colors.surface,
-      borderColor: colors.teal,
-      borderWidth: 1,
-      borderRadius: 8,
+      backgroundColor: 'transparent', // Will be overridden by animated value
     },
     checkboxContainer: {
       paddingRight: 12,
@@ -172,8 +188,9 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       fontSize: 16,
       lineHeight: 24,
       color: colors.text,
+      // NO padding - container/parent handles all spacing
       paddingVertical: 0,
-      paddingHorizontal: 8,
+      paddingHorizontal: 0,
       minHeight: 27,
       textAlignVertical: 'center',
     },

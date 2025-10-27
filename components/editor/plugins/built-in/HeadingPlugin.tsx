@@ -1,11 +1,12 @@
-import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { NativeSyntheticEvent, StyleSheet, TextInput, TextInputKeyPressEventData, View } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react';
+import { Animated, NativeSyntheticEvent, StyleSheet, TextInput, TextInputKeyPressEventData } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
+import { ANIMATION_CONFIG, BLOCK_SPACING, getHeadingFocusColors } from '../../styles/blockStyles';
 
 // Global cursor position tracker for heading blocks
 let headingCursorPositions: { [blockId: string]: number } = {};
@@ -32,10 +33,26 @@ const HeadingComponent = forwardRef<TextInput, BlockComponentProps>(({
   const level = block.meta?.level || 1;
   const headingStyle = getHeadingStyle(level, colorScheme ?? 'light');
   const [cursorPosition, setCursorPosition] = useState(0);
-  const styles = getStyles(colorScheme ?? 'light', level, isEditing || false);
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
   // Expose the TextInput methods through ref
   useImperativeHandle(ref, () => inputRef.current as TextInput);
+
+  // Determine if block should show focused state
+  const shouldFocus = isFocused || isEditing;
+
+  // Animate focus state changes
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: shouldFocus ? 1 : 0,
+      duration: ANIMATION_CONFIG.duration,
+      useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+    }).start();
+  }, [shouldFocus, animatedValue]);
+
+  // Get animated border color
+  const focusColors = getHeadingFocusColors(colorScheme ?? 'light', level, shouldFocus || false);
+  const styles = getStyles(colorScheme ?? 'light', level);
 
   const handleTextChange = (text: string) => {
     onBlockChange({ content: text });
@@ -75,8 +92,14 @@ const HeadingComponent = forwardRef<TextInput, BlockComponentProps>(({
     headingCursorPositions[block.id] = position;
   };
 
+  // Animated border color
+  const animatedBorderColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(0, 0, 0, 0)', focusColors.borderColor],
+  });
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { borderLeftColor: animatedBorderColor }]}>
       <FormattedTextInput
         ref={inputRef}
         value={block.content}
@@ -95,7 +118,7 @@ const HeadingComponent = forwardRef<TextInput, BlockComponentProps>(({
           styles.textInput,
         ]}
       />
-    </View>
+    </Animated.View>
   );
 });
 
@@ -131,27 +154,23 @@ const getHeadingStyle = (level: number, colorScheme: 'light' | 'dark') => {
   }
 };
 
-const getStyles = (colorScheme: 'light' | 'dark', level: number, isEditing: boolean) => {
-  // const colors = Colors[colorScheme];
-  const isDark = colorScheme === 'dark';
-
-  // Subtle border color that's always present but more visible when editing
-  const borderOpacity = isEditing ? 0.4 : 0;
-  const borderColor = isDark
-    ? `rgba(100, 181, 246, ${borderOpacity})`
-    : `rgba(33, 150, 243, ${borderOpacity})`;
-
+const getStyles = (colorScheme: 'light' | 'dark', level: number) => {
   return StyleSheet.create({
     container: {
-      marginVertical: level === 1 ? 8 : level === 2 ? 6 : 4,
-      paddingLeft: 8,
-      borderLeftWidth: 2,
-      borderLeftColor: borderColor,
+      // Use consistent spacing for all heading levels to prevent layout jumps
+      marginVertical: BLOCK_SPACING.marginVertical,
+      paddingLeft: BLOCK_SPACING.paddingLeft,
+      paddingRight: BLOCK_SPACING.paddingRight,
+      paddingVertical: BLOCK_SPACING.paddingVertical,
+      // Always have border, color will be animated
+      borderLeftWidth: BLOCK_SPACING.borderWidth,
+      borderLeftColor: 'rgba(0, 0, 0, 0)', // Will be overridden by animated value
     },
     textInput: {
       width: '100%',
-      paddingRight: 4,
-      paddingVertical: 2,
+      // NO padding on input - container handles all padding
+      paddingHorizontal: 0,
+      paddingVertical: 0,
       backgroundColor: 'transparent',
     },
   });

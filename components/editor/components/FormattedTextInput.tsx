@@ -146,7 +146,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       fontSize: 16,
       lineHeight: 24,
       color: colors.text,
-      minHeight: 40,
+      // Removed minHeight to prevent layout jumps - let content determine height
       backgroundColor: 'transparent',
       paddingHorizontal: 0,
       paddingVertical: 0,
@@ -154,7 +154,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     formattedContainer: {
       paddingHorizontal: 0,
       paddingVertical: 0,
-      minHeight: 40,
+      // Removed minHeight to prevent layout jumps - let content determine height
       backgroundColor: 'transparent',
       justifyContent: 'center',
     },
