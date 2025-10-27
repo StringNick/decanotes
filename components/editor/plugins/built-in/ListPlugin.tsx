@@ -19,6 +19,15 @@ export const getListCursorPosition = (blockId: string): number => {
   return listCursorPositions[blockId] || 0;
 };
 
+const LEVEL_INDICATOR_WIDTH = 4;
+const LEVEL_INDICATOR_SPACING = 6;
+const LIST_BASE_PADDING = 12;
+
+const LIST_INDICATOR_COLORS = {
+  light: ['rgba(37, 99, 235, 0.2)', 'rgba(14, 165, 233, 0.2)', 'rgba(34, 197, 94, 0.2)', 'rgba(249, 115, 22, 0.18)', 'rgba(168, 85, 247, 0.18)'],
+  dark: ['rgba(148, 193, 255, 0.35)', 'rgba(56, 189, 248, 0.35)', 'rgba(16, 185, 129, 0.35)', 'rgba(249, 115, 22, 0.3)', 'rgba(241, 171, 255, 0.35)'],
+};
+
 /**
  * List block component with modern dark theme support
  */
@@ -56,6 +65,8 @@ const ListComponent: React.FC<BlockComponentProps> = ({
 
   // Get animated colors
   const focusColors = getFocusColors(colorScheme ?? 'light', shouldFocus || false);
+  const indicatorPalette = LIST_INDICATOR_COLORS[colorScheme ?? 'light'];
+  const indicatorWidth = level > 0 ? level * (LEVEL_INDICATOR_WIDTH + LEVEL_INDICATOR_SPACING) - LEVEL_INDICATOR_SPACING : 0;
 
   // Get the plugin instance and controller (memoized to prevent recreation on every render)
   const controller = useMemo(() => {
@@ -119,9 +130,37 @@ const ListComponent: React.FC<BlockComponentProps> = ({
           <Animated.View
             style={[
               styles.listItem,
-              { marginLeft: level * 20, backgroundColor: animatedBackgroundColor }
+              {
+                backgroundColor: animatedBackgroundColor,
+                paddingLeft: LIST_BASE_PADDING,
+              }
             ]}
           >
+            {level > 0 && (
+              <View
+                style={[
+                  styles.indicatorContainer,
+                  {
+                    width: indicatorWidth,
+                  }
+                ]}
+                pointerEvents="none"
+              >
+                {Array.from({ length: level }).map((_, idx) => (
+                  <View
+                    key={`indicator-${idx}`}
+                    style={[
+                      styles.indicatorBar,
+                      {
+                        marginRight: idx === level - 1 ? 0 : LEVEL_INDICATOR_SPACING,
+                        backgroundColor: indicatorPalette[idx % indicatorPalette.length],
+                        opacity: shouldFocus ? 0.9 : 0.5,
+                      }
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
             <TouchableOpacity
               style={styles.bulletContainer}
               onPress={toggleListType}
@@ -185,11 +224,23 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     textInput: {
       flex: 1,
       fontSize: 16,
-      lineHeight: 24,
-      color: colors.text,
-      paddingVertical: 0,
-      paddingHorizontal: 0,
-      minHeight: 24,
+    lineHeight: 24,
+    color: colors.text,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    minHeight: 24,
+    },
+    indicatorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      marginRight: 12,
+      height: 20,
+    },
+    indicatorBar: {
+      width: LEVEL_INDICATOR_WIDTH,
+      height: 12,
+      borderRadius: LEVEL_INDICATOR_WIDTH,
     },
   });
 };

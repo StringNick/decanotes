@@ -58,6 +58,7 @@ export interface EditorBlock {
     
     // General
     [key: string]: any; // Allow plugins to add custom meta
+    quoteLineDepths?: number[];
   };
 }
 

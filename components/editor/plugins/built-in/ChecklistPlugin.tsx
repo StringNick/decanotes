@@ -17,6 +17,15 @@ export const getChecklistCursorPosition = (blockId: string): number => {
   return checklistCursorPositions[blockId] || 0;
 };
 
+const CHECKLIST_INDICATOR_WIDTH = 4;
+const CHECKLIST_INDICATOR_SPACING = 6;
+const CHECKLIST_BASE_PADDING = 12;
+
+const CHECKLIST_INDICATOR_COLORS = {
+  light: ['rgba(37, 99, 235, 0.2)', 'rgba(14, 165, 233, 0.2)', 'rgba(34, 197, 94, 0.2)', 'rgba(249, 115, 22, 0.18)', 'rgba(168, 85, 247, 0.18)'],
+  dark: ['rgba(148, 193, 255, 0.35)', 'rgba(56, 189, 248, 0.35)', 'rgba(16, 185, 129, 0.35)', 'rgba(249, 115, 22, 0.3)', 'rgba(241, 171, 255, 0.35)'],
+};
+
 /**
  * Checklist block component with modern dark theme support
  */
@@ -52,6 +61,8 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
 
   // Get animated colors
   const focusColors = getFocusColors(colorScheme ?? 'light', shouldFocus || false);
+  const indicatorPalette = CHECKLIST_INDICATOR_COLORS[colorScheme ?? 'light'];
+  const indicatorWidth = level > 0 ? level * (CHECKLIST_INDICATOR_WIDTH + CHECKLIST_INDICATOR_SPACING) - CHECKLIST_INDICATOR_SPACING : 0;
 
   // Get the plugin instance and controller
   // Note: In a real implementation, this would be passed from BlockRenderer
@@ -97,9 +108,35 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
           <Animated.View
             style={[
               styles.checklistItem,
-              { marginLeft: level * 20, backgroundColor: animatedBackgroundColor }
+              {
+                backgroundColor: animatedBackgroundColor,
+                paddingLeft: CHECKLIST_BASE_PADDING,
+              }
             ]}
           >
+            {level > 0 && (
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.indicatorContainer,
+                  { width: indicatorWidth }
+                ]}
+              >
+                {Array.from({ length: level }).map((_, idx) => (
+                  <View
+                    key={`indicator-${idx}`}
+                    style={[
+                      styles.indicatorBar,
+                      {
+                        marginRight: idx === level - 1 ? 0 : CHECKLIST_INDICATOR_SPACING,
+                        backgroundColor: indicatorPalette[idx % indicatorPalette.length],
+                        opacity: shouldFocus ? 0.9 : 0.5,
+                      }
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
             <TouchableOpacity
               style={styles.checkboxContainer}
               onPress={toggleChecked}
@@ -150,7 +187,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     checklistItem: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       paddingVertical: 6,
       paddingHorizontal: 8,
       borderRadius: 8,
@@ -158,11 +195,12 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: 'transparent', // Will be overridden by animated value
     },
     checkboxContainer: {
-      paddingRight: 12,
       paddingVertical: 0,
       justifyContent: 'center',
       alignItems: 'center',
       minHeight: 27,
+      marginLeft: 4,
+      marginRight: 12,
     },
     checkbox: {
       width: 20,
@@ -198,6 +236,18 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       textDecorationLine: 'line-through',
       color: colors.textSecondary,
       opacity: 0.7,
+    },
+    indicatorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      marginRight: 12,
+      height: 24,
+    },
+    indicatorBar: {
+      width: CHECKLIST_INDICATOR_WIDTH,
+      height: 12,
+      borderRadius: CHECKLIST_INDICATOR_WIDTH,
     },
   });
 };

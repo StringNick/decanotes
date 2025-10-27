@@ -5,6 +5,7 @@ import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { PluginRegistry } from '../plugins/PluginRegistry';
 import { EditorConfig, EditorError, ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
+import BlockActionToolbar from '../components/BlockActionToolbar';
 import { SafeBlockRenderer } from './BlockRenderer';
 import { useEditor } from './EditorContext';
 import { useEditorDragDrop } from './EditorDragDrop';
@@ -18,6 +19,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     blockPlugins = [],
     markdownPlugins = [],
     config = {},
+    readOnly = false,
     theme,
     onBlocksChange,
     onSelectionChange,
@@ -758,6 +760,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           ref={scrollViewRef}
           style={styles.content}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.contentContainer}
         >
           <View style={styles.blocksContainer}>
             {blocks.map(renderBlock)}
@@ -814,6 +817,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             </Text>
           </View>
         )}
+        
+        <BlockActionToolbar readOnly={readOnly} />
       </View>
     );
   }
@@ -852,6 +857,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+  },
+  contentContainer: {
+    paddingBottom: 160,
   },
   emptyState: {
     flex: 1,
