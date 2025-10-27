@@ -41,3 +41,6 @@ WARP.md
 *.tsbuildinfo
 
 app-example
+
+
+build-*.ipa
