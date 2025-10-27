@@ -44,6 +44,11 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       autoFocus = false,
       placeholder = 'Start writing...',
       shortcuts = [],
+      keyboardHeight,
+      keyboardDockVisible,
+      keyboardDockBlockSection,
+      keyboardDockFormattingSection,
+      keyboardDockActionSection,
       ...otherProps
     } = props;
 
@@ -338,6 +343,11 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           autoFocus={autoFocus}
           placeholder={placeholder}
           onKeyDown={handleKeyDown}
+          keyboardHeight={keyboardHeight}
+          keyboardDockVisible={keyboardDockVisible}
+          keyboardDockBlockSection={keyboardDockBlockSection}
+          keyboardDockFormattingSection={keyboardDockFormattingSection}
+          keyboardDockActionSection={keyboardDockActionSection}
         />
       </View>
     );

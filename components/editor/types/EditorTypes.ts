@@ -39,6 +39,13 @@ export interface ExtendedMarkdownEditorProps {
   // Plugin arrays
   blockPlugins?: BlockPlugin[];
   markdownPlugins?: MarkdownPlugin[];
+
+  // Keyboard dock props
+  keyboardHeight?: number;
+  keyboardDockVisible?: boolean;
+  keyboardDockBlockSection?: React.ReactNode;
+  keyboardDockFormattingSection?: React.ReactNode;
+  keyboardDockActionSection?: React.ReactNode;
 }
 
 // Editor configuration

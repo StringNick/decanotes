@@ -5,7 +5,7 @@ import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { PluginRegistry } from '../plugins/PluginRegistry';
 import { EditorConfig, EditorError, ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
-import BlockActionToolbar from '../components/BlockActionToolbar';
+import { EditorBottomBar } from '../components/EditorBottomBar';
 import { SafeBlockRenderer } from './BlockRenderer';
 import { useEditor } from './EditorContext';
 import { useEditorDragDrop } from './EditorDragDrop';
@@ -26,6 +26,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     onEditingChange,
     onError,
     style,
+    keyboardHeight = 0,
+    keyboardDockVisible = false,
+    keyboardDockBlockSection,
+    keyboardDockFormattingSection,
+    keyboardDockActionSection,
     ...props
   }, ref) => {
     // Plugin registry
@@ -817,8 +822,16 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             </Text>
           </View>
         )}
-        
-        <BlockActionToolbar readOnly={readOnly} />
+
+        {/* Unified bottom bar with toolbar and keyboard dock */}
+        <EditorBottomBar
+          keyboardHeight={keyboardHeight}
+          visible={keyboardDockVisible}
+          readOnly={readOnly}
+          blockSection={keyboardDockBlockSection}
+          formattingSection={keyboardDockFormattingSection}
+          actionSection={keyboardDockActionSection}
+        />
       </View>
     );
   }

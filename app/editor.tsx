@@ -9,10 +9,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckSquare, Code, Copy, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Table, Type, Undo2, X } from 'lucide-react-native';
 import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
-import KeyboardDock from '../components/editor/components/KeyboardDock';
+// EditorBottomBar now rendered inside MarkdownEditor
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
 import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
@@ -265,7 +265,6 @@ export default function EditorScreen() {
 
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
-  const insets = useSafeAreaInsets();
   const keyboardOffset = useKeyboardOffset();
 
   // Load note if noteId is provided
@@ -587,12 +586,12 @@ export default function EditorScreen() {
       <TouchableOpacity
         style={[styles.dockPrimaryButton, showBlockComponents && styles.dockPrimaryButtonActive]}
         onPress={showBlockComponents ? hideBlockComponents : showBlockComponentsWithAnimation}
-        activeOpacity={0.85}
+        activeOpacity={0.7}
       >
         {showBlockComponents ? (
-          <X size={20} color={colors.background} strokeWidth={2.3} />
+          <X size={18} color={colors.background} strokeWidth={2} />
         ) : (
-          <Plus size={20} color={colors.background} strokeWidth={2.3} />
+          <Plus size={18} color={colors.background} strokeWidth={2} />
         )}
       </TouchableOpacity>
 
@@ -609,7 +608,7 @@ export default function EditorScreen() {
   const dockVisible = true;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
@@ -710,18 +709,15 @@ export default function EditorScreen() {
                   }
                 }
               }}
+              keyboardHeight={keyboardOffset}
+              keyboardDockVisible={dockVisible}
+              keyboardDockBlockSection={blockDockSection}
+              keyboardDockFormattingSection={formattingDockSection}
+              keyboardDockActionSection={actionDockSection}
             />
           </StrictMode>
         </View>
       )}
-
-      <KeyboardDock
-        keyboardHeight={keyboardOffset}
-        visible={dockVisible}
-        blockSection={blockDockSection}
-        formattingSection={formattingDockSection}
-        actionSection={actionDockSection}
-      />
 
       {/* Rename Modal */}
       <Modal
@@ -1088,35 +1084,29 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     dockHistoryGroup: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: 8,
     },
     dockButtonSurface: {
-      width: 36,
-      height: 36,
+      width: 38,
+      height: 38,
       borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.06)',
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.1)',
     },
     dockToggleActive: {
       backgroundColor: colorScheme === 'dark' ? 'rgba(20, 184, 166, 0.18)' : 'rgba(20, 184, 166, 0.15)',
     },
     dockPrimaryButton: {
-      width: 42,
-      height: 42,
-      borderRadius: 13,
+      width: 38,
+      height: 38,
+      borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.tint,
-      shadowColor: colors.tint,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.24,
-      shadowRadius: 10,
-      elevation: 6,
     },
     dockPrimaryButtonActive: {
       backgroundColor: colors.textSecondary,
-      shadowColor: colors.textSecondary,
     },
   });
 };
