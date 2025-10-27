@@ -279,6 +279,14 @@ export default function EditorProvider({
       meta: {}
     };
     dispatch({ type: 'ADD_BLOCK', block: newBlock, index });
+    if (__DEV__) {
+      console.log('[EditorProvider] createBlock', {
+        id: newBlock.id,
+        type,
+        index
+      });
+    }
+    return newBlock.id;
   }, [generateId]);
 
   const updateBlock = useCallback((id: string, changes: Partial<ExtendedBlock>) => {

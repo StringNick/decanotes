@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, LayoutChangeEvent, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
@@ -27,6 +27,7 @@ interface EditorBottomBarProps {
   blockSection?: KeyboardDockSection;
   formattingSection?: KeyboardDockSection;
   actionSection?: KeyboardDockSection;
+  onHeightChange?: (height: number) => void;
 }
 
 const MIN_HEADING_LEVEL = 1;
@@ -61,11 +62,13 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
   blockSection,
   formattingSection,
   actionSection,
+  onHeightChange,
 }) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
   const toolbarOpacity = useRef(new Animated.Value(0)).current;
+  const lastMeasuredHeight = useRef(0);
 
   const {
     state,
@@ -92,6 +95,23 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
       useNativeDriver: true,
     }).start();
   }, [showToolbar, toolbarOpacity]);
+
+  useEffect(() => {
+    return () => {
+      if (lastMeasuredHeight.current !== 0) {
+        onHeightChange?.(0);
+      }
+      lastMeasuredHeight.current = 0;
+    };
+  }, [onHeightChange]);
+
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const height = event.nativeEvent.layout.height;
+    if (Math.abs(lastMeasuredHeight.current - height) > 1) {
+      lastMeasuredHeight.current = height;
+      onHeightChange?.(height);
+    }
+  }, [onHeightChange]);
 
   // Keyboard dock positioning
   const translateY = visible ? 0 : 120;
@@ -398,7 +418,7 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
           shadowOpacity: colorScheme === 'dark' ? 0.4 : 0.2,
           elevation: 4,
         }
-      ]}>
+      ]} onLayout={handleLayout}>
         {/* Block Action Toolbar Section - Fades in/out */}
         <Animated.View
           style={[

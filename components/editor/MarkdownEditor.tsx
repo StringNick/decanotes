@@ -137,23 +137,50 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         actions.setBlocks(blocks);
       },
       insertBlock: (type: any, index?: number) => {
-        // Find the plugin for this block type and use its createBlock method
-        const plugin = allPlugins.find(p => p.type === 'block' && (p as any).blockType === type) as any;
+        const plugin = allPlugins.find(
+          (p) => p.type === 'block' && (p as any).blockType === type
+        ) as any;
+
+        let targetType = type;
+        let initialContent = '';
+        let initialMeta: Record<string, any> | undefined;
+
         if (plugin && typeof plugin.createBlock === 'function') {
-          const newBlock = plugin.createBlock('', {});
-          // Create the block with the plugin's default meta
-          const blockToCreate = {
-            id: newBlock.id,
-            type: newBlock.type,
-            content: newBlock.content,
-            meta: newBlock.meta || {}
-          };
-          // Use dispatch directly to add the block with proper meta
-          actions.dispatch({ type: 'ADD_BLOCK', block: blockToCreate, index });
+          const pluginBlock = plugin.createBlock('', {});
+          targetType = pluginBlock.type || type;
+          initialContent = pluginBlock.content || '';
+          if (pluginBlock.meta && Object.keys(pluginBlock.meta).length > 0) {
+            initialMeta = pluginBlock.meta;
+          }
+        }
+
+        const newBlockId = editorRef.current?.insertBlock(targetType, index);
+
+        if (newBlockId) {
+          if (__DEV__) {
+            console.log('[MarkdownEditor] insertBlock delegated', {
+              newBlockId,
+              targetType,
+              index
+            });
+          }
+          if (initialContent || initialMeta) {
+            actions.updateBlock(newBlockId, {
+              ...(initialContent !== undefined ? { content: initialContent } : {}),
+              ...(initialMeta ? { meta: initialMeta } : {})
+            });
+          }
         } else {
-          // Fallback to basic block creation using actions.createBlock
+          if (__DEV__) {
+            console.warn('[MarkdownEditor] insertBlock fallback path', {
+              type,
+              index
+            });
+          }
           actions.createBlock(type, '', index);
         }
+
+        return newBlockId || null;
       },
       updateBlock: (id: string, updates: Partial<EditorBlock>) => {
         actions.updateBlock(id, updates);
@@ -405,7 +432,7 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       ...plugins
     ];
     
-    console.log('🔧 All plugins created:', allPlugins.map(p => ({ id: p.id, type: p.type, blockType: p.type === 'block' ? (p as any).blockType : 'N/A' })));
+    // console.log('🔧 All plugins created:', allPlugins.map(p => ({ id: p.id, type: p.type, blockType: p.type === 'block' ? (p as any).blockType : 'N/A' })));
 
     // Convert initialMarkdown to initialBlocks if provided
     const processedInitialBlocks = initialMarkdown 

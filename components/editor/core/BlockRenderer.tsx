@@ -53,13 +53,14 @@ export function BlockRenderer({
   
   // Effect to register block ref
   useEffect(() => {
-    if (blockComponentRef.current && onBlockRefReady) {
-      onBlockRefReady(blockComponentRef.current);
+    if (onBlockRefReady) {
+      onBlockRefReady({
+        container: blockRef.current,
+        focusable: blockComponentRef.current
+      });
     }
     return () => {
-      if (onBlockRefReady) {
-        onBlockRefReady(null);
-      }
+      onBlockRefReady?.(null);
     };
   }, [onBlockRefReady]);
 

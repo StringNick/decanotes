@@ -329,16 +329,16 @@ export default function EditorScreen() {
   // Handle adding blocks
   const handleAddBlock = useCallback((blockType: EditorBlockType) => {
     if (editorRef.current) {
+      if (__DEV__) {
+        console.log('[EditorScreen] handleAddBlock start', { blockType });
+      }
 
       // Insert the new block
       editorRef.current.insertBlock(blockType);
 
-      // Focus the newly added block after a short delay
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.focus();
-        }
-      }, 150);
+      if (__DEV__) {
+        console.log('[EditorScreen] handleAddBlock insertBlock dispatched', { blockType });
+      }
     }
     hideBlockComponents();
   }, [hideBlockComponents]);

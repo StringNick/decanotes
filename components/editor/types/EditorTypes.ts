@@ -216,7 +216,7 @@ export interface EditorContextInterface {
   dispatch: (action: EditorAction) => void;
   
   // Block operations
-  createBlock: (type: EditorBlockType | string, content?: string, index?: number) => void;
+  createBlock: (type: EditorBlockType | string, content?: string, index?: number) => string;
   updateBlock: (id: string, changes: Partial<ExtendedBlock>) => void;
   deleteBlock: (id: string) => void;
   moveBlock: (id: string, newIndex: number) => void;
