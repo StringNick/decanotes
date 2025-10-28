@@ -8,7 +8,7 @@ import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckSquare, Code, Copy, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Table, Type, Undo2, X } from 'lucide-react-native';
 import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
@@ -320,6 +320,7 @@ export default function EditorScreen() {
 
   // Show block components with animation
   const showBlockComponentsWithAnimation = useCallback(() => {
+    Keyboard.dismiss();
     setShowBlockComponents(true);
   }, []);
 
@@ -329,6 +330,7 @@ export default function EditorScreen() {
 
   // Handle adding blocks
   const handleAddBlock = useCallback((blockType: EditorBlockType, meta?: Record<string, any>) => {
+    Keyboard.dismiss();
     if (editorRef.current) {
       if (__DEV__) {
         console.log('[EditorScreen] handleAddBlock start', { blockType, meta });

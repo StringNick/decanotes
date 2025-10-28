@@ -19,6 +19,8 @@ import { FocusManager } from '../utils/FocusManager';
 type FocusOptions = {
   reveal?: boolean;   // Whether to scroll to make block visible (default: true)
   animated?: boolean; // Whether to animate scroll (default: true)
+  viewPosition?: number; // Desired view position (0-1) when revealing (default: 0.5)
+  viewOffset?: number;   // Additional offset in pixels when revealing (default: 0)
 };
 
 /**
@@ -247,9 +249,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     const requestBlockFocus = useCallback((blockId: string, options: FocusOptions = {}) => {
       const reveal = options.reveal ?? true;
       const animated = options.animated ?? true;
+      const viewPosition = options.viewPosition ?? 0.5;
+      const viewOffset = options.viewOffset ?? 0;
 
       if (__DEV__) {
-        console.log('[EditorCore] requestBlockFocus', { blockId, reveal, animated });
+        console.log('[EditorCore] requestBlockFocus', { blockId, reveal, animated, viewPosition, viewOffset });
       }
 
       // Register focus request with FocusManager
@@ -274,7 +278,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         flatListRef.current?.scrollToIndex({
           index: blockIndex,
           animated,
-          viewPosition: 0.5 // Center block in viewport
+          viewPosition,
+          viewOffset
         });
 
         // Apply focus after scroll animation completes
@@ -955,16 +960,28 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       const pendingId = pendingFocusBlockId.current;
       if (!pendingId) return;
 
-      // Check if the block now exists in blocks array
       const blockExists = blocks.some(b => b.id === pendingId);
+
       if (blockExists) {
-        if (__DEV__) {
-          console.log('[EditorCore] Pending block now exists, applying focus', { blockId: pendingId });
-        }
         pendingFocusBlockId.current = null;
-        requestBlockFocus(pendingId);
+
+        if (__DEV__) {
+          console.log('[EditorCore] Pending block ready, applying focus', { blockId: pendingId });
+        }
+
+        const viewPosition = keyboardHeight > 0 ? 0.1 : 0.4;
+        const viewOffset = keyboardHeight > 0
+          ? Math.max(bottomBarHeight - 16, 0)
+          : Math.max(bottomBarHeight - 32, 0);
+
+        requestBlockFocus(pendingId, {
+          reveal: true,
+          animated: true,
+          viewPosition,
+          viewOffset,
+        });
       }
-    }, [blocks, requestBlockFocus]);
+    }, [blocks, requestBlockFocus, keyboardHeight, bottomBarHeight]);
 
     // ========================================
     // OLD useEffects REMOVED

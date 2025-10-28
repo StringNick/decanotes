@@ -42,7 +42,14 @@ export class FocusManager {
    * Called by SafeBlockRenderer when a block mounts
    */
   registerBlock(blockId: string, entry: BlockFocusEntry): void {
+    if (__DEV__) {
+      console.log('[FocusManager] registerBlock', { blockId });
+    }
     this.blockRegistry.set(blockId, entry);
+
+    if (this.desiredFocus?.blockId === blockId) {
+      this.applyPendingFocus();
+    }
   }
 
   /**
@@ -61,6 +68,9 @@ export class FocusManager {
    * @param options.animated - Whether to animate scroll (default: true)
    */
   requestFocus(blockId: string, options: { reveal?: boolean; animated?: boolean } = {}): void {
+    if (__DEV__) {
+      console.log('[FocusManager] requestFocus', { blockId, options });
+    }
     this.desiredFocus = {
       blockId,
       reveal: options.reveal ?? true,
@@ -103,7 +113,6 @@ export class FocusManager {
 
     if (!entry) {
       console.warn(`[FocusManager] Cannot focus block ${blockId}: not registered`);
-      this.clearDesiredFocus();
       return;
     }
 
@@ -115,6 +124,9 @@ export class FocusManager {
       if (this.desiredFocus?.blockId === blockId) {
         try {
           entry.focus();
+          if (__DEV__) {
+            console.log('[FocusManager] focus applied', { blockId });
+          }
         } catch (error) {
           console.warn(`[FocusManager] Failed to focus block ${blockId}:`, error);
         } finally {
