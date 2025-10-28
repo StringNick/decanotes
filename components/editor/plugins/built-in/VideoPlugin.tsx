@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -6,10 +6,12 @@ import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
+type FocusableHandle = { focus: () => void };
+
 /**
  * Video block component with modern dark theme support
  */
-const VideoComponent: React.FC<BlockComponentProps> = memo(({
+const RawVideoComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   isSelected,
   isFocused,
@@ -20,7 +22,7 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
   onKeyPress,
   theme,
   readOnly
-}) => {
+}, ref) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
@@ -28,6 +30,21 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
   const videoUrl = block.meta?.url || block.content;
   const title = block.meta?.title || 'Video';
   const thumbnail = block.meta?.thumbnail;
+  const urlInputRef = useRef<TextInput>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      if (readOnly) {
+        return;
+      }
+      if (!isUrlEditing) {
+        setIsUrlEditing(true);
+      }
+      setTimeout(() => {
+        urlInputRef.current?.focus();
+      }, 0);
+    }
+  }));
 
   const handleUrlChange = (url: string) => {
     onBlockChange({ content: url });
@@ -62,6 +79,7 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
       return;
     }
     setIsUrlEditing(false);
+    onBlur?.();
   };
 
   const renderVideoPreview = () => {
@@ -119,6 +137,8 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
             autoFocus
             onSubmitEditing={handleUrlSubmit}
             onBlur={handleUrlSubmit}
+            onFocus={() => onFocus?.()}
+            ref={urlInputRef}
           />
           <TextInput
             style={styles.titleInput}
@@ -126,6 +146,8 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
             onChangeText={handleTitleChange}
             placeholder="Video title (optional)"
             placeholderTextColor={colors.textMuted}
+            onFocus={() => onFocus?.()}
+            onBlur={() => onBlur?.()}
           />
         </View>
       )}
@@ -138,7 +160,9 @@ const VideoComponent: React.FC<BlockComponentProps> = memo(({
       )}
     </View>
   );
-}, (prevProps, nextProps) => {
+});
+
+const VideoComponent = memo(RawVideoComponent, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
   return (
     prevProps.block.id === nextProps.block.id &&

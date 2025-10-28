@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -15,6 +15,8 @@ interface CalloutConfig {
   borderColor: string;
   label: string;
 }
+
+type FocusableHandle = { focus: () => void };
 
 const getCalloutConfigs = (colorScheme: 'light' | 'dark'): Record<CalloutType, CalloutConfig> => {
   const isDark = colorScheme === 'dark';
@@ -115,7 +117,7 @@ const getCalloutConfigs = (colorScheme: 'light' | 'dark'): Record<CalloutType, C
 /**
  * Callout block component with modern dark theme support
  */
-const CalloutComponent: React.FC<BlockComponentProps> = memo(({
+const RawCalloutComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   onUpdate,
   onFocus,
@@ -123,13 +125,20 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
   isSelected,
   isEditing,
   style
-}) => {
+}, ref) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   const CALLOUT_CONFIGS = getCalloutConfigs(colorScheme ?? 'light');
   const [isTypeEditing, setIsTypeEditing] = useState(false);
   const [isTitleEditing, setIsTitleEditing] = useState(false);
+  const contentInputRef = useRef<TextInput>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      contentInputRef.current?.focus();
+    }
+  }));
   
   const calloutType = (block.meta?.calloutType as CalloutType) || 'note';
   const config = CALLOUT_CONFIGS[calloutType];
@@ -274,11 +283,14 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
+          ref={contentInputRef}
         />
       </View>
     </View>
   );
-}, (prevProps, nextProps) => {
+});
+
+const CalloutComponent = memo(RawCalloutComponent, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
   return (
     prevProps.block.id === nextProps.block.id &&

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../../constants/Colors';
@@ -7,10 +7,12 @@ import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
+type FocusableHandle = { focus: () => void };
+
 /**
  * Table block component with support for headers, alignment, and cell editing
  */
-const TableComponent: React.FC<BlockComponentProps> = ({
+const TableComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   onBlockChange,
   onFocus,
@@ -18,14 +20,21 @@ const TableComponent: React.FC<BlockComponentProps> = ({
   isSelected,
   isEditing,
   style
-}) => {
+}, ref) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
+  const firstEditableRef = useRef<TextInput>(null);
 
   const headers = block.meta?.headers || [];
   const rows = block.meta?.rows || [];
   const alignments = block.meta?.alignments || [];
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      firstEditableRef.current?.focus();
+    }
+  }));
 
   const handleHeaderChange = (index: number, value: string) => {
     const newHeaders = [...headers];
@@ -154,6 +163,7 @@ const TableComponent: React.FC<BlockComponentProps> = ({
                     placeholder={`Column ${index + 1}`}
                     placeholderTextColor={colors.textSecondary}
                     style={[styles.cellInput, styles.headerText, getAlignmentStyle(getAlignment(index))]}
+                    ref={index === 0 ? firstEditableRef : undefined}
                   />
                 ) : (
                   <Text style={[styles.headerText, getAlignmentStyle(getAlignment(index))]}>
@@ -190,6 +200,11 @@ const TableComponent: React.FC<BlockComponentProps> = ({
                       placeholder=""
                       placeholderTextColor={colors.textSecondary}
                       style={[styles.cellInput, styles.cellText, getAlignmentStyle(getAlignment(cellIndex))]}
+                      ref={
+                        headers.length === 0 && rowIndex === 0 && cellIndex === 0
+                          ? firstEditableRef
+                          : undefined
+                      }
                     />
                   ) : (
                     <Text style={[styles.cellText, getAlignmentStyle(getAlignment(cellIndex))]}>
@@ -215,7 +230,7 @@ const TableComponent: React.FC<BlockComponentProps> = ({
       </TouchableOpacity>
     </View>
   );
-};
+});
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];

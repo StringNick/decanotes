@@ -68,6 +68,14 @@ const allPlugins = useMemo(() => [
 - Stable plugin references across re-renders
 - Better performance (no unnecessary plugin recreation)
 
+#### Focus & Scroll Contract
+
+Block plugins participate in the editor's `FocusManager`. To ensure new plugins work with auto-focus and scroll-to-reveal:
+- Wrap the rendered block component in `React.forwardRef`.
+- Use `useImperativeHandle` to expose a `focus()` method that calls the primary input's `.focus()` (or opens any editing UI before focusing).
+- For non-text blocks (image, video, divider, etc.) make sure `focus()` also triggers any state needed so that the block becomes editable before requesting focus.
+- Always pass the received `onFocus`/`onBlur` callbacks to the underlying input so selection state stays in sync.
+
 ### 3. MarkdownRegistry (Serialization Engine)
 
 **Location**: `components/editor/utils/MarkdownRegistry.ts`

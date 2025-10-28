@@ -105,10 +105,10 @@ export function BlockRenderer({
     block,
     isSelected,
     isEditing,
+    isFocused: isEditing,
     onBlockChange: (updates) => onBlockChange(block.id, updates),
     onAction: () => {},
     config,
-    ref: blockComponentRef,
     onFocus: () => {
       // Call both select and edit to synchronize the focus systems
       onBlockSelect(block.id);
@@ -132,7 +132,10 @@ export function BlockRenderer({
     >
       {/* Block Content */}
       <View style={styles.blockContent}>
-        <BlockComponent {...blockComponentProps} />
+        <BlockComponent
+          {...blockComponentProps}
+          ref={blockComponentRef}
+        />
       </View>
 
       {/* Block Info */}

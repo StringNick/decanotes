@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -6,10 +6,12 @@ import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 
+type FocusableHandle = { focus: () => void };
+
 /**
  * Image block component with modern dark theme support
  */
-const ImageComponent: React.FC<BlockComponentProps> = memo(({
+const RawImageComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   onUpdate,
   onFocus,
@@ -17,20 +19,30 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
   isSelected,
   isEditing,
   style
-}) => {
+}, ref) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   const [isUrlEditing, setIsUrlEditing] = useState(false);
   const [imageError, setImageError] = useState(false);
-
-  console.log('imageUrl', block.meta?.url, 'alt', block.meta?.alt, 'caption', block.meta?.caption);
   
   const imageUrl = block.meta?.url || block.content;
   const alt = block.meta?.alt || 'Image';
   const caption = block.meta?.caption;
   const width = block.meta?.width;
   const height = block.meta?.height;
+  const urlInputRef = useRef<TextInput>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      if (!isUrlEditing) {
+        setIsUrlEditing(true);
+      }
+      setTimeout(() => {
+        urlInputRef.current?.focus();
+      }, 0);
+    }
+  }));
 
   const handleUrlChange = (url: string) => {
     setImageError(false);
@@ -83,6 +95,7 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
       return;
     }
     setIsUrlEditing(false);
+    onBlur?.();
   };
 
   const handleImageError = () => {
@@ -154,6 +167,8 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
             autoFocus
             onSubmitEditing={handleUrlSubmit}
             onBlur={handleUrlSubmit}
+            onFocus={() => onFocus?.()}
+            ref={urlInputRef}
           />
           <TextInput
             style={styles.altInput}
@@ -161,6 +176,8 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
             onChangeText={handleAltChange}
             placeholder="Alt text (for accessibility)"
             placeholderTextColor={colors.textMuted}
+            onFocus={() => onFocus?.()}
+            onBlur={() => onBlur?.()}
           />
           <TextInput
             style={styles.captionInput}
@@ -168,6 +185,8 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
             onChangeText={handleCaptionChange}
             placeholder="Caption (optional)"
             placeholderTextColor={colors.textMuted}
+            onFocus={() => onFocus?.()}
+            onBlur={() => onBlur?.()}
           />
         </View>
       )}
@@ -181,7 +200,9 @@ const ImageComponent: React.FC<BlockComponentProps> = memo(({
       )}
     </View>
   );
-}, (prevProps, nextProps) => {
+});
+
+const ImageComponent = memo(RawImageComponent, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
   return (
     prevProps.block.id === nextProps.block.id &&

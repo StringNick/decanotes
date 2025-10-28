@@ -11,10 +11,12 @@ import { ANIMATION_CONFIG, BLOCK_SPACING, getHeadingFocusColors } from '../../st
 // Global cursor position tracker for heading blocks
 let headingCursorPositions: { [blockId: string]: number } = {};
 
+type FocusableHandle = { focus: () => void };
+
 /**
  * Heading block component with modern minimalist design
  */
-const HeadingComponent = forwardRef<TextInput, BlockComponentProps>(({
+const HeadingComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   isSelected,
   isFocused,
@@ -36,7 +38,11 @@ const HeadingComponent = forwardRef<TextInput, BlockComponentProps>(({
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   // Expose the TextInput methods through ref
-  useImperativeHandle(ref, () => inputRef.current as TextInput);
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current?.focus();
+    }
+  }));
 
   // Determine if block should show focused state
   const shouldFocus = isFocused || isEditing;

@@ -1,10 +1,12 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, forwardRef, useImperativeHandle } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+
+type FocusableHandle = { focus: () => void };
 
 type DividerStyle = 'solid' | 'dashed' | 'dotted' | 'double' | 'gradient';
 
@@ -50,7 +52,7 @@ const getDividerStyles = (colorScheme: 'light' | 'dark'): Record<DividerStyle, D
 /**
  * Divider block component with modern dark theme support
  */
-const DividerComponent: React.FC<BlockComponentProps> = memo(({
+const DividerComponent = memo(forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   onUpdate,
   onFocus,
@@ -58,12 +60,19 @@ const DividerComponent: React.FC<BlockComponentProps> = memo(({
   isSelected,
   isEditing,
   style
-}) => {
+}, ref) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
   const DIVIDER_STYLES = getDividerStyles(colorScheme ?? 'light');
   const [isStyleEditing, setIsStyleEditing] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      onFocus?.();
+      setIsStyleEditing(true);
+    }
+  }));
   
   const dividerStyle = (block.meta?.dividerStyle as DividerStyle) || 'solid';
   const thickness = block.meta?.thickness || 1;
@@ -216,7 +225,7 @@ const DividerComponent: React.FC<BlockComponentProps> = memo(({
       </TouchableOpacity>
     </View>
   );
-}, (prevProps, nextProps) => {
+}), (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
   return (
     prevProps.block.id === nextProps.block.id &&

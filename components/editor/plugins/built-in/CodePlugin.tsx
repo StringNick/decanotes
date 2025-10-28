@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState, useEffect, useRef } from 'react';
+import React, { memo, useCallback, useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Animated, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TextInput, TextInputContentSizeChangeEventData, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -7,10 +7,12 @@ import { generateId } from '../../../../utils/markdownParser';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
 import { ANIMATION_CONFIG, getCodeFocusColors } from '../../styles/blockStyles';
 
+type FocusableHandle = { focus: () => void };
+
 /**
  * Code block component with modern dark theme support
  */
-const CodeComponent: React.FC<BlockComponentProps> = memo(({
+const RawCodeComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   isSelected,
   isFocused,
@@ -22,7 +24,7 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
   onKeyPress,
   theme,
   readOnly
-}) => {
+}, ref) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
@@ -30,9 +32,16 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
   const language = block.meta?.language || 'text';
   const showLineNumbers = block.meta?.showLineNumbers !== false;
   const animatedValue = useRef(new Animated.Value(0)).current;
+  const codeInputRef = useRef<TextInput>(null);
 
   // Determine if block should show focused state
   const shouldFocus = isFocused || isEditing;
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      codeInputRef.current?.focus();
+    }
+  }));
 
   // Animate focus state changes
   useEffect(() => {
@@ -178,12 +187,15 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
             autoCorrect={false}
             spellCheck={false}
             editable={!readOnly}
+            ref={codeInputRef}
           />
         </View>
       </ScrollView>
     </Animated.View>
   );
-}, (prevProps, nextProps) => {
+});
+
+const CodeComponent = memo(RawCodeComponent, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
   return (
     prevProps.block.id === nextProps.block.id &&

@@ -10,10 +10,12 @@ import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
 import { ANIMATION_CONFIG, BLOCK_SPACING, getFocusColors } from '../../styles/blockStyles';
 
+type FocusableHandle = { focus: () => void };
+
 /**
  * Paragraph block component with minimalist design
  */
-const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
+const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   onUpdate,
   onBlockChange,
@@ -35,7 +37,11 @@ const ParagraphComponent = forwardRef<TextInput, BlockComponentProps>(({
   const styles = getStyles(colorScheme ?? 'light');
 
   // Expose the TextInput methods through ref
-  useImperativeHandle(ref, () => inputRef.current as TextInput);
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current?.focus();
+    }
+  }));
 
   // Animate focus state changes
   useEffect(() => {

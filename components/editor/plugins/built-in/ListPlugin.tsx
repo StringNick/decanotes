@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -10,6 +10,7 @@ import { BlockComponentProps, BlockPlugin, EnhancedKeyboardResult } from '../../
 import { ANIMATION_CONFIG, getFocusColors } from '../../styles/blockStyles';
 
 type ListType = 'ordered' | 'unordered';
+type FocusableHandle = { focus: () => void };
 
 // Global cursor position tracking for list blocks
 const listCursorPositions: { [blockId: string]: number } = {};
@@ -31,7 +32,7 @@ const LIST_INDICATOR_COLORS = {
 /**
  * List block component with modern dark theme support
  */
-const ListComponent: React.FC<BlockComponentProps> = ({
+const ListComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   onBlockChange,
   onFocus,
@@ -40,7 +41,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   isFocused,
   isEditing,
   style
-}) => {
+}, ref) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
@@ -50,6 +51,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   const [cursorPosition, setCursorPosition] = useState(0);
+  const inputRef = useRef<TextInput>(null);
 
   // Determine if block should show focused state
   const shouldFocus = isFocused || isEditing;
@@ -73,6 +75,12 @@ const ListComponent: React.FC<BlockComponentProps> = ({
     const pluginInstance = new ListPlugin();
     return pluginInstance.controller;
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current?.focus();
+    }
+  }));
 
   const handleTextChange = (text: string) => {
     onBlockChange({ content: text });
@@ -183,6 +191,7 @@ const ListComponent: React.FC<BlockComponentProps> = ({
               textAlignVertical="center"
               scrollEnabled={false}
               preventNewlines={preventNewlines}
+              ref={inputRef}
               style={styles.textInput}
             />
           </Animated.View>
@@ -190,7 +199,9 @@ const ListComponent: React.FC<BlockComponentProps> = ({
       )}
     </KeyboardHandler>
   );
-};
+});
+
+ListComponent.displayName = 'ListComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -26,10 +26,12 @@ const CHECKLIST_INDICATOR_COLORS = {
   dark: ['rgba(148, 193, 255, 0.35)', 'rgba(56, 189, 248, 0.35)', 'rgba(16, 185, 129, 0.35)', 'rgba(249, 115, 22, 0.3)', 'rgba(241, 171, 255, 0.35)'],
 };
 
+type FocusableHandle = { focus: () => void };
+
 /**
  * Checklist block component with modern dark theme support
  */
-const ChecklistComponent: React.FC<BlockComponentProps> = ({
+const ChecklistComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   block,
   onBlockChange,
   onFocus,
@@ -38,7 +40,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   isFocused,
   isEditing,
   style
-}) => {
+}, ref) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
@@ -46,6 +48,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   const level = block.meta?.level || 0;
   const [cursorPosition, setCursorPosition] = useState(0);
   const animatedValue = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
   // Determine if block should show focused state
   const shouldFocus = isFocused || isEditing;
@@ -68,6 +71,12 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
   // Note: In a real implementation, this would be passed from BlockRenderer
   const pluginInstance = ChecklistPlugin.getInstance();
   const controller = pluginInstance.controller;
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current?.focus();
+    }
+  }));
 
   const handleTextChange = (text: string) => {
     onBlockChange({ content: text });
@@ -166,6 +175,7 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
               textAlignVertical="top"
               scrollEnabled={false}
               preventNewlines={preventNewlines}
+              ref={inputRef}
               style={[
                 styles.textInput,
                 isChecked && styles.checkedText
@@ -176,7 +186,9 @@ const ChecklistComponent: React.FC<BlockComponentProps> = ({
       )}
     </KeyboardHandler>
   );
-};
+});
+
+ChecklistComponent.displayName = 'ChecklistComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
