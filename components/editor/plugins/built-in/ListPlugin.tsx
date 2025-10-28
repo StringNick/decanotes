@@ -94,15 +94,6 @@ const ListComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
     listCursorPositions[block.id] = position;
   };
 
-  const toggleListType = () => {
-    onBlockChange({
-      meta: {
-        ...block.meta,
-        listType: listType === 'ordered' ? 'unordered' : 'ordered'
-      }
-    });
-  };
-
   const renderBullet = () => {
     if (listType === 'ordered') {
       return (
@@ -169,12 +160,12 @@ const ListComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
                 ))}
               </View>
             )}
-            <TouchableOpacity
+            <View
               style={styles.bulletContainer}
-              onPress={toggleListType}
+              pointerEvents="none"
             >
               {renderBullet()}
-            </TouchableOpacity>
+            </View>
 
             <FormattedTextInput
               value={block.content}
@@ -303,6 +294,28 @@ export class ListPlugin implements BlockPlugin {
     }
   };
 
+  createBlock(content: string = '', meta: Record<string, any> = {}): EditorBlock {
+    const listType = meta.listType ?? this.settings.defaultMeta.listType;
+    const level = meta.level ?? this.settings.defaultMeta.level;
+    const baseMeta: Record<string, any> = {
+      listType,
+      level,
+      ...(listType === 'ordered'
+        ? { index: meta.index ?? this.settings.defaultMeta.index }
+        : {}),
+    };
+
+    return {
+      id: generateId(),
+      type: 'list',
+      content,
+      meta: {
+        ...baseMeta,
+        ...meta,
+      },
+    };
+  }
+
   protected handleKeyPress(event: any, block: EditorBlock): boolean | void {
     // Note: Tab indentation is not currently supported due to architectural limitations
     // handleKeyPress can only return boolean, not updated blocks
@@ -333,37 +346,48 @@ export class ListPlugin implements BlockPlugin {
       meta: {
         listType,
         level,
-        index: currentIndexValue + 1
+        ...(listType === 'ordered' ? { index: currentIndexValue + 1 } : {})
       }
     };
 
     // For ordered lists, we need to update the numbering of subsequent items
     if (listType === 'ordered' && allBlocks && currentIndex !== undefined) {
       const updates: { blockId: string; updates: Partial<EditorBlock> }[] = [];
-      
-      // Find all subsequent list items at the same level and update their indices
-      for (let i = currentIndex + 2; i < allBlocks.length; i++) {
+
+      let nextIndexValue = currentIndexValue + 2;
+
+      // Find all subsequent list items and update indices for same-level ordered items
+      for (let i = currentIndex + 1; i < allBlocks.length; i++) {
         const subsequentBlock = allBlocks[i];
-        
-        // Check if it's a list item at the same level
-        if (subsequentBlock.type === 'list' && 
-            subsequentBlock.meta?.listType === 'ordered' && 
-            subsequentBlock.meta?.level === level) {
-          
+
+        if (subsequentBlock.type !== 'list') {
+          break;
+        }
+
+        const subsequentMeta = subsequentBlock.meta || {};
+        const subsequentLevel = subsequentMeta.level || 0;
+
+        if (subsequentLevel < level) {
+          break;
+        }
+
+        if (subsequentLevel > level) {
+          // Skip nested items; they maintain their numbering within the nested scope
+          continue;
+        }
+
+        if (subsequentMeta.listType === 'ordered') {
           // Update the index by incrementing it
-          const newIndex = (subsequentBlock.meta?.index || 1) + 1;
           updates.push({
             blockId: subsequentBlock.id,
             updates: {
               meta: {
-                ...subsequentBlock.meta,
-                index: newIndex
+                ...subsequentMeta,
+                index: nextIndexValue++
               }
             }
           });
-        } else if (subsequentBlock.type !== 'list' || 
-                   subsequentBlock.meta?.level !== level) {
-          // Stop when we encounter a different block type or level
+        } else {
           break;
         }
       }
@@ -514,17 +538,53 @@ export class ListPlugin implements BlockPlugin {
    * Reorder list indices
    */
   reorderList(blocks: EditorBlock[]): EditorBlock[] {
-    const listBlocks = blocks.filter(block => block.type === 'list');
-    let currentIndex = 1;
+    const results: EditorBlock[] = [];
+    const levelCounters = new Map<number, number>();
 
-    return listBlocks.map(block => {
-      if (block.meta?.listType === 'ordered') {
-        const level = block.meta?.level || 0;
-        if (level === 0) {
-          block.meta.index = currentIndex++;
-        }
+    for (let i = 0; i < blocks.length; i += 1) {
+      const block = blocks[i];
+
+      if (block.type !== 'list') {
+        levelCounters.clear();
+        results.push(block);
+        continue;
       }
-      return block;
-    });
+
+      const level = block.meta?.level ?? 0;
+
+      if (block.meta?.listType !== 'ordered') {
+        levelCounters.delete(level);
+        results.push(block);
+        continue;
+      }
+
+      const previous = results.length > 0 ? results[results.length - 1] : null;
+      const previousIsSibling =
+        previous &&
+        previous.type === 'list' &&
+        previous.meta?.listType === 'ordered' &&
+        (previous.meta?.level ?? 0) === level;
+
+      const previousValue = levelCounters.get(level) ?? 0;
+      let indexValue: number;
+
+      if (previousIsSibling) {
+        indexValue = previousValue + 1;
+      } else {
+        indexValue = previousValue > 0 ? previousValue + 1 : 1;
+      }
+
+      levelCounters.set(level, indexValue);
+
+      results.push({
+        ...block,
+        meta: {
+          ...(block.meta ?? {}),
+          index: indexValue,
+        },
+      });
+    }
+
+    return results;
   }
 }

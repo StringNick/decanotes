@@ -134,51 +134,29 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         const blocks = parseMarkdownToBlocks(markdown, allPlugins);
         actions.setBlocks(blocks);
       },
-      insertBlock: (type: any, index?: number) => {
-        const plugin = allPlugins.find(
-          (p) => p.type === 'block' && (p as any).blockType === type
-        ) as any;
-
-        let targetType = type;
-        let initialContent = '';
-        let initialMeta: Record<string, any> | undefined;
-
-        if (plugin && typeof plugin.createBlock === 'function') {
-          const pluginBlock = plugin.createBlock('', {});
-          targetType = pluginBlock.type || type;
-          initialContent = pluginBlock.content || '';
-          if (pluginBlock.meta && Object.keys(pluginBlock.meta).length > 0) {
-            initialMeta = pluginBlock.meta;
-          }
-        }
-
-        const newBlockId = editorRef.current?.insertBlock(targetType, index);
+      insertBlock: (type: any, index?: number, options?: { meta?: Record<string, any>; content?: string }) => {
+        const newBlockId = editorRef.current?.insertBlock(type, index, options);
 
         if (newBlockId) {
           if (__DEV__) {
             console.log('[MarkdownEditor] insertBlock delegated', {
               newBlockId,
-              targetType,
-              index
-            });
-          }
-          if (initialContent || initialMeta) {
-            actions.updateBlock(newBlockId, {
-              ...(initialContent !== undefined ? { content: initialContent } : {}),
-              ...(initialMeta ? { meta: initialMeta } : {})
-            });
-          }
-        } else {
-          if (__DEV__) {
-            console.warn('[MarkdownEditor] insertBlock fallback path', {
               type,
               index
             });
           }
-          actions.createBlock(type, '', index);
+          return newBlockId;
         }
 
-        return newBlockId || null;
+        if (__DEV__) {
+          console.warn('[MarkdownEditor] insertBlock fallback path', {
+            type,
+            index
+          });
+        }
+
+        const fallbackId = actions.createBlock(type, options?.content ?? '', index, options?.meta);
+        return fallbackId || null;
       },
       updateBlock: (id: string, updates: Partial<EditorBlock>) => {
         actions.updateBlock(id, updates);

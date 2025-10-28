@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
@@ -7,6 +7,7 @@ import { EditorBlock } from '../../../types/editor';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEditor } from '../core/EditorContext';
 import { getQuoteCursorState } from '../plugins/built-in/QuotePlugin';
+import { getListSiblingIndices } from '../utils/listHelpers';
 import { useKeyboardOffset } from '../../../hooks/useKeyboardOffset';
 
 type ToolbarAction = {
@@ -57,6 +58,7 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
     updateBlock,
     deleteBlock,
   } = useEditor();
+  const previousListMetaRef = useRef<Map<string, Record<string, any>>>(new Map());
 
   const activeBlock = useMemo(() => {
     if (!state.focusedBlockId) {
@@ -162,22 +164,50 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
 
   const handleToggleListType = useCallback(() => {
     if (!activeBlock) return;
+    const blockIndex = state.blocks.findIndex(b => b.id === activeBlock.id);
+    if (blockIndex === -1) return;
+
     const currentType = activeBlock.meta?.listType ?? 'unordered';
     const nextType = currentType === 'ordered' ? 'unordered' : 'ordered';
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      listType: nextType,
-    };
+    const siblingIndices = getListSiblingIndices(state.blocks, blockIndex);
+    const targets = siblingIndices.length > 0 ? siblingIndices : [blockIndex];
+    const store = previousListMetaRef.current;
 
-    if (nextType === 'ordered') {
-      nextMeta.index = activeBlock.meta?.index ?? 1;
-    } else if ('index' in nextMeta) {
-      delete nextMeta.index;
+    if (currentType === 'unordered') {
+      targets.forEach((idx) => {
+        const block = state.blocks[idx];
+        if (!block || block.type !== 'list') return;
+        store.set(block.id, { ...(block.meta ?? {}) });
+      });
     }
 
-    updateBlock(activeBlock.id, { meta: nextMeta });
-  }, [activeBlock, updateBlock]);
+    targets.forEach((idx, order) => {
+      const block = state.blocks[idx];
+      if (!block || block.type !== 'list') return;
+
+      if (nextType === 'unordered') {
+        const previousMeta = store.get(block.id);
+        if (previousMeta) {
+          const restored = { ...previousMeta, listType: 'unordered' };
+          updateBlock(block.id, { meta: restored });
+          store.delete(block.id);
+          return;
+        }
+      }
+
+      const nextMeta: Record<string, any> = {
+        ...(block.meta ?? {}),
+        listType: nextType,
+      };
+
+      if (nextType === 'ordered') {
+        nextMeta.index = order + 1;
+      }
+
+      updateBlock(block.id, { meta: nextMeta });
+    });
+  }, [activeBlock, state.blocks, updateBlock]);
 
   const handleChecklistLevelChange = useCallback((delta: number) => {
     if (!activeBlock) return;

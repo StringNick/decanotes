@@ -281,12 +281,28 @@ export default function EditorProvider({
 
   // Block operations
   const createBlock = useCallback((type: EditorBlockType | string, content = '', index?: number, meta?: Record<string, any>) => {
-    const newBlock: ExtendedBlock = {
-      id: generateId(),
-      type: type as EditorBlockType,
-      content,
-      meta: meta || {}
-    };
+    const plugin = pluginRegistry.getBlockPlugin(type as string);
+
+    let newBlock: ExtendedBlock;
+
+    if (plugin && typeof plugin.createBlock === 'function') {
+      const pluginBlock = plugin.createBlock(content, meta ?? {});
+      newBlock = {
+        id: pluginBlock.id,
+        type: (pluginBlock.type || type) as EditorBlockType,
+        content: pluginBlock.content ?? '',
+        meta: pluginBlock.meta ? { ...pluginBlock.meta } : {},
+        pluginId: plugin.id,
+      };
+    } else {
+      newBlock = {
+        id: generateId(),
+        type: type as EditorBlockType,
+        content,
+        meta: meta ? { ...meta } : {}
+      };
+    }
+
     dispatch({ type: 'ADD_BLOCK', block: newBlock, index });
     if (__DEV__) {
       console.log('[EditorProvider] createBlock', {
@@ -297,7 +313,7 @@ export default function EditorProvider({
       });
     }
     return newBlock.id;
-  }, [generateId]);
+  }, [generateId, pluginRegistry]);
 
   const updateBlock = useCallback((id: string, changes: Partial<ExtendedBlock>) => {
     dispatch({ type: 'UPDATE_BLOCK', id, changes });

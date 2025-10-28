@@ -48,11 +48,13 @@ const TableComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
   };
 
   const handleCellChange = (rowIndex: number, cellIndex: number, value: string) => {
-    const newRows = [...rows];
+    const newRows = rows.map(row => (row ? [...row] : []));
     if (!newRows[rowIndex]) {
-      newRows[rowIndex] = [];
+      newRows[rowIndex] = new Array(headers.length).fill('');
     }
-    newRows[rowIndex][cellIndex] = value;
+    const updatedRow = [...newRows[rowIndex]];
+    updatedRow[cellIndex] = value;
+    newRows[rowIndex] = updatedRow;
     onBlockChange({
       meta: {
         ...block.meta,
@@ -83,7 +85,7 @@ const TableComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
 
   const addColumn = () => {
     const newHeaders = [...headers, `Column ${headers.length + 1}`];
-    const newRows = rows.map(row => [...row, '']);
+    const newRows = rows.map(row => (row ? [...row, ''] : []));
     const newAlignments = [...alignments, 'left' as const];
 
     onBlockChange({
@@ -100,7 +102,9 @@ const TableComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
     if (headers.length <= 1) return; // Keep at least one column
 
     const newHeaders = headers.filter((_, idx) => idx !== colIndex);
-    const newRows = rows.map(row => row.filter((_, idx) => idx !== colIndex));
+    const newRows = rows.map(row =>
+      row ? row.filter((_, idx) => idx !== colIndex) : []
+    );
     const newAlignments = alignments.filter((_, idx) => idx !== colIndex);
 
     onBlockChange({

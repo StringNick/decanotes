@@ -328,17 +328,17 @@ export default function EditorScreen() {
   }, []);
 
   // Handle adding blocks
-  const handleAddBlock = useCallback((blockType: EditorBlockType) => {
+  const handleAddBlock = useCallback((blockType: EditorBlockType, meta?: Record<string, any>) => {
     if (editorRef.current) {
       if (__DEV__) {
-        console.log('[EditorScreen] handleAddBlock start', { blockType });
+        console.log('[EditorScreen] handleAddBlock start', { blockType, meta });
       }
 
       // Insert the new block
-      editorRef.current.insertBlock(blockType);
+      editorRef.current.insertBlock(blockType, undefined, { meta });
 
       if (__DEV__) {
-        console.log('[EditorScreen] handleAddBlock insertBlock dispatched', { blockType });
+        console.log('[EditorScreen] handleAddBlock insertBlock dispatched', { blockType, meta });
       }
     }
     hideBlockComponents();
@@ -511,13 +511,13 @@ export default function EditorScreen() {
   }, [rawMarkdown]);
 
   // Block types for the menu - Notion-style
-  const blockTypes: { type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: any }[] = [
+  const blockTypes: { type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: Record<string, any> }[] = [
     { type: 'paragraph', icon: Type, label: 'Text' },
     { type: 'heading', icon: Heading1, label: 'Heading 1', meta: { level: 1 } },
     { type: 'heading', icon: Heading2, label: 'Heading 2', meta: { level: 2 } },
     { type: 'heading', icon: Heading3, label: 'Heading 3', meta: { level: 3 } },
-    { type: 'list', icon: List, label: 'Bulleted list' },
-    { type: 'list', icon: ListOrdered, label: 'Numbered list', meta: { ordered: true } },
+    { type: 'list', icon: List, label: 'Bulleted list', meta: { listType: 'unordered' } },
+    { type: 'list', icon: ListOrdered, label: 'Numbered list', meta: { listType: 'ordered' } },
     { type: 'checklist', icon: CheckSquare, label: 'To-do list' },
     { type: 'quote', icon: Quote, label: 'Quote' },
     { type: 'divider', icon: Minus, label: 'Divider' },
@@ -538,7 +538,7 @@ export default function EditorScreen() {
           <TouchableOpacity
             key={`dock-block-${index}`}
             style={styles.blockQuickChip}
-            onPress={() => handleAddBlock(item.type)}
+            onPress={() => handleAddBlock(item.type, item.meta)}
             activeOpacity={0.85}
           >
             <View style={styles.blockQuickIcon}>

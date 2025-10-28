@@ -595,7 +595,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     };
 
     // Toolbar actions
-    const handleToolbarAction = (actionId: string, blockType?: string) => {
+    const handleToolbarAction = (actionId: string, blockType?: string, options?: { content?: string; meta?: Record<string, any> }) => {
       switch (actionId) {
         case 'add-block':
           if (blockType) {
@@ -603,7 +603,12 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               ? blocks.findIndex(b => b.id === focusedBlockId) + 1
               : blocks.length;
 
-            const newBlockId = createBlock(blockType, '', insertIndex);
+            const newBlockId = createBlock(
+              blockType,
+              options?.content ?? '',
+              insertIndex,
+              options?.meta
+            );
             if (newBlockId) {
               if (__DEV__) {
                 console.log('[EditorCore] add-block created', {
@@ -659,8 +664,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           requestBlockFocus(lastBlockId);
         }
       },
-      insertBlock: (type: EditorBlockType, index?: number) => {
-        const newBlockId = createBlock(type, '', index);
+      insertBlock: (type: EditorBlockType, index?: number, options?: { meta?: Record<string, any>; content?: string }) => {
+        const newBlockId = createBlock(type, options?.content ?? '', index, options?.meta);
         if (!newBlockId) {
           return;
         }

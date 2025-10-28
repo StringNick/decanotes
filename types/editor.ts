@@ -97,7 +97,11 @@ export type MarkdownEditorRef = {
   getBlocks: () => EditorBlock[];
   setBlocks: (blocks: EditorBlock[]) => void;
   focus: () => void;
-  insertBlock: (type: EditorBlockType, index?: number) => string | null | undefined;
+  insertBlock: (
+    type: EditorBlockType,
+    index?: number,
+    options?: { meta?: Record<string, any>; content?: string }
+  ) => string | null | undefined;
   deleteBlock: (id: string) => void;
   moveBlockUp: (id: string) => boolean;
   moveBlockDown: (id: string) => boolean;
