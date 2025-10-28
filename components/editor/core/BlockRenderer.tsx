@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
 import { EditorBlock } from '../../../types/editor';
 import { EditorConfig } from '../types/EditorTypes';
 import { BlockComponentProps, BlockPlugin } from '../types/PluginTypes';
+import { FocusManager } from '../utils/FocusManager';
 
 interface BlockRendererProps {
   block: EditorBlock;
@@ -23,6 +24,8 @@ interface BlockRendererProps {
   dragHandleProps?: any;
   blockProps?: any;
   onBlockRefReady?: (ref: any) => void;
+  focusManager?: FocusManager; // NEW: for focus management
+  onBlockHeightChange?: (blockId: string, height: number) => void; // NEW: for getItemLayout
 }
 
 /**
@@ -43,15 +46,19 @@ export function BlockRenderer({
   onBlockMove,
   dragHandleProps,
   blockProps,
-  onBlockRefReady
+  onBlockRefReady,
+  focusManager,
+  onBlockHeightChange
 }: BlockRendererProps) {
   const blockRef = useRef<View>(null);
   const blockComponentRef = useRef<any>(null);
   const colorScheme = useColorScheme();
-  // const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
-  
-  // Effect to register block ref
+
+  // Track block height for getItemLayout optimization
+  const [blockHeight, setBlockHeight] = useState(0);
+
+  // Effect to register block ref (legacy support)
   useEffect(() => {
     if (onBlockRefReady) {
       onBlockRefReady({
@@ -63,6 +70,35 @@ export function BlockRenderer({
       onBlockRefReady?.(null);
     };
   }, [onBlockRefReady]);
+
+  // NEW: Register block with FocusManager
+  useEffect(() => {
+    if (!focusManager) return;
+
+    focusManager.registerBlock(block.id, {
+      focus: () => {
+        // Try to focus the block component (usually a TextInput)
+        if (blockComponentRef.current && typeof blockComponentRef.current.focus === 'function') {
+          blockComponentRef.current.focus();
+        }
+      },
+      getHeight: () => blockHeight
+    });
+
+    return () => {
+      focusManager.unregisterBlock(block.id);
+    };
+  }, [block.id, focusManager, blockHeight]);
+
+  // NEW: Handle layout changes to track height
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+
+    if (Math.abs(height - blockHeight) > 1) {
+      setBlockHeight(height);
+      onBlockHeightChange?.(block.id, height);
+    }
+  }, [block.id, blockHeight, onBlockHeightChange]);
 
   // Get block component props (memoized to prevent unnecessary re-renders)
   const blockComponentProps: BlockComponentProps = useMemo(() => ({
@@ -91,6 +127,7 @@ export function BlockRenderer({
         styles.blockContainer,
         blockProps?.style
       ]}
+      onLayout={handleLayout}
       {...blockProps}
     >
       {/* Block Content */}

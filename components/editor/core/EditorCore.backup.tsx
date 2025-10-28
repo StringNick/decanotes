@@ -67,9 +67,6 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // NEW: Track block heights for getItemLayout optimization
     const blockHeights = useRef(new Map<string, number>()).current;
 
-    // NEW: Pending focus for newly created blocks (to handle async state updates)
-    const pendingFocusBlockId = useRef<string | null>(null);
-
     // Refs
     const flatListRef = useRef<FlatList<EditorBlock>>(null);
     const editorRef = useRef<View>(null);
@@ -88,70 +85,6 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     const handleBottomBarHeight = useCallback((height: number) => {
       setBottomBarHeight((prev) => (Math.abs(prev - height) > 1 ? height : prev));
     }, []);
-
-    // ====================
-    // NEW: FlatList + FocusManager Functions
-    // ====================
-
-    /**
-     * Track block heights for getItemLayout optimization
-     */
-    const handleBlockHeightChange = useCallback((blockId: string, height: number) => {
-      blockHeights.set(blockId, height);
-    }, [blockHeights]);
-
-    /**
-     * Get item layout for FlatList performance optimization
-     * This eliminates the need for FlatList to measure items
-     */
-    const getItemLayout = useCallback((data: ArrayLike<EditorBlock> | null | undefined, index: number) => {
-      if (!data || index < 0 || index >= data.length) {
-        return { length: ESTIMATED_BLOCK_HEIGHT, offset: 0, index };
-      }
-
-      const block = data[index];
-      const height = blockHeights.get(block.id) || ESTIMATED_BLOCK_HEIGHT;
-
-      // Calculate offset (sum of all previous block heights)
-      let offset = 0;
-      for (let i = 0; i < index; i++) {
-        offset += blockHeights.get(data[i].id) || ESTIMATED_BLOCK_HEIGHT;
-      }
-
-      return { length: height, offset, index };
-    }, [blockHeights]);
-
-    /**
-     * Handle FlatList scroll-to-index failures
-     * This happens when trying to scroll to unmeasured items
-     */
-    const handleScrollToIndexFailed = useCallback((info: {
-      index: number;
-      highestMeasuredFrameIndex: number;
-      averageItemLength: number;
-    }) => {
-      if (__DEV__) {
-        console.log('[EditorCore] scrollToIndex failed, retrying with offset', info);
-      }
-
-      // FlatList provides average item length, use it to estimate offset
-      const offset = info.averageItemLength * info.index;
-
-      // Scroll to estimated offset
-      flatListRef.current?.scrollToOffset({
-        offset,
-        animated: true
-      });
-
-      // Apply focus after scroll completes
-      InteractionManager.runAfterInteractions(() => {
-        focusManager.applyPendingFocus();
-      });
-    }, [focusManager]);
-
-    // ====================
-    // End of NEW Functions (Part 1)
-    // ====================
 
     // Configuration with defaults
     const editorConfig: EditorConfig = {
@@ -231,62 +164,6 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 
     const { blocks, focusedBlockId, selectedBlocks, mode, errors, history } = state;
     // isDirty and isLoading are available in state but not used in this component
-
-    /**
-     * NEW: Request focus on a block with optional scroll-to-reveal
-     * This is the single entry point for all block focus operations
-     *
-     * NOTE: For newly created blocks, use pendingFocusBlockId.current instead
-     * of calling this directly, as the block may not be in the blocks array yet.
-     *
-     * @param blockId - ID of block to focus
-     * @param options - Focus options
-     * @param options.reveal - Whether to scroll to make block visible (default: true)
-     * @param options.animated - Whether to animate scroll (default: true)
-     */
-    const requestBlockFocus = useCallback((blockId: string, options: FocusOptions = {}) => {
-      const reveal = options.reveal ?? true;
-      const animated = options.animated ?? true;
-
-      if (__DEV__) {
-        console.log('[EditorCore] requestBlockFocus', { blockId, reveal, animated });
-      }
-
-      // Register focus request with FocusManager
-      focusManager.requestFocus(blockId, { reveal, animated });
-
-      // If no reveal needed, just focus immediately
-      if (!reveal) {
-        focusManager.applyPendingFocus();
-        return;
-      }
-
-      // Find block index for scrolling
-      const blockIndex = blocks.findIndex(b => b.id === blockId);
-      if (blockIndex === -1) {
-        console.warn(`[EditorCore] Block not found for focus: ${blockId}`);
-        focusManager.clearDesiredFocus();
-        return;
-      }
-
-      // Scroll to block using FlatList
-      try {
-        flatListRef.current?.scrollToIndex({
-          index: blockIndex,
-          animated,
-          viewPosition: 0.5 // Center block in viewport
-        });
-
-        // Apply focus after scroll animation completes
-        InteractionManager.runAfterInteractions(() => {
-          focusManager.applyPendingFocus();
-        });
-      } catch (error) {
-        console.warn('[EditorCore] Failed to scroll to block:', error);
-        // Still try to apply focus even if scroll fails
-        focusManager.applyPendingFocus();
-      }
-    }, [blocks, focusManager]);
 
     // Keyboard handling hook
     const {
@@ -381,11 +258,9 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // Handle clicking on empty space to create new paragraph
     const handleEmptySpacePress = useCallback(() => {
       // Create a new paragraph block at the end
-      const newBlockId = createBlock('paragraph', '', blocks.length);
-      if (newBlockId) {
-        // Set pending focus - useEffect will apply when block is rendered
-        pendingFocusBlockId.current = newBlockId;
-      }
+      createBlock('paragraph', '', blocks.length);
+      // Mark that we should focus the last block after it's created
+      shouldFocusLastBlock.current = true;
     }, [createBlock, blocks.length]);
 
     // Handle block operations with proper callbacks
@@ -567,11 +442,25 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     };
     
     const handleBlockSelect = useCallback((blockId: string) => {
+      const pendingTarget = pendingFocusBlockIdRef.current;
+      if (pendingTarget && pendingTarget !== blockId) {
+        if (__DEV__) {
+          console.log('[EditorCore] handleBlockSelect ignored', { blockId, pendingTarget });
+        }
+        return;
+      }
       selectBlock(blockId);
       onSelectionChange?.(blockId);
     }, [selectBlock, onSelectionChange]);
-
+    
     const handleBlockEdit = useCallback((blockId: string) => {
+      const pendingTarget = pendingFocusBlockIdRef.current;
+      if (pendingTarget && pendingTarget !== blockId) {
+        if (__DEV__) {
+          console.log('[EditorCore] handleBlockEdit ignored', { blockId, pendingTarget });
+        }
+        return;
+      }
       focusBlock(blockId);
       onEditingChange?.(!!blockId);
     }, [focusBlock, onEditingChange]);
@@ -599,10 +488,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       switch (actionId) {
         case 'add-block':
           if (blockType) {
-            const insertIndex = focusedBlockId
+            const insertIndex = focusedBlockId 
               ? blocks.findIndex(b => b.id === focusedBlockId) + 1
               : blocks.length;
-
+            
             const newBlockId = createBlock(blockType, '', insertIndex);
             if (newBlockId) {
               if (__DEV__) {
@@ -612,11 +501,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
                   previousFocused: focusedBlockId
                 });
               }
+              pendingFocusBlockIdRef.current = newBlockId;
               blockRefsMap.current.delete(newBlockId);
               handleBlockSelect(newBlockId);
               handleBlockEdit(newBlockId);
-              // Set pending focus - useEffect will apply when block is rendered
-              pendingFocusBlockId.current = newBlockId;
+              scrollToBlock(newBlockId, { focus: true });
             }
           }
           break;
@@ -634,10 +523,154 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       }
     };
 
-    // ========================================
-    // OLD scroll/focus functions REMOVED
-    // Replaced by requestBlockFocus() + FocusManager
-    // ========================================
+    const attemptEnsureBlockVisible = useCallback(function ensure(
+      blockId: string,
+      attempt = 0,
+      options: Required<ScrollTargetOptions> = pendingScrollOptionsRef.current
+    ) {
+      if (pendingScrollBlockIdRef.current !== blockId) {
+        return;
+      }
+
+      const scrollView = scrollViewRef.current;
+      const contentNodeHandle = scrollContentRef.current
+        ? findNodeHandle(scrollContentRef.current)
+        : null;
+      const blockEntry = blockRefsMap.current.get(blockId);
+
+      if (!scrollView || !contentNodeHandle || !blockEntry) {
+        if (__DEV__) {
+          console.log('[EditorCore] attemptEnsureBlockVisible retry (missing refs)', {
+            blockId,
+            attempt,
+            hasScrollView: !!scrollView,
+            hasContent: !!contentNodeHandle,
+            hasEntry: !!blockEntry
+          });
+        }
+        if (attempt < MAX_SCROLL_ATTEMPTS - 1) {
+          retryTimeoutRef.current = setTimeout(() => {
+            retryTimeoutRef.current = null;
+            ensure(blockId, attempt + 1, options);
+          }, SCROLL_RETRY_DELAY);
+        }
+        return;
+      }
+
+      const focusTarget = blockEntry.focusable || blockEntry.container;
+      const measureTargetRaw = blockEntry.container || blockEntry.focusable;
+      const targetNodeHandle = measureTargetRaw ? findNodeHandle(measureTargetRaw) : null;
+
+      if (!targetNodeHandle) {
+        if (__DEV__) {
+          console.log('[EditorCore] attemptEnsureBlockVisible retry (missing node handle)', {
+            blockId,
+            attempt,
+            hasContainer: !!blockEntry.container,
+            hasFocusable: !!blockEntry.focusable
+          });
+        }
+        if (attempt < MAX_SCROLL_ATTEMPTS - 1) {
+          retryTimeoutRef.current = setTimeout(() => {
+            retryTimeoutRef.current = null;
+            ensure(blockId, attempt + 1, options);
+          }, SCROLL_RETRY_DELAY);
+        }
+        return;
+      }
+
+      if (options.focus && focusTarget && typeof focusTarget.focus === 'function') {
+        focusTimeoutRef.current = setTimeout(() => {
+          focusTimeoutRef.current = null;
+          if (pendingScrollBlockIdRef.current !== blockId) {
+            return;
+          }
+          if (__DEV__) {
+            console.log('[EditorCore] focusing target before measure', { blockId });
+          }
+          focusTarget.focus();
+        }, 0);
+      }
+
+      interactionHandleRef.current = InteractionManager.runAfterInteractions(() => {
+        interactionHandleRef.current = null;
+
+        if (pendingScrollBlockIdRef.current !== blockId) {
+          return;
+        }
+
+        UIManager.measureLayout(
+          targetNodeHandle,
+          contentNodeHandle,
+          (error) => {
+            if (attempt >= MAX_SCROLL_ATTEMPTS - 1) {
+              console.warn('Failed to measure block position:', error);
+            }
+            if (attempt < MAX_SCROLL_ATTEMPTS - 1) {
+              retryTimeoutRef.current = setTimeout(() => {
+                retryTimeoutRef.current = null;
+                ensure(blockId, attempt + 1, options);
+              }, SCROLL_RETRY_DELAY);
+            }
+          },
+          (_x: number, y: number) => {
+            if (pendingScrollBlockIdRef.current !== blockId) {
+              return;
+            }
+
+            const targetY = Math.max(0, y - focusOffsetTop);
+
+            scrollView.scrollTo({
+              y: targetY,
+              animated: options.animated
+            });
+
+            if (options.focus && focusTarget && typeof focusTarget.focus === 'function') {
+              if (__DEV__) {
+                console.log('[EditorCore] focusing target after scroll', {
+                  blockId,
+                  y,
+                  targetY,
+                  attempt
+                });
+              }
+              focusTarget.focus();
+            }
+
+            if (__DEV__) {
+              console.log('[EditorCore] scroll success', {
+                blockId,
+                y,
+                targetY,
+                attempt,
+                focusOffsetTop
+              });
+            }
+            pendingScrollBlockIdRef.current = null;
+          }
+        );
+      });
+    }, [focusOffsetTop]);
+
+    const scrollToBlock = useCallback((blockId: string, options?: ScrollTargetOptions) => {
+      if (!blockId) {
+        return;
+      }
+
+      const normalizedOptions = normalizeScrollOptions(options);
+
+      clearPendingScrollOperations();
+      pendingScrollBlockIdRef.current = blockId;
+      pendingScrollOptionsRef.current = normalizedOptions;
+
+      if (__DEV__) {
+        console.log('[EditorCore] scrollToBlock invoked', {
+          blockId,
+          options: normalizedOptions
+        });
+      }
+      attemptEnsureBlockVisible(blockId, 0, normalizedOptions);
+    }, [attemptEnsureBlockVisible, clearPendingScrollOperations]);
 
     // Expose API through ref
     useImperativeHandle(ref, () => ({
@@ -652,11 +685,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       focus: () => {
         // Focus the currently focused block, or focus the last block
         if (focusedBlockId) {
-          requestBlockFocus(focusedBlockId);
+          scrollToBlock(focusedBlockId, { focus: true });
         } else if (blocks.length > 0) {
           const lastBlockId = blocks[blocks.length - 1].id;
           focusBlock(lastBlockId);
-          requestBlockFocus(lastBlockId);
+          scrollToBlock(lastBlockId, { focus: true });
         }
       },
       insertBlock: (type: EditorBlockType, index?: number) => {
@@ -664,6 +697,9 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         if (!newBlockId) {
           return;
         }
+
+        pendingFocusBlockIdRef.current = newBlockId;
+        pendingScrollBlockIdRef.current = newBlockId;
 
         if (__DEV__) {
           console.log('[EditorCore] insertBlock', {
@@ -676,8 +712,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 
         handleBlockSelect(newBlockId);
         handleBlockEdit(newBlockId);
-        // Set pending focus - useEffect will apply when block is rendered
-        pendingFocusBlockId.current = newBlockId;
+        scrollToBlock(newBlockId, { focus: true });
         return newBlockId;
       },
       moveBlockUp: (id: string) => {
@@ -737,9 +772,9 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       // Focus operations
       // focus is defined above in base methods
       blur: blurEditor,
-
-      // Scroll and focus operations (NEW API)
-      requestBlockFocus,
+      
+      // Scroll operations
+      scrollToBlock,
       
       // History operations
       undo: () => undo(),
@@ -793,8 +828,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       focusedBlockId,
       state,
       pluginRegistry,
+      // markdownPlugins,
+      // focusEditor,
       blurEditor,
-      requestBlockFocus,
+      scrollToBlock,
       handleBlockSelect,
       handleBlockEdit,
       errors,
@@ -894,14 +931,24 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               onBlockMove={handleBlockMove}
               dragHandleProps={getDragHandleProps(block.id)}
               blockProps={getBlockProps(block.id, index)}
-              focusManager={focusManager}
-              onBlockHeightChange={handleBlockHeightChange}
               onBlockRefReady={(ref) => {
-                // Legacy ref tracking for drag-drop compatibility
                 if (ref) {
                   blockRefsMap.current.set(block.id, ref);
+                  if (__DEV__ && (pendingFocusBlockIdRef.current === block.id || pendingScrollBlockIdRef.current === block.id)) {
+                    console.log('[EditorCore] block ref ready', {
+                      blockId: block.id,
+                      hasContainer: !!ref?.container,
+                      hasFocusable: !!ref?.focusable
+                    });
+                  }
+                  if (pendingScrollBlockIdRef.current === block.id) {
+                    attemptEnsureBlockVisible(block.id, 0, pendingScrollOptionsRef.current);
+                  }
                 } else {
                   blockRefsMap.current.delete(block.id);
+                  if (__DEV__ && (pendingFocusBlockIdRef.current === block.id || pendingScrollBlockIdRef.current === block.id)) {
+                    console.log('[EditorCore] block ref cleared', { blockId: block.id });
+                  }
                 }
               }}
             />
@@ -916,52 +963,155 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       );
     };
 
-    /**
-     * NEW: Render item for FlatList
-     * Adapter between FlatList's renderItem and our renderBlock function
-     */
-    const renderItem = useCallback(({ item, index }: ListRenderItemInfo<EditorBlock>) => {
-      return renderBlock(item, index);
-    }, [renderBlock]);
-
-    /**
-     * NEW: Render footer (empty space for creating new blocks)
-     */
-    const renderFooter = useCallback(() => {
-      return (
-        <TouchableOpacity
-          style={styles.emptySpace}
-          onPress={handleEmptySpacePress}
-          activeOpacity={1}
-        >
-          <Text style={styles.emptySpaceHint}>Tap here to add a new block...</Text>
-        </TouchableOpacity>
-      );
-    }, [handleEmptySpacePress]);
-
-    // ========================================
-    // NEW: Effect to apply pending focus when block is rendered
-    // ========================================
+    // Effect to focus newly created blocks
     useEffect(() => {
-      const pendingId = pendingFocusBlockId.current;
-      if (!pendingId) return;
-
-      // Check if the block now exists in blocks array
-      const blockExists = blocks.some(b => b.id === pendingId);
-      if (blockExists) {
-        if (__DEV__) {
-          console.log('[EditorCore] Pending block now exists, applying focus', { blockId: pendingId });
-        }
-        pendingFocusBlockId.current = null;
-        requestBlockFocus(pendingId);
+      if (!focusedBlockId) {
+        pendingScrollBlockIdRef.current = null;
+        clearPendingScrollOperations();
+        return;
       }
-    }, [blocks, requestBlockFocus]);
 
-    // ========================================
-    // OLD useEffects REMOVED
-    // All scroll/focus coordination now handled by requestBlockFocus + FocusManager
-    // No need for manual useEffects watching focusedBlockId, keyboardHeight, etc.
-    // ========================================
+      if (
+        pendingFocusBlockIdRef.current &&
+        pendingFocusBlockIdRef.current !== focusedBlockId
+      ) {
+        if (__DEV__) {
+          console.log('[EditorCore] focus effect skip (pending mismatch)', {
+            focusedBlockId,
+            pending: pendingFocusBlockIdRef.current
+          });
+        }
+        return;
+      }
+
+      const targetBlock = blocks.find(b => b.id === focusedBlockId);
+      if (!targetBlock) {
+        if (__DEV__) {
+          console.log('[EditorCore] focus effect waiting for block', {
+            focusedBlockId
+          });
+        }
+        pendingFocusBlockIdRef.current = focusedBlockId;
+        pendingScrollBlockIdRef.current = focusedBlockId;
+        return;
+      }
+
+      if (targetBlock.id !== focusedBlockId) {
+        if (__DEV__) {
+          console.log('[EditorCore] focus effect mismatch after lookup', {
+            focusedBlockId
+          });
+        }
+        return;
+      }
+
+      if (__DEV__) {
+        console.log('[EditorCore] focus effect triggered scroll', { focusedBlockId });
+      }
+      scrollToBlock(focusedBlockId, { focus: true });
+    }, [focusedBlockId, blocks, scrollToBlock, clearPendingScrollOperations]);
+
+    // Effect to auto-focus last block when created via empty space press
+    useEffect(() => {
+      if (shouldFocusLastBlock.current && blocks.length > 0) {
+        const lastBlock = blocks[blocks.length - 1];
+        shouldFocusLastBlock.current = false;
+        // Focus the last block
+        focusBlock(lastBlock.id);
+        selectBlock(lastBlock.id);
+      }
+    }, [blocks, focusBlock, selectBlock]);
+
+    useEffect(() => {
+      const pendingBlockId = pendingFocusBlockIdRef.current;
+      if (!pendingBlockId) {
+        return;
+      }
+
+      const pendingBlock = blocks.find(b => b.id === pendingBlockId);
+      if (!pendingBlock) {
+        if (__DEV__) {
+          console.log('[EditorCore] pending focus waiting for block', { pendingBlockId });
+        }
+        return;
+      }
+
+      if (__DEV__) {
+        console.log('[EditorCore] pending focus effect', {
+          blockId: pendingBlockId,
+          index: blocks.findIndex(b => b.id === pendingBlockId),
+          pendingScroll: pendingScrollBlockIdRef.current
+        });
+      }
+      pendingFocusBlockIdRef.current = null;
+      selectBlock(pendingBlockId);
+      onSelectionChange?.(pendingBlockId);
+      focusBlock(pendingBlockId);
+      onEditingChange?.(true);
+      scrollToBlock(pendingBlockId, { focus: true });
+      if (pendingScrollBlockIdRef.current === pendingBlockId) {
+        pendingScrollBlockIdRef.current = null;
+      }
+    }, [blocks, focusBlock, selectBlock, scrollToBlock, onSelectionChange, onEditingChange]);
+
+
+    // Re-run scroll when keyboard height changes (e.g., keyboard toggles)
+    useEffect(() => {
+      if (!focusedBlockId) {
+        return;
+      }
+      if (
+        pendingFocusBlockIdRef.current &&
+        pendingFocusBlockIdRef.current !== focusedBlockId
+      ) {
+        if (__DEV__) {
+          console.log('[EditorCore] keyboard effect skip (pending mismatch)', {
+            focusedBlockId,
+            pending: pendingFocusBlockIdRef.current
+          });
+        }
+        return;
+      }
+      if (__DEV__) {
+        console.log('[EditorCore] keyboard height effect', {
+          focusedBlockId,
+          keyboardHeight
+        });
+      }
+      scrollToBlock(focusedBlockId, { focus: true, animated: true });
+    }, [keyboardHeight, focusedBlockId, scrollToBlock]);
+
+    // Re-run scroll when bottom bar height is measured/changes
+    useEffect(() => {
+      if (!focusedBlockId) {
+        return;
+      }
+      if (
+        pendingFocusBlockIdRef.current &&
+        pendingFocusBlockIdRef.current !== focusedBlockId
+      ) {
+        if (__DEV__) {
+          console.log('[EditorCore] bottom bar effect skip (pending mismatch)', {
+            focusedBlockId,
+            pending: pendingFocusBlockIdRef.current
+          });
+        }
+        return;
+      }
+      if (__DEV__) {
+        console.log('[EditorCore] bottom bar height effect', {
+          focusedBlockId,
+          bottomBarHeight
+        });
+      }
+      scrollToBlock(focusedBlockId, { focus: true, animated: false });
+    }, [bottomBarHeight, focusedBlockId, scrollToBlock]);
+
+    useEffect(() => {
+      return () => {
+        clearPendingScrollOperations();
+      };
+    }, [clearPendingScrollOperations]);
 
     return (
       <View 
@@ -971,16 +1121,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         {...props}
       >
         {toolbarEnabled && renderToolbar()}
-
-        {/* NEW: FlatList for virtualized rendering */}
-        <FlatList
-          ref={flatListRef}
-          data={blocks}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          getItemLayout={getItemLayout}
-          onScrollToIndexFailed={handleScrollToIndexFailed}
+        
+        <ScrollView
+          ref={scrollViewRef}
           style={styles.content}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.contentContainer,
             {
@@ -988,13 +1133,20 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               paddingBottom: contentPaddingBottom
             }
           ]}
-          showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true} // Performance optimization
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={50}
-          windowSize={21}
-          ListFooterComponent={renderFooter}
-        />
+        >
+          <View style={styles.blocksContainer} ref={scrollContentRef}>
+            {blocks.map(renderBlock)}
+          </View>
+          
+          {/* Clickable empty space to create new block */}
+          <TouchableOpacity
+            style={styles.emptySpace}
+            onPress={handleEmptySpacePress}
+            activeOpacity={1}
+          >
+            <Text style={styles.emptySpaceHint}>Tap here to add a new block...</Text>
+          </TouchableOpacity>
+        </ScrollView>
         
         {/* Drag overlay */}
         {dragState.isDragging && dragState.draggedBlockId && (
