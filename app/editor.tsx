@@ -358,8 +358,10 @@ export default function EditorScreen() {
 
     if (hasActualChanges) {
       markAsChanged();
+    } else if (hasUnsavedChanges) {
+      clearUnsavedChanges();
     }
-  }, [markAsChanged]);
+  }, [markAsChanged, clearUnsavedChanges, hasUnsavedChanges]);
 
   // Save note handler
   const handleSaveNote = useCallback(async () => {

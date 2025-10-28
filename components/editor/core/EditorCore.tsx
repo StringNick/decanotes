@@ -934,13 +934,17 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
      */
     const renderFooter = useCallback(() => {
       return (
-        <TouchableOpacity
-          style={styles.emptySpace}
-          onPress={handleEmptySpacePress}
-          activeOpacity={1}
-        >
-          <Text style={styles.emptySpaceHint}>Tap here to add a new block...</Text>
-        </TouchableOpacity>
+        <View style={styles.footerContainer}>
+          <TouchableOpacity
+            style={styles.addBlockButton}
+            onPress={handleEmptySpacePress}
+            accessibilityRole="button"
+            accessibilityLabel="Add a new block"
+          >
+            <Ionicons name="add-circle-outline" size={20} color="#667085" />
+            <Text style={styles.addBlockText}>Add block</Text>
+          </TouchableOpacity>
+        </View>
       );
     }, [handleEmptySpacePress]);
 
@@ -1157,16 +1161,31 @@ const styles = StyleSheet.create({
   blocksContainer: {
     flex: 1
   },
-  emptySpace: {
-    minHeight: 200,
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+  footerContainer: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  emptySpaceHint: {
+  addBlockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#101828',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2
+  },
+  addBlockText: {
     fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic'
+    color: '#344054',
+    fontWeight: '500',
+    marginLeft: 8
   }
 });
 
