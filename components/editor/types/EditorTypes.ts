@@ -214,38 +214,39 @@ export type EditorAction =
 export interface EditorContextInterface {
   state: EditorState;
   dispatch: (action: EditorAction) => void;
-  
+  pluginRegistry: any; // PluginRegistry instance
+
   // Block operations
-  createBlock: (type: EditorBlockType | string, content?: string, index?: number) => string;
+  createBlock: (type: EditorBlockType | string, content?: string, index?: number, meta?: Record<string, any>) => string;
   updateBlock: (id: string, changes: Partial<ExtendedBlock>) => void;
   deleteBlock: (id: string) => void;
   moveBlock: (id: string, newIndex: number) => void;
   duplicateBlock: (id: string) => void;
-  
+
   // Selection operations
   selectBlock: (id: string) => void;
   selectBlocks: (ids: string[]) => void;
   clearSelection: () => void;
-  
+
   // Focus operations
   focusBlock: (id: string) => void;
   focusNext: () => void;
   focusPrevious: () => void;
-  
+
   // Mode operations
   setMode: (mode: EditorMode) => void;
   toggleMode: () => void;
-  
+
   // History operations
   undo: () => void;
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
-  
+
   // Plugin operations
   getPlugin: (id: string) => BlockPlugin | MarkdownPlugin | null;
   executePluginAction: (pluginId: string, actionId: string, data?: any) => void;
-  
+
   // Utility operations
   getMarkdown: () => string;
   setMarkdown: (markdown: string) => void;

@@ -187,6 +187,29 @@ class MarkdownRegistry {
       };
     }
 
+    // Callout (GitHub-style alerts)
+    const calloutMatch = line.match(/^>\s+\[!(\w+)\]\s+(.*)$/);
+    if (calloutMatch) {
+      const calloutType = calloutMatch[1].toLowerCase();
+      const content = calloutMatch[2];
+      const emojiMap: Record<string, string> = {
+        note: '📝',
+        tip: '💡',
+        info: 'ℹ️',
+        warning: '⚠️',
+        danger: '🚨'
+      };
+      return {
+        id: this.generateId(),
+        type: 'callout',
+        content: content,
+        meta: {
+          calloutType,
+          emoji: emojiMap[calloutType] || '💡'
+        }
+      };
+    }
+
     // Quotes
     if (line.startsWith('> ')) {
       return {
@@ -196,7 +219,24 @@ class MarkdownRegistry {
       };
     }
 
-    // Lists
+    // Checklist (- [ ] or - [x])
+    const checklistMatch = line.match(/^(\s*)-\s+\[([ x])\]\s+(.+)$/);
+    if (checklistMatch) {
+      const indentation = checklistMatch[1];
+      const checkState = checklistMatch[2];
+      const content = checklistMatch[3];
+      const level = Math.floor(indentation.length / 2);
+      const checked = checkState === 'x';
+
+      return {
+        id: this.generateId(),
+        type: 'checklist',
+        content: content,
+        meta: { checked, level }
+      };
+    }
+
+    // Lists (must come after checklist)
     const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
     if (listMatch) {
       const isOrdered = /\d+\./.test(listMatch[2]);
@@ -207,6 +247,35 @@ class MarkdownRegistry {
         meta: {
           ordered: isOrdered,
           depth: Math.floor(listMatch[1].length / 2)
+        }
+      };
+    }
+
+    // Image (![alt](url) or ![alt](url "caption"))
+    const imageMatch = line.match(/^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]*)")?\)$/);
+    if (imageMatch) {
+      return {
+        id: this.generateId(),
+        type: 'image',
+        content: imageMatch[2],
+        meta: {
+          alt: imageMatch[1] || 'Image',
+          url: imageMatch[2],
+          caption: imageMatch[3] || ''
+        }
+      };
+    }
+
+    // Video (!video[caption](url))
+    const videoMatch = line.match(/^!video\[([^\]]*)\]\(([^)]+)\)$/);
+    if (videoMatch) {
+      return {
+        id: this.generateId(),
+        type: 'video',
+        content: videoMatch[2],
+        meta: {
+          url: videoMatch[2],
+          caption: videoMatch[1] || ''
         }
       };
     }
@@ -254,9 +323,40 @@ class MarkdownRegistry {
         const indent = '  '.repeat(block.meta?.depth || 0);
         const marker = block.meta?.ordered ? '1.' : '-';
         return `${indent}${marker} ${block.content}`;
-      
+
+      case 'checklist': {
+        const checkIndent = '  '.repeat(block.meta?.level || 0);
+        const checked = block.meta?.checked ? 'x' : ' ';
+        return `${checkIndent}- [${checked}] ${block.content}`;
+      }
+
       case 'divider':
         return '---';
+
+      case 'image': {
+        const alt = block.meta?.alt || 'Image';
+        const url = block.meta?.url || block.content;
+        const caption = block.meta?.caption || '';
+        if (caption) {
+          return `![${alt}](${url} "${caption}")`;
+        }
+        return `![${alt}](${url})`;
+      }
+
+      case 'video': {
+        const url = block.meta?.url || block.content;
+        const caption = block.meta?.caption || '';
+        if (caption) {
+          return `!video[${caption}](${url})`;
+        }
+        return `!video[](${url})`;
+      }
+
+      case 'callout': {
+        const calloutType = block.meta?.calloutType || 'info';
+        const emoji = block.meta?.emoji || '💡';
+        return `> [!${calloutType}] ${emoji}\n> ${block.content}`;
+      }
 
       case 'table': {
         const headers = block.meta?.headers || [];
@@ -526,6 +626,29 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
     };
   }
 
+  // Callout (GitHub-style alerts)
+  const calloutMatch = line.match(/^>\s+\[!(\w+)\]\s+(.*)$/);
+  if (calloutMatch) {
+    const calloutType = calloutMatch[1].toLowerCase();
+    const content = calloutMatch[2];
+    const emojiMap: Record<string, string> = {
+      note: '📝',
+      tip: '💡',
+      info: 'ℹ️',
+      warning: '⚠️',
+      danger: '🚨'
+    };
+    return {
+      id: generateId(),
+      type: 'callout',
+      content: content,
+      meta: {
+        calloutType,
+        emoji: emojiMap[calloutType] || '💡'
+      }
+    };
+  }
+
   // Quotes
   if (line.startsWith('> ')) {
     return {
@@ -535,7 +658,24 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
     };
   }
 
-  // Lists
+  // Checklist (- [ ] or - [x])
+  const checklistMatch = line.match(/^(\s*)-\s+\[([ x])\]\s+(.+)$/);
+  if (checklistMatch) {
+    const indentation = checklistMatch[1];
+    const checkState = checklistMatch[2];
+    const content = checklistMatch[3];
+    const level = Math.floor(indentation.length / 2);
+    const checked = checkState === 'x';
+
+    return {
+      id: generateId(),
+      type: 'checklist',
+      content: content,
+      meta: { checked, level }
+    };
+  }
+
+  // Lists (must come after checklist)
   const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
   if (listMatch) {
     const isOrdered = /\d+\./.test(listMatch[2]);
@@ -546,6 +686,35 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       meta: {
         ordered: isOrdered,
         depth: Math.floor(listMatch[1].length / 2)
+      }
+    };
+  }
+
+  // Image (![alt](url) or ![alt](url "caption"))
+  const imageMatch = line.match(/^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]*)")?\)$/);
+  if (imageMatch) {
+    return {
+      id: generateId(),
+      type: 'image',
+      content: imageMatch[2],
+      meta: {
+        alt: imageMatch[1] || 'Image',
+        url: imageMatch[2],
+        caption: imageMatch[3] || ''
+      }
+    };
+  }
+
+  // Video (!video[caption](url))
+  const videoMatch = line.match(/^!video\[([^\]]*)\]\(([^)]+)\)$/);
+  if (videoMatch) {
+    return {
+      id: generateId(),
+      type: 'video',
+      content: videoMatch[2],
+      meta: {
+        url: videoMatch[2],
+        caption: videoMatch[1] || ''
       }
     };
   }

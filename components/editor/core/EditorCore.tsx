@@ -188,7 +188,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       blockPlugins,
       config: editorConfig,
       actions: {
-        addBlock: (block: EditorBlock, index?: number) => createBlock(block.type, block.content, index),
+        addBlock: (block: EditorBlock, index?: number) => createBlock(block.type, block.content, index, block.meta),
         updateBlock,
         deleteBlock,
         selectBlock: (blockId: string | null) => selectBlock(blockId || ''),
@@ -747,7 +747,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       getCurrentMode: () => mode,
       
       // Block operations
-      addBlock: (block: EditorBlock, index?: number) => createBlock(block.type, block.content, index),
+      addBlock: (block: EditorBlock, index?: number) => createBlock(block.type, block.content, index, block.meta),
       updateBlock: updateBlock,
       deleteBlock: deleteBlock,
       moveBlock: moveBlock,
@@ -771,7 +771,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       getBlockPlugins: () => pluginRegistry.getAllBlockPlugins(),
       getMarkdownPlugins: () => pluginRegistry.getMarkdownPlugins(),
       
-      // Content operations
+      // Content operations (use context methods which now use MarkdownRegistry)
       exportToMarkdown: () => getMarkdown(),
       importFromMarkdown: (markdown: string) => setMarkdown(markdown),
       exportToPlainText: () => blocks.map(b => b.content).join('\n'),

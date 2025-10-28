@@ -1,13 +1,13 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { EditorBlock } from '../../types/editor';
 import { useEditor } from './core/EditorContext';
 import { EditorCore } from './core/EditorCore';
 import EditorProvider from './core/EditorProvider';
 import { useEditorKeyboard } from './EditorKeyboard';
-import { PluginRegistry } from './plugins/PluginRegistry';
 import { ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef } from './types/EditorTypes';
 import { parseMarkdownToBlocks, serializeBlocksToMarkdown } from './utils/MarkdownRegistry';
+import { EditorThemeProvider } from './contexts/EditorThemeContext';
 
 // Built-in plugins
 import {
@@ -53,11 +53,8 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     } = props;
 
     const context = useEditor();
-    const { state } = context;
-    
-    // Create plugin registry
-    const pluginRegistry = new PluginRegistry();
-    
+    const { state, pluginRegistry } = context;
+
     // Use the plugins passed from the parent component
     const allPlugins = plugins || [];
   
@@ -88,13 +85,14 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     },
     exportContent: (format: string) => {
       if (format === 'markdown') {
-        return context.getMarkdown();
+        return serializeBlocksToMarkdown(state.blocks);
       }
       return JSON.stringify(state.blocks);
     },
     importContent: (content: string, format: string) => {
       if (format === 'markdown') {
-        context.setMarkdown(content);
+        const blocks = parseMarkdownToBlocks(content, allPlugins);
+        context.dispatch({ type: 'SET_BLOCKS', blocks });
       } else {
         try {
           const blocks = JSON.parse(content);
@@ -264,10 +262,23 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 
       // Utility methods
       exportContent: (format: 'markdown' | 'json' = 'markdown') => {
-        return actions.exportContent(format);
+        if (format === 'markdown') {
+          return serializeBlocksToMarkdown(state.blocks);
+        }
+        return JSON.stringify(state.blocks);
       },
       importContent: (content: string, format: 'markdown' | 'json' = 'markdown') => {
-        actions.importContent(content, format);
+        if (format === 'markdown') {
+          const blocks = parseMarkdownToBlocks(content, allPlugins);
+          actions.setBlocks(blocks);
+        } else {
+          try {
+            const blocks = JSON.parse(content);
+            actions.setBlocks(blocks);
+          } catch (e) {
+            console.error('Failed to import content:', e);
+          }
+        }
       },
       isEmpty: () => {
         return state.blocks.length === 0 || 
@@ -355,27 +366,29 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // console.log('🔧 Block plugins being passed to EditorCore:', blockPlugins.map(p => ({ id: p.id, blockType: p.blockType })));
 
     return (
-      <View 
+      <View
         style={[styles.container, style]}
         {...otherProps}
       >
-        <EditorCore
-          ref={editorRef}
-          initialBlocks={state.blocks}
-          blockPlugins={blockPlugins}
-          markdownPlugins={markdownPlugins}
-          config={config}
-          theme={theme}
-          readOnly={readOnly}
-          autoFocus={autoFocus}
-          placeholder={placeholder}
-          onKeyDown={handleKeyDown}
-          keyboardHeight={keyboardHeight}
-          keyboardDockVisible={keyboardDockVisible}
-          keyboardDockBlockSection={keyboardDockBlockSection}
-          keyboardDockFormattingSection={keyboardDockFormattingSection}
-          keyboardDockActionSection={keyboardDockActionSection}
-        />
+        <EditorThemeProvider theme={theme}>
+          <EditorCore
+            ref={editorRef}
+            initialBlocks={state.blocks}
+            blockPlugins={blockPlugins}
+            markdownPlugins={markdownPlugins}
+            config={config}
+            theme={theme}
+            readOnly={readOnly}
+            autoFocus={autoFocus}
+            placeholder={placeholder}
+            onKeyDown={handleKeyDown}
+            keyboardHeight={keyboardHeight}
+            keyboardDockVisible={keyboardDockVisible}
+            keyboardDockBlockSection={keyboardDockBlockSection}
+            keyboardDockFormattingSection={keyboardDockFormattingSection}
+            keyboardDockActionSection={keyboardDockActionSection}
+          />
+        </EditorThemeProvider>
       </View>
     );
   }
@@ -395,29 +408,8 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       ...otherProps
     } = props;
 
-    // Create plugin registry and register built-in plugins
-    const pluginRegistry = new PluginRegistry();
-    
-    // Register built-in block plugins
-    pluginRegistry.register(new ParagraphPlugin());
-    pluginRegistry.register(new HeadingPlugin());
-    pluginRegistry.register(new CodePlugin()); // Class-based plugin
-    pluginRegistry.register(new ImagePlugin()); // Class-based plugin
-    pluginRegistry.register(new ListPlugin()); // Class-based plugin
-    pluginRegistry.register(new QuotePlugin()); // Class-based plugin
-    pluginRegistry.register(new DividerPlugin()); // Class-based plugin
-    pluginRegistry.register(new VideoPlugin()); // Class-based plugin
-    pluginRegistry.register(new CalloutPlugin()); // Class-based plugin
-    pluginRegistry.register(new ChecklistPlugin()); // Class-based plugin
-    pluginRegistry.register(new TablePlugin()); // Class-based plugin
-
-    // Register custom plugins
-    plugins.forEach(plugin => {
-      pluginRegistry.register(plugin);
-    });
-
-    // Combine built-in and custom plugins
-    const allPlugins = [
+    // Create singleton built-in plugins using useMemo
+    const builtInPlugins = useMemo(() => [
       new ParagraphPlugin(),
       new HeadingPlugin(),
       new CodePlugin(),
@@ -428,19 +420,25 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       new VideoPlugin(),
       new CalloutPlugin(),
       new ChecklistPlugin(),
-      new TablePlugin(),
-      ...plugins
-    ];
-    
-    // console.log('🔧 All plugins created:', allPlugins.map(p => ({ id: p.id, type: p.type, blockType: p.type === 'block' ? (p as any).blockType : 'N/A' })));
+      new TablePlugin()
+    ], []);
 
-    // Convert initialMarkdown to initialBlocks if provided
-    const processedInitialBlocks = initialMarkdown 
-      ? parseMarkdownToBlocks(initialMarkdown, allPlugins)
-      : initialBlocks;
+    // Combine built-in and custom plugins
+    const allPlugins = useMemo(() => [
+      ...builtInPlugins,
+      ...plugins
+    ], [builtInPlugins, plugins]);
+
+    // Convert initialMarkdown to initialBlocks if provided (only once)
+    const processedInitialBlocks = useMemo(() => {
+      if (initialMarkdown) {
+        return parseMarkdownToBlocks(initialMarkdown, allPlugins);
+      }
+      return initialBlocks;
+    }, [initialMarkdown, initialBlocks, allPlugins]);
 
     return (
-      <EditorProvider 
+      <EditorProvider
         initialBlocks={processedInitialBlocks}
         plugins={allPlugins}
         onError={props.onError}

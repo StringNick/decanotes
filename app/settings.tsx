@@ -77,7 +77,7 @@ function SettingItem({
 }
 
 export default function SettingsScreen() {
-  const { effectiveTheme, setTheme } = useTheme();
+  const { theme, effectiveTheme, setTheme } = useTheme();
   const { authState, signOut, sync } = useStorage();
   const isDark = effectiveTheme === 'dark';
   const colors = getThemeColors(isDark);
@@ -182,11 +182,11 @@ export default function SettingsScreen() {
             <SettingItem
               icon="moon"
               title="Dark Mode"
-              subtitle="Toggle dark theme"
+              subtitle={theme === 'system' ? 'Following system theme' : 'Toggle dark theme'}
               colors={colors}
               rightElement={
                 <Switch
-                  value={isDark}
+                  value={theme === 'dark' || (theme === 'system' && isDark)}
                   onValueChange={handleThemeChange}
                   trackColor={{
                     false: isDark ? Colors.neutral.gray700 : Colors.neutral.gray300,

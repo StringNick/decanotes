@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/Colors';
 import { useStorage } from '@/contexts/StorageContext';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { Note } from '@/types/storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -243,7 +243,8 @@ function convertTableMarkdownToBlocks(blocks: EditorBlock[]): EditorBlock[] {
 export default function EditorScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ noteId?: string }>();
-  const colorScheme = useColorScheme();
+  const { effectiveTheme } = useTheme();
+  const colorScheme = effectiveTheme; // Use app theme setting instead of system theme
   const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges } = useStorage();
 
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);

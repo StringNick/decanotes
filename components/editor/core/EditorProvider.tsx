@@ -3,6 +3,7 @@ import { EditorBlockType, EditorMode } from '../../../types/editor';
 import { PluginRegistry } from '../plugins/PluginRegistry';
 import { EditorAction, EditorContextInterface, EditorError, EditorState, ExtendedBlock } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
+import { parseMarkdownToBlocks, serializeBlocksToMarkdown } from '../utils/MarkdownRegistry';
 
 // Create the editor context
 const EditorContext = createContext<EditorContextInterface | null>(null);
@@ -247,23 +248,31 @@ export default function EditorProvider({
   });
   
   const [pluginRegistry] = React.useState(() => new PluginRegistry());
+  const [registeredPluginIds] = React.useState(() => new Set<string>());
 
-  // Register plugins on mount
+  // Register plugins on mount - idempotent registration
   useEffect(() => {
     plugins.forEach(plugin => {
+      // Skip if already registered
+      if (registeredPluginIds.has(plugin.id)) {
+        return;
+      }
+
       try {
         pluginRegistry.register(plugin);
+        registeredPluginIds.add(plugin.id);
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         const editorError: EditorError = {
           type: 'plugin-error',
-          message: `Failed to register plugin: ${error}`,
+          message: `Failed to register plugin: ${errorMessage}`,
           source: plugin.id
         };
         dispatch({ type: 'ADD_ERROR', error: editorError });
         onError?.(editorError);
       }
     });
-  }, [plugins, pluginRegistry, onError]);
+  }, [plugins, pluginRegistry, registeredPluginIds, onError]);
 
   // Generate unique ID
   const generateId = useCallback(() => {
@@ -271,19 +280,20 @@ export default function EditorProvider({
   }, []);
 
   // Block operations
-  const createBlock = useCallback((type: EditorBlockType | string, content = '', index?: number) => {
+  const createBlock = useCallback((type: EditorBlockType | string, content = '', index?: number, meta?: Record<string, any>) => {
     const newBlock: ExtendedBlock = {
       id: generateId(),
       type: type as EditorBlockType,
       content,
-      meta: {}
+      meta: meta || {}
     };
     dispatch({ type: 'ADD_BLOCK', block: newBlock, index });
     if (__DEV__) {
       console.log('[EditorProvider] createBlock', {
         id: newBlock.id,
         type,
-        index
+        index,
+        meta
       });
     }
     return newBlock.id;
@@ -392,58 +402,16 @@ export default function EditorProvider({
     }
   }, [pluginRegistry]);
 
-  // Content operations
+  // Content operations using MarkdownRegistry
   const getMarkdown = useCallback(() => {
-    // Convert blocks to markdown
-    return state.blocks.map(block => {
-      switch (block.type) {
-        case 'heading':
-          const level = block.meta?.level || 1;
-          return `${'#'.repeat(level)} ${block.content}`;
-        case 'code':
-          const language = block.meta?.language || '';
-          return `\`\`\`${language}\n${block.content}\n\`\`\``;
-        case 'quote':
-          return `> ${block.content}`;
-        default:
-          return block.content;
-      }
-    }).join('\n\n');
+    return serializeBlocksToMarkdown(state.blocks);
   }, [state.blocks]);
 
   const setMarkdown = useCallback((markdown: string) => {
-    // Parse markdown to blocks (simplified)
-    const lines = markdown.split('\n');
-    const newBlocks: ExtendedBlock[] = [];
-    
-    lines.forEach(line => {
-      if (line.startsWith('#')) {
-        const level = line.match(/^#+/)?.[0].length || 1;
-        const content = line.replace(/^#+\s*/, '');
-        newBlocks.push({
-          id: generateId(),
-          type: 'heading',
-          content,
-          meta: { level }
-        });
-      } else if (line.startsWith('>')) {
-        const content = line.replace(/^>\s*/, '');
-        newBlocks.push({
-          id: generateId(),
-          type: 'quote',
-          content
-        });
-      } else if (line.trim()) {
-        newBlocks.push({
-          id: generateId(),
-          type: 'paragraph',
-          content: line
-        });
-      }
-    });
-    
+    const blockPlugins = pluginRegistry.getAllBlockPlugins();
+    const newBlocks = parseMarkdownToBlocks(markdown, blockPlugins);
     dispatch({ type: 'SET_BLOCKS', blocks: newBlocks });
-  }, [generateId]);
+  }, [pluginRegistry]);
 
   const validate = useCallback((): EditorError[] => {
     const errors: EditorError[] = [];
@@ -471,6 +439,7 @@ export default function EditorProvider({
   const contextValue: EditorContextInterface = {
     state,
     dispatch,
+    pluginRegistry,
     createBlock,
     updateBlock,
     deleteBlock,
