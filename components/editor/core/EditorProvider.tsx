@@ -13,6 +13,7 @@ const initialState: EditorState = {
   blocks: [],
   focusedBlockId: null,
   selectedBlocks: [],
+  highlightedBlockId: null, // NEW: For Notion-style highlight navigation
   mode: 'edit',
   isDirty: false,
   isLoading: false,
@@ -98,6 +99,18 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       return {
         ...state,
         selectedBlocks: action.blockIds,
+      };
+
+    case 'SET_HIGHLIGHT':
+      return {
+        ...state,
+        highlightedBlockId: action.blockId,
+      };
+
+    case 'CLEAR_HIGHLIGHT':
+      return {
+        ...state,
+        highlightedBlockId: null,
       };
 
     case 'SET_MODE':
@@ -374,6 +387,22 @@ export default function EditorProvider({ children, initialBlocks = [], plugins =
     }
   }, [state.focusedBlockId, state.blocks]);
 
+  // Highlight operations (NEW: Notion-style navigation)
+  const highlightBlock = useCallback((id: string, duration = 2000) => {
+    dispatch({ type: 'SET_HIGHLIGHT', blockId: id });
+
+    // Auto-clear highlight after duration
+    const timer = setTimeout(() => {
+      dispatch({ type: 'CLEAR_HIGHLIGHT' });
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const clearHighlight = useCallback(() => {
+    dispatch({ type: 'CLEAR_HIGHLIGHT' });
+  }, []);
+
   // Mode operations
   const setMode = useCallback((mode: EditorMode) => {
     dispatch({ type: 'SET_MODE', mode });
@@ -475,6 +504,8 @@ export default function EditorProvider({ children, initialBlocks = [], plugins =
     focusBlock,
     focusNext,
     focusPrevious,
+    highlightBlock,
+    clearHighlight,
     setMode,
     toggleMode,
     undo,

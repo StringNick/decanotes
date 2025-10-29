@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
 import { EditorBlock } from '../../../types/editor';
@@ -13,6 +13,7 @@ interface BlockRendererProps {
   index: number;
   isSelected: boolean;
   isEditing: boolean;
+  isHighlighted?: boolean; // NEW: For Notion-style highlight navigation
   blockPlugin: BlockPlugin;
   config: EditorConfig;
   onBlockChange: (blockId: string, updates: Partial<EditorBlock>) => void;
@@ -21,6 +22,7 @@ interface BlockRendererProps {
   onBlockDelete: (blockId: string) => void;
   onBlockDuplicate: (blockId: string) => void;
   onBlockMove: (blockId: string, direction: 'up' | 'down') => void;
+  onFootnotePress?: (footnoteId: string) => void;
   dragHandleProps?: any;
   blockProps?: any;
   onBlockRefReady?: (ref: any) => void;
@@ -36,6 +38,7 @@ export function BlockRenderer({
   index,
   isSelected,
   isEditing,
+  isHighlighted = false,
   blockPlugin,
   config,
   onBlockChange,
@@ -44,6 +47,7 @@ export function BlockRenderer({
   onBlockDelete,
   onBlockDuplicate,
   onBlockMove,
+  onFootnotePress,
   dragHandleProps,
   blockProps,
   onBlockRefReady,
@@ -57,6 +61,37 @@ export function BlockRenderer({
 
   // Track block height for getItemLayout optimization
   const [blockHeight, setBlockHeight] = useState(0);
+
+  // NEW: Notion-style highlight animation (yellow fade-out)
+  const highlightAnim = useRef(new Animated.Value(0)).current;
+
+  // Animate highlight when isHighlighted changes
+  useEffect(() => {
+    if (isHighlighted) {
+      // Fade in highlight
+      Animated.timing(highlightAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+      }).start(() => {
+        // After 2 seconds, fade out
+        setTimeout(() => {
+          Animated.timing(highlightAnim, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: false,
+          }).start();
+        }, 2000);
+      });
+    } else {
+      // Reset if highlight is cleared externally
+      Animated.timing(highlightAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [isHighlighted, highlightAnim]);
 
   // Effect to register block ref (legacy support)
   useEffect(() => {
@@ -134,6 +169,7 @@ export function BlockRenderer({
       isFocused: isEditing,
       onBlockChange: updates => onBlockChange(block.id, updates),
       onAction: () => {},
+      onFootnotePress,
       config,
       onFocus: () => {
         // Call both select and edit to synchronize the focus systems
@@ -142,14 +178,26 @@ export function BlockRenderer({
       },
       onBlur: () => {},
     }),
-    [block, isSelected, isEditing, config, onBlockChange, onBlockSelect, onBlockEdit]
+    [block, isSelected, isEditing, config, onBlockChange, onBlockSelect, onBlockEdit, onFootnotePress]
   );
 
   // Render the block component
   const BlockComponent = blockPlugin.component;
 
+  // Interpolate highlight background color (Notion-style yellow)
+  const highlightBackgroundColor = highlightAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255, 212, 0, 0)', 'rgba(255, 212, 0, 0.25)'], // Transparent to yellow (Notion color)
+  });
+
   return (
     <View ref={blockRef} style={[styles.blockContainer, blockProps?.style]} onLayout={handleLayout} {...blockProps}>
+      {/* Highlight overlay (Notion-style) */}
+      <Animated.View
+        style={[styles.highlightOverlay, { backgroundColor: highlightBackgroundColor }]}
+        pointerEvents="none"
+      />
+
       {/* Block Content */}
       <View style={styles.blockContent}>
         {React.createElement(BlockComponent as any, { ...blockComponentProps, ref: blockComponentRef })}
@@ -257,6 +305,17 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     blockContainer: {
       marginVertical: 2,
       backgroundColor: 'transparent',
+      position: 'relative',
+    },
+
+    highlightOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: -8,
+      right: -8,
+      bottom: 0,
+      borderRadius: 4,
+      zIndex: -1, // Behind content
     },
 
     blockContent: {

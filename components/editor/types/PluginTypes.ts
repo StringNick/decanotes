@@ -80,6 +80,7 @@ export interface BlockComponentProps {
   onFocus: () => void;
   onBlur: () => void;
   onKeyPress?: (event: any) => void;
+  onFootnotePress?: (footnoteId: string) => void;
   theme?: any;
   config?: any;
   readOnly?: boolean;

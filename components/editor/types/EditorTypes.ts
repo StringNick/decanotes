@@ -165,6 +165,7 @@ export interface EditorState {
   blocks: ExtendedBlock[];
   focusedBlockId: string | null;
   selectedBlocks: string[];
+  highlightedBlockId: string | null; // NEW: For Notion-style highlight navigation (separate from focus)
   mode: EditorMode;
   isDirty: boolean;
   isLoading: boolean;
@@ -187,6 +188,8 @@ export type EditorAction =
   | { type: 'MOVE_BLOCK'; id: string; newIndex: number }
   | { type: 'SET_FOCUS'; blockId: string | null }
   | { type: 'SET_SELECTION'; blockIds: string[] }
+  | { type: 'SET_HIGHLIGHT'; blockId: string | null } // NEW: Highlight block (Notion-style)
+  | { type: 'CLEAR_HIGHLIGHT' } // NEW: Clear highlight
   | { type: 'SET_MODE'; mode: EditorMode }
   | { type: 'SET_LOADING'; isLoading: boolean }
   | { type: 'ADD_ERROR'; error: EditorError }
@@ -232,6 +235,10 @@ export interface EditorContextInterface {
   focusBlock: (id: string) => void;
   focusNext: () => void;
   focusPrevious: () => void;
+
+  // Highlight operations (NEW: Notion-style navigation)
+  highlightBlock: (id: string, duration?: number) => void;
+  clearHighlight: () => void;
 
   // Mode operations
   setMode: (mode: EditorMode) => void;

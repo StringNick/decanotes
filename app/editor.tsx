@@ -44,10 +44,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
 // EditorBottomBar now rendered inside MarkdownEditor
+import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
 import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 
 // Demo markdown text (not used - we use initialBlocks from loaded notes instead)
 /* const initialMarkdown = `# Welcome to DecanNotes Editor
@@ -304,8 +304,30 @@ export default function EditorScreen() {
         try {
           const note = await loadNote(params.noteId);
           if (note) {
-            // Convert any paragraph blocks containing table markdown to table blocks
+            if (__DEV__) {
+              console.log(
+                '[EditorScreen] Raw note.content from storage:',
+                JSON.stringify(note.content.slice(0, 10), null, 2)
+              );
+            }
+
+            // Convert any paragraph blocks containing table markdown
             const processedBlocks = convertTableMarkdownToBlocks(note.content);
+
+            if (__DEV__) {
+              const footnoteBlocks = processedBlocks.filter(b => b.type === 'footnote');
+              console.log('[EditorScreen] Loaded blocks:', processedBlocks.length);
+              console.log(
+                '[EditorScreen] Footnote blocks:',
+                footnoteBlocks.length,
+                footnoteBlocks.map(b => b.meta?.footnoteId)
+              );
+              console.log(
+                '[EditorScreen] Block types:',
+                processedBlocks.map(b => b.type)
+              );
+            }
+
             setBlocks(processedBlocks);
             const title = note.title || 'Untitled';
             setNoteTitle(title);
@@ -404,6 +426,20 @@ export default function EditorScreen() {
 
     setIsSaving(true);
     try {
+      if (__DEV__) {
+        const footnoteBlocks = blocks.filter(b => b.type === 'footnote');
+        console.log('[handleSaveNote] Saving blocks count:', blocks.length);
+        console.log(
+          '[handleSaveNote] Footnote blocks:',
+          footnoteBlocks.length,
+          footnoteBlocks.map(b => b.meta?.footnoteId)
+        );
+        console.log(
+          '[handleSaveNote] Block types:',
+          blocks.map(b => b.type)
+        );
+      }
+
       // Generate note preview from blocks
       const preview = blocks
         .filter(b => b.type === 'paragraph' || b.type === 'heading')
@@ -518,6 +554,21 @@ export default function EditorScreen() {
         setTimeout(() => {
           if (editorRef.current) {
             const updatedBlocks = editorRef.current.getBlocks();
+
+            if (__DEV__) {
+              const footnoteBlocks = updatedBlocks.filter(b => b.type === 'footnote');
+              console.log('[handleApplyMarkdown] Updated blocks count:', updatedBlocks.length);
+              console.log(
+                '[handleApplyMarkdown] Footnote blocks:',
+                footnoteBlocks.length,
+                footnoteBlocks.map(b => b.meta?.footnoteId)
+              );
+              console.log(
+                '[handleApplyMarkdown] Block types:',
+                updatedBlocks.map(b => b.type)
+              );
+            }
+
             setBlocks(updatedBlocks);
           }
         }, 100);

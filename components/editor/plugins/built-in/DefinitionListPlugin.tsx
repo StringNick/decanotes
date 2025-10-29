@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Animated, StyleSheet, TextInput } from 'react-native';
+import { Animated, StyleSheet, TextInput, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -13,9 +13,12 @@ import { BlockPlugin } from '../BlockPlugin';
 type FocusableHandle = { focus: () => void };
 
 /**
- * Paragraph block component with minimalist design
+ * Definition list block component
+ * Renders definition lists like:
+ * Term
+ * : Definition
  */
-const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+const DefinitionListComponent = forwardRef<FocusableHandle, BlockComponentProps>(
   (
     { block, onUpdate, onBlockChange, onFocus, onBlur, onFootnotePress, isSelected, isFocused, isEditing, style },
     ref
@@ -26,18 +29,15 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
     const colors = Colors[colorScheme ?? 'light'];
     const animatedValue = useRef(new Animated.Value(0)).current;
 
-    // Explicitly determine if we should show editor or formatted view
     const shouldShowEditor = Boolean(isFocused || isEditing);
     const styles = getStyles(colorScheme ?? 'light');
 
-    // Expose the TextInput methods through ref
     useImperativeHandle(ref, () => ({
       focus: () => {
         inputRef.current?.focus();
       },
     }));
 
-    // Animate focus state changes
     useEffect(() => {
       Animated.timing(animatedValue, {
         toValue: shouldShowEditor ? 1 : 0,
@@ -46,11 +46,9 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
       }).start();
     }, [shouldShowEditor, animatedValue]);
 
-    // Get animated colors
     const focusColors = getFocusColors(colorScheme ?? 'light', shouldShowEditor || false);
 
-    // Get the plugin instance and controller
-    const pluginInstance = new ParagraphPlugin();
+    const pluginInstance = new DefinitionListPlugin();
     const controller = pluginInstance.controller;
 
     const handleSelectionChange = (event: any) => {
@@ -71,7 +69,6 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
       }
     };
 
-    // Animated colors
     const animatedBorderColor = animatedValue.interpolate({
       inputRange: [0, 1],
       outputRange: ['rgba(0, 0, 0, 0)', focusColors.borderColor],
@@ -81,6 +78,11 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
       inputRange: [0, 1],
       outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
     });
+
+    // Parse term and definition from content
+    // Format: "Term\n: Definition" or just content for term-only
+    const lines = block.content.split('\n');
+    const hasSeparator = lines.some(line => line.trim().startsWith(':'));
 
     return (
       <KeyboardHandler block={block} controller={controller} cursorPosition={cursorPosition}>
@@ -95,25 +97,27 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
               },
             ]}
           >
-            <FormattedTextInput
-              ref={inputRef}
-              value={block.content}
-              onChangeText={handleTextChange}
-              onFocus={onFocus}
-              onBlur={onBlur}
-              onSelectionChange={handleSelectionChange}
-              onKeyPress={onKeyPress}
-              onFootnotePress={onFootnotePress}
-              placeholder="Type something..."
-              placeholderTextColor={colors.textSecondary}
-              isSelected={isSelected}
-              isEditing={shouldShowEditor}
-              multiline
-              textAlignVertical="top"
-              scrollEnabled={false}
-              preventNewlines={preventNewlines}
-              style={styles.textInput}
-            />
+            <View style={styles.content}>
+              <FormattedTextInput
+                ref={inputRef}
+                value={block.content}
+                onChangeText={handleTextChange}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                onSelectionChange={handleSelectionChange}
+                onKeyPress={onKeyPress}
+                onFootnotePress={onFootnotePress}
+                placeholder="Term\n: Definition"
+                placeholderTextColor={colors.textSecondary}
+                isSelected={isSelected}
+                isEditing={shouldShowEditor}
+                multiline
+                textAlignVertical="top"
+                scrollEnabled={false}
+                preventNewlines={preventNewlines}
+                style={styles.textInput}
+              />
+            </View>
           </Animated.View>
         )}
       </KeyboardHandler>
@@ -121,30 +125,30 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
   }
 );
 
-ParagraphComponent.displayName = 'ParagraphComponent';
+DefinitionListComponent.displayName = 'DefinitionListComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
 
   return StyleSheet.create({
     container: {
-      // Standard container spacing - handles ALL padding/margin
       marginVertical: BLOCK_SPACING.marginVertical,
       paddingLeft: BLOCK_SPACING.paddingLeft,
       paddingRight: BLOCK_SPACING.paddingRight,
       paddingVertical: BLOCK_SPACING.paddingVertical,
-      // Always have border, color will be animated
       borderLeftWidth: BLOCK_SPACING.borderWidth,
-      borderLeftColor: 'rgba(0, 0, 0, 0)', // Will be overridden by animated value
-      backgroundColor: 'transparent', // Will be overridden by animated value
+      borderLeftColor: 'rgba(0, 0, 0, 0)',
+      backgroundColor: 'transparent',
+    },
+    content: {
+      width: '100%',
     },
     textInput: {
       width: '100%',
-      fontSize: 16,
+      fontSize: 15,
       color: colors.text,
-      lineHeight: 24,
+      lineHeight: 22,
       backgroundColor: 'transparent',
-      // NO padding - container handles all spacing
       paddingHorizontal: 0,
       paddingVertical: 0,
     },
@@ -152,16 +156,16 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
 };
 
 /**
- * Paragraph block plugin
+ * Definition list block plugin
  */
-export class ParagraphPlugin extends BlockPlugin {
+export class DefinitionListPlugin extends BlockPlugin {
   readonly type = 'block';
-  readonly id = 'paragraph';
-  readonly name = 'Paragraph';
+  readonly id = 'definition-list';
+  readonly name = 'Definition List';
   readonly version = '1.0.0';
-  readonly description = 'Basic paragraph text block';
-  readonly blockType = 'paragraph';
-  readonly component = ParagraphComponent;
+  readonly description = 'Definition list block (Term / : Definition)';
+  readonly blockType = 'definition-list';
+  readonly component = DefinitionListComponent;
   readonly controller = {
     transformContent: this.transformContent.bind(this),
     handleEnter: this.handleEnter.bind(this),
@@ -171,69 +175,54 @@ export class ParagraphPlugin extends BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      // Paragraphs are default - no specific pattern needed
+      // Matches Term followed by : Definition
+      block: /^(.+)\n:\s+(.+)$/,
     },
-    priority: 10, // Lowest priority - fallback
+    priority: 45,
   };
 
   readonly toolbar = {
-    icon: 'text',
-    label: 'Paragraph',
-    shortcut: 'Ctrl+Alt+0',
+    icon: 'list',
+    label: 'Definition',
+    shortcut: 'Ctrl+Alt+D',
     group: 'text',
   };
 
   readonly settings = {
-    allowedParents: ['root', 'quote', 'list', 'callout'] as EditorBlockType[],
+    allowedParents: ['root'] as EditorBlockType[],
     validation: {
-      maxLength: 10000,
+      maxLength: 2000,
     },
-    defaultMeta: {
-      textAlign: 'left',
-    },
+    defaultMeta: {},
   };
 
-  /**
-   * Handle Enter key press
-   */
   protected handleEnter(
     block: EditorBlock,
     allBlocks?: EditorBlock[],
     currentIndex?: number
   ): EditorBlock | EditorBlock[] | null {
     // Create new paragraph on Enter
-    if (block.content.trim() === '') {
-      // If current paragraph is empty, don't create new one
-      return null; // Or convert to previous block type, depending on desired behavior
-    }
     const newParagraph: EditorBlock = {
       id: generateId(),
       type: 'paragraph',
       content: '',
-      meta: { textAlign: block.meta?.textAlign || 'left' },
+      meta: {},
     };
-    // Return both blocks - the current one stays, and we add a new one after it
     return [block, newParagraph];
   }
 
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
-    // If paragraph is empty and backspace is pressed, delete the block
-    // We return null to let the KeyboardHandler handle block deletion
     if (block.content.trim() === '') {
-      return null; // Let KeyboardHandler handle block deletion
+      return null;
     }
-
-    // Return null to let default behavior handle non-empty paragraphs
     return null;
   }
 
   protected transformContent(content: string): string {
-    // Clean up content - remove excessive whitespace
-    return content.replace(/\s+/g, ' ').trim();
+    return content.trim();
   }
 
   public getActions(block: EditorBlock) {
-    // Return only the default actions (duplicate and delete)
     return super.getActions(block);
   }
 }

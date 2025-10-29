@@ -1,12 +1,12 @@
-import React, { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Animated, NativeSyntheticEvent, StyleSheet, TextInput, TextInputKeyPressEventData } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { ANIMATION_CONFIG, BLOCK_SPACING, getHeadingFocusColors } from '../../styles/blockStyles';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
-import { ANIMATION_CONFIG, BLOCK_SPACING, getHeadingFocusColors } from '../../styles/blockStyles';
 
 // Global cursor position tracker for heading blocks
 let headingCursorPositions: { [blockId: string]: number } = {};
@@ -65,8 +65,34 @@ const HeadingComponent = forwardRef<FocusableHandle, BlockComponentProps>(
     const styles = getStyles(colorScheme ?? 'light', level);
 
     const handleTextChange = (text: string) => {
-      onBlockChange({ content: text });
+      // If we're editing and had a custom ID, preserve it
+      if (isEditing && block.meta?.headingId) {
+        // Only update if not manually editing the {#id} part
+        if (!text.includes('{#')) {
+          onBlockChange({ content: `${text} {#${block.meta.headingId}}` });
+        } else {
+          onBlockChange({ content: text });
+        }
+      } else {
+        onBlockChange({ content: text });
+      }
     };
+
+    // Extract display text and headingId from content
+    const getDisplayContent = () => {
+      if (isEditing) {
+        // Show everything in edit mode
+        return block.content;
+      }
+      // In view mode, hide {#id} suffix
+      const match = block.content.match(/^(.+?)\s*\{#[\w-]+\}\s*$/);
+      if (match) {
+        return match[1].trim();
+      }
+      return block.content;
+    };
+
+    const displayContent = getDisplayContent();
 
     const handleKeyPress = (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
       const key = event.nativeEvent.key;
@@ -112,7 +138,7 @@ const HeadingComponent = forwardRef<FocusableHandle, BlockComponentProps>(
       <Animated.View style={[styles.container, { borderLeftColor: animatedBorderColor }]}>
         <FormattedTextInput
           ref={inputRef}
-          value={block.content}
+          value={displayContent}
           onChangeText={handleTextChange}
           onSelectionChange={handleSelectionChange}
           onFocus={onFocus}

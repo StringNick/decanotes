@@ -199,76 +199,18 @@ class MarkdownRegistry {
   }
 
   /**
-   * Parse built-in markdown patterns
+   * Parse built-in markdown patterns (delegates to shared function)
    */
   private parseBuiltInMarkdown(line: string): EditorBlock | null {
-    // Headings (with optional custom ID: ### Heading {#custom-id})
-    const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+\{#([a-z0-9-_]+)\})?$/i);
-    if (headingMatch) {
-      const content = replaceEmojiShortcodes(headingMatch[2].trim());
-      const headingId = headingMatch[3]; // custom ID if provided
-      return {
-        id: this.generateId(),
-        type: 'heading',
-        content,
-        meta: {
-          level: headingMatch[1].length,
-          ...(headingId && { headingId }),
-        },
-      };
-    }
+    return parseBuiltInMarkdownLine(line);
+  }
 
-    // Callout (GitHub-style alerts)
-    const calloutMatch = line.match(/^>\s+\[!(\w+)\]\s+(.*)$/);
-    if (calloutMatch) {
-      const calloutType = calloutMatch[1].toLowerCase() as any;
-      const content = calloutMatch[2];
-      const emojiMap: Record<string, string> = {
-        note: '📝',
-        tip: '💡',
-        info: 'ℹ️',
-        warning: '⚠️',
-        danger: '🚨',
-      };
-      return {
-        id: this.generateId(),
-        type: 'callout',
-        content: content,
-        meta: {
-          calloutType,
-          emoji: emojiMap[calloutType] || '💡',
-        },
-      };
-    }
-
-    // Quotes
-    if (line.startsWith('> ')) {
-      return {
-        id: this.generateId(),
-        type: 'quote',
-        content: line.substring(2),
-      };
-    }
-
-    // Checklist (- [ ] or - [x])
-    const checklistMatch = line.match(/^(\s*)-\s+\[([ x])\]\s+(.+)$/);
-    if (checklistMatch) {
-      const indentation = checklistMatch[1];
-      const checkState = checklistMatch[2];
-      const content = checklistMatch[3];
-      const level = Math.floor(indentation.length / 2);
-      const checked = checkState === 'x';
-
-      return {
-        id: this.generateId(),
-        type: 'checklist',
-        content: content,
-        meta: { checked, level },
-      };
-    }
-
-    // Footnote definitions [^id]: text
-    const footnoteMatch = line.match(/^\[\^([^\]]+)\]:\s+(.+)$/);
+  /**
+   * Parse text block (paragraph, footnote, or definition-list)
+   */
+  private parseTextBlock(content: string): EditorBlock {
+    // Check for footnote definition: [^id]: text
+    const footnoteMatch = content.match(/^\[\^([^\]]+)\]:\s+(.+)$/);
     if (footnoteMatch) {
       return {
         id: this.generateId(),
@@ -281,66 +223,21 @@ class MarkdownRegistry {
       };
     }
 
-    // Lists (must come after checklist)
-    const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
-    if (listMatch) {
-      const isOrdered = /\d+\./.test(listMatch[2]);
+    // Check for definition list: Term\n: Definition
+    const definitionMatch = content.match(/^(.+)\n:\s+(.+)$/);
+    if (definitionMatch) {
       return {
         id: this.generateId(),
-        type: 'list',
-        content: listMatch[3],
+        type: 'definition-list',
+        content: definitionMatch[1],
         meta: {
-          ordered: isOrdered,
-          depth: Math.floor(listMatch[1].length / 2),
+          term: definitionMatch[1],
+          definition: definitionMatch[2],
         },
       };
     }
 
-    // Image (![alt](url) or ![alt](url "caption"))
-    const imageMatch = line.match(/^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]*)")?\)$/);
-    if (imageMatch) {
-      return {
-        id: this.generateId(),
-        type: 'image',
-        content: imageMatch[2],
-        meta: {
-          alt: imageMatch[1] || 'Image',
-          url: imageMatch[2],
-          caption: imageMatch[3] || '',
-        },
-      };
-    }
-
-    // Video (!video[caption](url))
-    const videoMatch = line.match(/^!video\[([^\]]*)\]\(([^)]+)\)$/);
-    if (videoMatch) {
-      return {
-        id: this.generateId(),
-        type: 'video',
-        content: videoMatch[2],
-        meta: {
-          url: videoMatch[2],
-          caption: videoMatch[1] || '',
-        },
-      };
-    }
-
-    // Horizontal rule
-    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
-      return {
-        id: this.generateId(),
-        type: 'divider',
-        content: '',
-      };
-    }
-
-    return null;
-  }
-
-  /**
-   * Parse text block (paragraph)
-   */
-  private parseTextBlock(content: string): EditorBlock {
+    // Default to paragraph
     return {
       id: this.generateId(),
       type: 'paragraph',
@@ -668,17 +565,23 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
 }
 
 /**
- * Parse built-in markdown patterns (extracted for reuse)
+ * Shared built-in markdown parser (used by both registry and plugin-based parsing)
+ * Supports all extended markdown features including heading IDs, footnotes, emoji
  */
 function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
-  // Headings
-  const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+  // Headings (with optional custom ID: ### Heading {#custom-id})
+  const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+\{#([a-z0-9-_]+)\})?$/i);
   if (headingMatch) {
+    const content = replaceEmojiShortcodes(headingMatch[2].trim());
+    const headingId = headingMatch[3]; // custom ID if provided
     return {
       id: generateId(),
       type: 'heading',
-      content: headingMatch[2],
-      meta: { level: headingMatch[1].length },
+      content,
+      meta: {
+        level: headingMatch[1].length,
+        ...(headingId && { headingId }),
+      },
     };
   }
 
@@ -728,6 +631,20 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       type: 'checklist',
       content: content,
       meta: { checked, level },
+    };
+  }
+
+  // Footnote definitions [^id]: text
+  const footnoteMatch = line.match(/^\[\^([^\]]+)\]:\s+(.+)$/);
+  if (footnoteMatch) {
+    return {
+      id: generateId(),
+      type: 'footnote',
+      content: footnoteMatch[2],
+      meta: {
+        footnoteId: footnoteMatch[1],
+        footnoteLabel: `[^${footnoteMatch[1]}]`,
+      },
     };
   }
 

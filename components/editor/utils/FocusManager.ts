@@ -26,6 +26,7 @@ interface DesiredFocus {
   blockId: string;
   reveal: boolean; // Whether to scroll to make it visible
   animated?: boolean;
+  applyFocus?: boolean; // Whether to apply focus after scroll (default: true)
   onRevealFailure?: (details: { blockId: string; extraOffset: number }) => void;
 }
 
@@ -68,7 +69,7 @@ export class FocusManager {
    */
   registerBlock(blockId: string, entry: BlockFocusEntry): void {
     if (__DEV__) {
-      console.log('[FocusManager] registerBlock', { blockId });
+      // console.log('[FocusManager] registerBlock', { blockId });
     }
     this.blockRegistry.set(blockId, entry);
 
@@ -149,8 +150,23 @@ export class FocusManager {
     const entry = this.blockRegistry.get(blockId);
 
     if (!entry) {
-      console.warn(`[FocusManager] Cannot focus block ${blockId}: not registered`);
+      if (__DEV__) {
+        console.log(`[FocusManager] Block ${blockId} not yet registered, waiting...`);
+      }
       this.awaitingRegistration = true;
+
+      // Retry mechanism: wait for block to be registered
+      // This handles cases where FlatList is still rendering the block
+      setTimeout(() => {
+        if (this.desiredFocus?.blockId === blockId && this.blockRegistry.has(blockId)) {
+          if (__DEV__) {
+            console.log(`[FocusManager] Block ${blockId} now registered, retrying focus`);
+          }
+          this.awaitingRegistration = false;
+          this.maybeApplyFocus();
+        }
+      }, 500);
+
       return;
     }
 

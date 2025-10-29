@@ -1,20 +1,22 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { EditorBlock } from '../../types/editor';
+import { EditorThemeProvider } from './contexts/EditorThemeContext';
 import { useEditor } from './core/EditorContext';
 import { EditorCore } from './core/EditorCore';
 import EditorProvider from './core/EditorProvider';
 import { useEditorKeyboard } from './EditorKeyboard';
 import { ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef } from './types/EditorTypes';
 import { parseMarkdownToBlocks, serializeBlocksToMarkdown } from './utils/MarkdownRegistry';
-import { EditorThemeProvider } from './contexts/EditorThemeContext';
 
 // Built-in plugins
 import {
   CalloutPlugin,
   ChecklistPlugin,
   CodePlugin,
+  DefinitionListPlugin,
   DividerPlugin,
+  FootnotePlugin,
   HeadingPlugin,
   ImagePlugin,
   ListPlugin,
@@ -396,6 +398,8 @@ export const MarkdownEditor = forwardRef<ExtendedMarkdownEditorRef, ExtendedMark
       new CalloutPlugin(),
       new ChecklistPlugin(),
       new TablePlugin(),
+      new FootnotePlugin(),
+      new DefinitionListPlugin(),
     ],
     []
   );

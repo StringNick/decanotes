@@ -20,6 +20,7 @@ interface FormattedTextInputProps {
   textAlignVertical?: 'auto' | 'top' | 'bottom' | 'center';
   scrollEnabled?: boolean;
   preventNewlines?: boolean; // New prop to prevent newline characters
+  onFootnotePress?: (footnoteId: string) => void; // Callback for footnote references
 }
 
 /**
@@ -44,6 +45,7 @@ export const FormattedTextInput = forwardRef<TextInput, FormattedTextInputProps>
       textAlignVertical = 'top',
       scrollEnabled = false,
       preventNewlines = false,
+      onFootnotePress,
     },
     ref
   ) => {
@@ -115,12 +117,18 @@ export const FormattedTextInput = forwardRef<TextInput, FormattedTextInputProps>
         activeOpacity={0.7}
       >
         {value ? (
-          <FormattedText text={value} style={[styles.formattedText, style]} isEditing={false} />
+          <FormattedText
+            text={value}
+            style={[styles.formattedText, style]}
+            isEditing={false}
+            onFootnotePress={onFootnotePress}
+          />
         ) : (
           <FormattedText
             text={placeholder || ''}
             style={[styles.formattedText, styles.placeholder, style]}
             isEditing={false}
+            onFootnotePress={onFootnotePress}
           />
         )}
       </TouchableOpacity>

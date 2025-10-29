@@ -509,10 +509,7 @@ export const processInlineFormatting = (text: string): FormattedTextSegment[] =>
     }
 
     // Auto-link URLs (http:// or https://)
-    if (
-      !handled &&
-      (processedText.slice(i).startsWith('http://') || processedText.slice(i).startsWith('https://'))
-    ) {
+    if (!handled && (processedText.slice(i).startsWith('http://') || processedText.slice(i).startsWith('https://'))) {
       const urlMatch = processedText.slice(i).match(/^https?:\/\/[^\s]+/);
       if (urlMatch) {
         segments.push({

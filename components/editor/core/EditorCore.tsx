@@ -1,27 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
-  Dimensions,
-  FlatList,
-  InteractionManager,
-  LayoutChangeEvent,
-  ListRenderItemInfo,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    FlatList,
+    InteractionManager,
+    LayoutChangeEvent,
+    ListRenderItemInfo,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { EditorBottomBar } from '../components/EditorBottomBar';
 import { PluginRegistry } from '../plugins/PluginRegistry';
 import {
-  EditorConfig,
-  EditorError,
-  ExtendedMarkdownEditorProps,
-  ExtendedMarkdownEditorRef,
+    EditorConfig,
+    EditorError,
+    ExtendedMarkdownEditorProps,
+    ExtendedMarkdownEditorRef,
 } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
 import { FocusManager } from '../utils/FocusManager';
@@ -38,6 +38,7 @@ type FocusOptions = {
   animated?: boolean; // Whether to animate scroll (default: true)
   viewPosition?: number; // Desired view position (0-1) when revealing (default: 0.5)
   viewOffset?: number; // Additional offset in pixels when revealing (default: 0)
+  applyFocus?: boolean; // Whether to apply focus after scroll (default: true). Set false for "reveal-only" mode.
   onRevealFailure?: (details: { blockId: string; extraOffset: number }) => void;
 };
 
@@ -153,24 +154,35 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     }, [focusManager, revealRetryCounts]);
 
     const scheduleRevealCompletionCheck = useCallback(
-      (blockId: string) => {
-        InteractionManager.runAfterInteractions(() => {
-          if (pendingRevealBlockId.current !== blockId) {
-            return;
-          }
+      (blockId: string, blockIndex: number = 0) => {
+        // Calculate delay based on block distance for fallback
+        // Increased delays to account for:
+        // 1. FlatList scroll animation
+        // 2. Block rendering (virtualization)
+        // 3. Block registration in FocusManager
+        const baseDelay = 500; // Base delay for nearby blocks
+        const perIndexDelay = 5; // Per-block delay
+        const maxDelay = 1500; // Max delay for far blocks
+        const scrollDelay = Math.min(maxDelay, baseDelay + blockIndex * perIndexDelay);
 
-          pendingRevealBlockId.current = null;
-          focusManager.notifyRevealComplete(blockId);
-        });
+        if (__DEV__) {
+          console.log('[EditorCore] scheduleRevealCompletionCheck', { blockId, blockIndex, scrollDelay });
+        }
 
+        // Primary: wait for scroll events (handleScrollSettled)
+        // Fallback: timeout in case scroll events don't fire
         setTimeout(() => {
           if (pendingRevealBlockId.current !== blockId) {
             return;
           }
 
+          if (__DEV__) {
+            console.log('[EditorCore] Reveal completion timeout fallback for', blockId);
+          }
+
           pendingRevealBlockId.current = null;
           focusManager.notifyRevealComplete(blockId);
-        }, 160);
+        }, scrollDelay);
       },
       [focusManager]
     );
@@ -307,6 +319,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       focusBlock,
       // focusNext,
       // focusPrevious,
+      highlightBlock,
+      clearHighlight,
       // setMode,
       toggleMode,
       undo,
@@ -317,7 +331,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       // reset
     } = useEditor();
 
-    const { blocks, focusedBlockId, selectedBlocks, mode, errors, history } = state;
+    const { blocks, focusedBlockId, selectedBlocks, highlightedBlockId, mode, errors, history } = state;
     // isDirty and isLoading are available in state but not used in this component
 
     /**
@@ -338,9 +352,17 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         const animated = options.animated ?? true;
         const viewPosition = options.viewPosition ?? 0.5;
         const viewOffset = options.viewOffset ?? 0;
+        const applyFocus = options.applyFocus ?? true;
 
         if (__DEV__) {
-          console.log('[EditorCore] requestBlockFocus', { blockId, reveal, animated, viewPosition, viewOffset });
+          console.log('[EditorCore] requestBlockFocus', {
+            blockId,
+            reveal,
+            animated,
+            viewPosition,
+            viewOffset,
+            applyFocus,
+          });
         }
 
         revealRetryCounts.set(blockId, 0);
@@ -358,7 +380,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             scrollOffsetRef.current = targetOffset;
             flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: false });
             focusManager.notifyRevealComplete(blockId);
-            focusManager.applyPendingFocus();
+            if (applyFocus) {
+              focusManager.applyPendingFocus();
+            } else {
+              focusManager.clearDesiredFocus();
+            }
             return;
           }
 
@@ -373,22 +399,30 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             scrollOffsetRef.current = targetOffset;
             flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: false });
             focusManager.notifyRevealComplete(blockId);
-            focusManager.applyPendingFocus();
+            if (applyFocus) {
+              focusManager.applyPendingFocus();
+            } else {
+              focusManager.clearDesiredFocus();
+            }
           }
 
           options.onRevealFailure?.({ blockId, extraOffset });
         };
 
-        // Register focus request with FocusManager
-        focusManager.requestFocus(blockId, {
-          reveal,
-          animated,
-          onRevealFailure: details => handleRevealFailure(details),
-        });
+        // Register focus request with FocusManager (only if applyFocus=true)
+        if (applyFocus) {
+          focusManager.requestFocus(blockId, {
+            reveal,
+            animated,
+            onRevealFailure: details => handleRevealFailure(details),
+          });
+        }
 
-        // If no reveal needed, just focus immediately
+        // If no reveal needed, just focus immediately (if applyFocus=true)
         if (!reveal) {
-          focusManager.applyPendingFocus();
+          if (applyFocus) {
+            focusManager.applyPendingFocus();
+          }
           return;
         }
 
@@ -400,6 +434,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           return;
         }
 
+        if (__DEV__) {
+          console.log('[EditorCore] scrollToIndex attempting', { blockIndex, animated, viewPosition, viewOffset });
+        }
+
         // Scroll to block using FlatList
         try {
           flatListRef.current?.scrollToIndex({
@@ -409,9 +447,13 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             viewOffset,
           });
 
+          if (__DEV__) {
+            console.log('[EditorCore] scrollToIndex called successfully');
+          }
+
           if (animated) {
             pendingRevealBlockId.current = blockId;
-            scheduleRevealCompletionCheck(blockId);
+            scheduleRevealCompletionCheck(blockId, blockIndex);
           } else {
             focusManager.notifyRevealComplete(blockId);
           }
@@ -426,7 +468,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             });
             if (animated) {
               pendingRevealBlockId.current = blockId;
-              scheduleRevealCompletionCheck(blockId);
+              scheduleRevealCompletionCheck(blockId, blockIndex);
             } else {
               focusManager.notifyRevealComplete(blockId);
             }
@@ -437,6 +479,69 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         }
       },
       [blocks, focusManager, getItemLayout, scheduleRevealCompletionCheck, bottomBarHeight, revealRetryCounts]
+    );
+
+    /**
+     * NEW: Request highlight on a block (Notion-style navigation without focus/keyboard)
+     * Use this for footnote navigation, link navigation, etc.
+     *
+     * @param blockId - ID of block to highlight and scroll to
+     * @param options - Scroll options (same as requestBlockFocus but without applyFocus)
+     */
+    const requestBlockHighlight = useCallback(
+      (blockId: string, options: Omit<FocusOptions, 'applyFocus'> = {}) => {
+        const reveal = options.reveal ?? true;
+        const animated = options.animated ?? true;
+        const viewPosition = options.viewPosition ?? 0.5;
+        const viewOffset = options.viewOffset ?? 60;
+
+        if (__DEV__) {
+          console.log('[EditorCore] requestBlockHighlight', { blockId, reveal, animated, viewPosition, viewOffset });
+        }
+
+        // Highlight the block (auto-clears after 2 seconds)
+        highlightBlock(blockId);
+
+        // If no reveal needed, we're done
+        if (!reveal) {
+          return;
+        }
+
+        // Find block index for scrolling
+        const blockIndex = blocks.findIndex(b => b.id === blockId);
+        if (blockIndex === -1) {
+          console.warn(`[EditorCore] Block not found for highlight: ${blockId}`);
+          return;
+        }
+
+        if (__DEV__) {
+          console.log('[EditorCore] scrollToIndex for highlight', { blockIndex, animated, viewPosition, viewOffset });
+        }
+
+        // Scroll to block using FlatList (without focus)
+        try {
+          flatListRef.current?.scrollToIndex({
+            index: blockIndex,
+            animated,
+            viewPosition,
+            viewOffset,
+          });
+        } catch (error) {
+          console.warn('[EditorCore] Failed to scroll to block:', error);
+          // Fallback to scrollToOffset
+          const { offset: estimatedOffset } = getItemLayout(blocks, blockIndex);
+          const fallbackOffset = Math.max(0, estimatedOffset - viewOffset);
+          try {
+            flatListRef.current?.scrollToOffset({
+              offset: fallbackOffset,
+              animated,
+            });
+          } catch {
+            // Silent fail
+          }
+        }
+      },
+      [blocks, highlightBlock, getItemLayout]
     );
 
     // Keyboard handling hook
@@ -906,6 +1011,24 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         // Scroll and focus operations (NEW API)
         requestBlockFocus,
 
+        // Scroll to footnote definition (NEW: Uses Notion-style highlight)
+        scrollToFootnote: (footnoteId: string) => {
+          // Find the footnote block with matching footnoteId
+          const footnoteBlock = blocks.find(b => b.type === 'footnote' && b.meta?.footnoteId === footnoteId);
+
+          if (footnoteBlock) {
+            // Use Notion-style highlight (no focus, no keyboard)
+            requestBlockHighlight(footnoteBlock.id, {
+              reveal: true,
+              animated: true,
+              viewPosition: 0.5, // Center position for better UX
+              viewOffset: 60, // Extra padding from center
+            });
+          } else if (__DEV__) {
+            console.warn('[EditorCore] Footnote not found:', footnoteId);
+          }
+        },
+
         // History operations
         undo: () => undo(),
         redo: () => redo(),
@@ -961,6 +1084,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         pluginRegistry,
         blurEditor,
         requestBlockFocus,
+        requestBlockHighlight,
         handleBlockSelect,
         handleBlockEdit,
         errors,
@@ -1022,64 +1146,114 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     };
 
     // Render block
-    const renderBlock = (block: EditorBlock, index: number) => {
-      const isSelected = selectedBlocks.includes(block.id);
-      const isEditing = focusedBlockId === block.id;
+    const renderBlock = useCallback(
+      (block: EditorBlock, index: number) => {
+        const isSelected = selectedBlocks.includes(block.id);
+        const isEditing = focusedBlockId === block.id;
+        const isHighlighted = highlightedBlockId === block.id; // NEW: Check if block is highlighted
 
-      // Find the appropriate plugin for this block type
-      const plugin = getBlockPlugin(block.type);
+        // Find the appropriate plugin for this block type
+        const plugin = getBlockPlugin(block.type);
 
-      if (!plugin) {
+        if (!plugin) {
+          return (
+            <View key={block.id} style={styles.errorBlock}>
+              <Text style={styles.errorText}>No plugin found for block type: {block.type}</Text>
+            </View>
+          );
+        }
+
         return (
-          <View key={block.id} style={styles.errorBlock}>
-            <Text style={styles.errorText}>No plugin found for block type: {block.type}</Text>
-          </View>
-        );
-      }
+          <React.Fragment key={block.id}>
+            {/* Drop indicator */}
+            {dragState.isDragging && <View {...getDropIndicatorProps(index)} />}
 
-      return (
-        <React.Fragment key={block.id}>
-          {/* Drop indicator */}
-          {dragState.isDragging && <View {...getDropIndicatorProps(index)} />}
+            {/* Drop zone */}
+            <View {...getDropZoneProps(index)}>
+              <SafeBlockRenderer
+                block={block}
+                index={index}
+                isSelected={isSelected}
+                isEditing={isEditing}
+                isHighlighted={isHighlighted}
+                blockPlugin={plugin}
+                config={editorConfig}
+                onBlockChange={handleBlockChange}
+                onBlockSelect={handleBlockSelect}
+                onBlockEdit={handleBlockEdit}
+                onBlockDelete={handleBlockDelete}
+                onBlockDuplicate={handleBlockDuplicate}
+                onBlockMove={handleBlockMove}
+                onFootnotePress={(footnoteId: string) => {
+                  if (__DEV__) {
+                    console.log('[EditorCore] Footnote press:', footnoteId);
+                  }
 
-          {/* Drop zone */}
-          <View {...getDropZoneProps(index)}>
-            <SafeBlockRenderer
-              block={block}
-              index={index}
-              isSelected={isSelected}
-              isEditing={isEditing}
-              blockPlugin={plugin}
-              config={editorConfig}
-              onBlockChange={handleBlockChange}
-              onBlockSelect={handleBlockSelect}
-              onBlockEdit={handleBlockEdit}
-              onBlockDelete={handleBlockDelete}
-              onBlockDuplicate={handleBlockDuplicate}
-              onBlockMove={handleBlockMove}
-              dragHandleProps={getDragHandleProps(block.id)}
-              blockProps={getBlockProps(block.id, index)}
-              focusManager={focusManager}
-              onBlockHeightChange={handleBlockHeightChange}
-              onBlockRefReady={ref => {
-                // Legacy ref tracking for drag-drop compatibility
-                if (ref) {
-                  blockRefsMap.current.set(block.id, ref);
-                } else {
-                  blockRefsMap.current.delete(block.id);
-                }
-              }}
-            />
-          </View>
+                  // Find and scroll to footnote definition
+                  const footnoteBlock = blocks.find(b => b.type === 'footnote' && b.meta?.footnoteId === footnoteId);
 
-          {/* Final drop indicator */}
-          {/* Disabled temporarily due to dragState not being used */}
-          {/* {dragState.isDragging && index === blocks.length - 1 && (
+                  if (footnoteBlock) {
+                    if (__DEV__) {
+                      console.log('[EditorCore] Highlighting footnote:', footnoteBlock.id);
+                    }
+                    // Use Notion-style highlight (no focus, no keyboard)
+                    requestBlockHighlight(footnoteBlock.id, {
+                      reveal: true,
+                      animated: true,
+                      viewPosition: 0.5, // Center position for better UX
+                      viewOffset: 60, // Extra padding from center
+                    });
+                  } else {
+                    console.warn('[EditorCore] Footnote block not found for ID:', footnoteId);
+                  }
+                }}
+                dragHandleProps={getDragHandleProps(block.id)}
+                blockProps={getBlockProps(block.id, index)}
+                focusManager={focusManager}
+                onBlockHeightChange={handleBlockHeightChange}
+                onBlockRefReady={ref => {
+                  // Legacy ref tracking for drag-drop compatibility
+                  if (ref) {
+                    blockRefsMap.current.set(block.id, ref);
+                  } else {
+                    blockRefsMap.current.delete(block.id);
+                  }
+                }}
+              />
+            </View>
+
+            {/* Final drop indicator */}
+            {/* Disabled temporarily due to dragState not being used */}
+            {/* {dragState.isDragging && index === blocks.length - 1 && (
             <View {...getDropIndicatorProps(blocks.length)} />
           )} */}
-        </React.Fragment>
-      );
-    };
+          </React.Fragment>
+        );
+      },
+      [
+        selectedBlocks,
+        focusedBlockId,
+        highlightedBlockId,
+        dragState.isDragging,
+        blocks,
+        editorConfig,
+        getBlockPlugin,
+        handleBlockChange,
+        handleBlockSelect,
+        handleBlockEdit,
+        handleBlockDelete,
+        handleBlockDuplicate,
+        handleBlockMove,
+        requestBlockHighlight,
+        getDragHandleProps,
+        getDropZoneProps,
+        getDropIndicatorProps,
+        getBlockProps,
+        focusManager,
+        handleBlockHeightChange,
+        blockRefsMap,
+      ]
+    );
 
     /**
      * NEW: Render item for FlatList

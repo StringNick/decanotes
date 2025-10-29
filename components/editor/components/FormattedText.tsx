@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import React, { useCallback } from 'react';
+import { Alert, Linking, Platform, Pressable, StyleSheet, Text } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import { useColorScheme } from '../../../hooks/useColorScheme';
 import { processInlineFormatting } from '../../../utils/markdownParser';
@@ -28,16 +28,59 @@ interface FormattedTextProps {
   text: string;
   style?: any;
   isEditing?: boolean;
+  onFootnotePress?: (footnoteId: string) => void;
 }
 
 /**
  * Component that renders text with inline markdown formatting
  * When editing, shows raw markdown. When not editing, shows formatted text.
  */
-export const FormattedText: React.FC<FormattedTextProps> = ({ text, style, isEditing = false }) => {
+export const FormattedText: React.FC<FormattedTextProps> = ({ text, style, isEditing = false, onFootnotePress }) => {
   const colorScheme = useColorScheme();
   // const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
+
+  // Handle link press with long press menu
+  const handleLinkLongPress = useCallback((url: string) => {
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank');
+      return;
+    }
+
+    Alert.alert(
+      'Link Action',
+      url,
+      [
+        {
+          text: 'Open in Browser',
+          onPress: async () => {
+            const supported = await Linking.canOpenURL(url);
+            if (supported) {
+              await Linking.openURL(url);
+            } else {
+              Alert.alert('Error', `Cannot open URL: ${url}`);
+            }
+          },
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  }, []);
+
+  // Handle footnote reference press
+  const handleFootnoteLongPress = useCallback(
+    (footnoteId: string) => {
+      if (onFootnotePress) {
+        // Directly call the scroll function
+        onFootnotePress(footnoteId);
+      }
+    },
+    [onFootnotePress]
+  );
 
   // If editing, show raw text
   if (isEditing) {
@@ -51,6 +94,65 @@ export const FormattedText: React.FC<FormattedTextProps> = ({ text, style, isEdi
     <Text style={[styles.text, style]}>
       {segments.map((segment, index) => {
         const segmentStyle = getSegmentStyle(segment.type, styles);
+
+        // Add long press handlers for interactive segments
+        const isFootnoteRef = segment.type === 'footnote-ref' && segment.meta?.footnoteId;
+        const isLink = segment.type === 'link' && segment.meta?.url;
+
+        if (isFootnoteRef) {
+          return (
+            <Pressable
+              key={index}
+              onLongPress={() => {
+                console.log('[FormattedText] Footnote long press:', segment.meta!.footnoteId);
+                handleFootnoteLongPress(segment.meta!.footnoteId!);
+              }}
+              style={({ pressed }) => [
+                {
+                  opacity: pressed ? 0.6 : 1,
+                  backgroundColor: pressed
+                    ? colorScheme === 'dark'
+                      ? 'rgba(96, 165, 250, 0.2)'
+                      : 'rgba(37, 99, 235, 0.1)'
+                    : 'transparent',
+                  borderRadius: 4,
+                  paddingHorizontal: 2,
+                },
+              ]}
+              android_ripple={{ color: colorScheme === 'dark' ? 'rgba(96, 165, 250, 0.3)' : 'rgba(37, 99, 235, 0.2)' }}
+            >
+              <Text style={segmentStyle}>{segment.text}</Text>
+            </Pressable>
+          );
+        }
+
+        if (isLink) {
+          return (
+            <Pressable
+              key={index}
+              onLongPress={() => {
+                console.log('[FormattedText] Link long press:', segment.meta!.url);
+                handleLinkLongPress(segment.meta!.url!);
+              }}
+              style={({ pressed }) => [
+                {
+                  opacity: pressed ? 0.6 : 1,
+                  backgroundColor: pressed
+                    ? colorScheme === 'dark'
+                      ? 'rgba(96, 165, 250, 0.2)'
+                      : 'rgba(37, 99, 235, 0.1)'
+                    : 'transparent',
+                  borderRadius: 4,
+                  paddingHorizontal: 2,
+                },
+              ]}
+              android_ripple={{ color: colorScheme === 'dark' ? 'rgba(96, 165, 250, 0.3)' : 'rgba(37, 99, 235, 0.2)' }}
+            >
+              <Text style={segmentStyle}>{segment.text}</Text>
+            </Pressable>
+          );
+        }
+
         return (
           <Text key={index} style={segmentStyle}>
             {segment.text}

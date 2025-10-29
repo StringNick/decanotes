@@ -482,6 +482,7 @@ export function useEditorState({ initialBlocks, onBlocksChange, config }: UseEdi
   const editorState: EditorState = {
     blocks,
     focusedBlockId: editingBlockId,
+    highlightedBlockId: null,
     selectedBlocks: selectedBlockId ? [selectedBlockId] : [],
     mode: 'edit' as 'edit' | 'preview',
     isDirty: false,

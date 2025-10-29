@@ -7,16 +7,18 @@ This document demonstrates all supported Markdown features in DecaNotes.
 Regular headings and headings with custom IDs for deep linking:
 
 ### Level 3 Heading {#level-3}
+
 #### Level 4 Heading {#level-4}
+
 ##### Important Section {#important}
 
 ## Text Formatting
 
-**Bold text** using double asterisks or __double underscores__
+**Bold text** using double asterisks or **double underscores**
 
-*Italic text* using single asterisks or _single underscores_
+_Italic text_ using single asterisks or _single underscores_
 
-***Bold and italic*** combined
+**_Bold and italic_** combined
 
 `Inline code` with backticks
 
@@ -75,13 +77,14 @@ Tech: :computer: :iphone: :email: :package: :bug:
 > that continues here
 > and here
 
->> Nested quote level 2
+> > Nested quote level 2
 
->>> Triple nested quote
+> > > Triple nested quote
 
 ## Code Blocks
 
 ### JavaScript
+
 ```javascript
 function hello(name) {
   console.log(`Hello, ${name}!`);
@@ -90,6 +93,7 @@ function hello(name) {
 ```
 
 ### Python
+
 ```python
 def calculate_sum(a, b):
     """Calculate sum of two numbers"""
@@ -100,6 +104,7 @@ print(f"Result: {result}")
 ```
 
 ### TypeScript
+
 ```typescript
 interface User {
   id: string;
@@ -133,32 +138,32 @@ const createUser = (data: User): User => {
 
 ### Simple Table
 
-| Name | Age | City |
-| --- | --- | --- |
-| Alice | 30 | New York |
-| Bob | 25 | London |
-| Charlie | 35 | Tokyo |
+| Name    | Age | City     |
+| ------- | --- | -------- |
+| Alice   | 30  | New York |
+| Bob     | 25  | London   |
+| Charlie | 35  | Tokyo    |
 
 ### Table with Alignment
 
 | Left | Center | Right |
-| :--- | :---: | ---: |
-| Text | Text | Text |
-| A | B | C |
-| 1 | 2 | 3 |
+| :--- | :----: | ----: |
+| Text |  Text  |  Text |
+| A    |   B    |     C |
+| 1    |   2    |     3 |
 
 ### Complex Table
 
-| Feature | Status | Priority | Notes |
-| --- | --- | --- | --- |
-| Authentication | ✅ Complete | High | OAuth integration |
-| Dashboard | 🚧 In Progress | High | UI redesign |
-| Analytics | ⏳ Planned | Medium | Data collection |
-| Settings | ✅ Complete | Low | User preferences |
+| Feature        | Status         | Priority | Notes             |
+| -------------- | -------------- | -------- | ----------------- |
+| Authentication | ✅ Complete    | High     | OAuth integration |
+| Dashboard      | 🚧 In Progress | High     | UI redesign       |
+| Analytics      | ⏳ Planned     | Medium   | Data collection   |
+| Settings       | ✅ Complete    | Low      | User preferences  |
 
 ## Images
 
-![Sample Image](https://via.placeholder.com/400x200 "Image with caption")
+![Sample Image](https://via.placeholder.com/400x200 'Image with caption')
 
 ![Landscape](https://via.placeholder.com/600x300)
 
@@ -198,15 +203,16 @@ Use three dashes, asterisks, or underscores:
 
 Content after divider
 
-***
+---
 
 Another section
 
-___
+---
 
 ## Mixed Formatting Examples
 
 ### Code with Emoji
+
 Here's some code :computer: with emoji support :sparkles:
 
 ```bash
@@ -217,20 +223,21 @@ npm run dev :rocket:
 ### Formatted Text in Lists
 
 1. **Bold item** with emphasis
-2. *Italic item* for style
+2. _Italic item_ for style
 3. `Code item` for technical terms
 4. ~~Crossed out~~ completed item
 5. ==Highlighted== important item
 
 ### Complex Paragraph
 
-This paragraph contains **bold**, *italic*, `code`, ~~strikethrough~~, and ==highlighted== text. You can also use H~2~O and E=mc^2^ for scientific notation. Don't forget emoji :smile: :heart: :rocket:!
+This paragraph contains **bold**, _italic_, `code`, ~~strikethrough~~, and ==highlighted== text. You can also use H~2~O and E=mc^2^ for scientific notation. Don't forget emoji :smile: :heart: :rocket:!
 
 ## Nested Structures
 
 ### Lists in Quotes
 
 > **Important checklist:**
+>
 > - [x] Review documentation
 > - [x] Test all features
 > - [ ] Deploy to production
@@ -250,12 +257,12 @@ This paragraph contains **bold**, *italic*, `code`, ~~strikethrough~~, and ==hig
 
 > [!TIP]
 > Quick reference table:
-> 
+>
 > | Shortcut | Action |
-> | --- | --- |
-> | Cmd+B | Bold |
-> | Cmd+I | Italic |
-> | Cmd+K | Code |
+> | -------- | ------ |
+> | Cmd+B    | Bold   |
+> | Cmd+I    | Italic |
+> | Cmd+K    | Code   |
 
 ## Real-world Example
 
@@ -264,19 +271,22 @@ This paragraph contains **bold**, *italic*, `code`, ~~strikethrough~~, and ==hig
 Follow these steps to set up the project:
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/user/project.git
    cd project
    ```
 
 2. **Install dependencies**
+
    ```bash
    bun install
    ```
 
 3. **Configure environment**
-   
+
    Create a `.env` file:
+
    ```env
    API_KEY=your_api_key
    DATABASE_URL=postgresql://localhost:5432/db
@@ -297,13 +307,13 @@ Follow these steps to set up the project:
 
 ### Expected Output
 
-| Step | Status | Time |
-| :--- | :---: | ---: |
-| Clone | ✅ | 2min |
-| Install | ✅ | 5min |
-| Configure | ✅ | 1min |
-| Test | ✅ | 3min |
-| Start | ✅ | 1min |
+| Step      | Status | Time |
+| :-------- | :----: | ---: |
+| Clone     |   ✅   | 2min |
+| Install   |   ✅   | 5min |
+| Configure |   ✅   | 1min |
+| Test      |   ✅   | 3min |
+| Start     |   ✅   | 1min |
 
 ---
 

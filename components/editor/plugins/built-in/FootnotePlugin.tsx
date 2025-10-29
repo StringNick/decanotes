@@ -13,9 +13,10 @@ import { BlockPlugin } from '../BlockPlugin';
 type FocusableHandle = { focus: () => void };
 
 /**
- * Paragraph block component with minimalist design
+ * Footnote block component
+ * Renders footnote definitions like [^1]: Footnote text
  */
-const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+const FootnoteComponent = forwardRef<FocusableHandle, BlockComponentProps>(
   (
     { block, onUpdate, onBlockChange, onFocus, onBlur, onFootnotePress, isSelected, isFocused, isEditing, style },
     ref
@@ -26,18 +27,15 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
     const colors = Colors[colorScheme ?? 'light'];
     const animatedValue = useRef(new Animated.Value(0)).current;
 
-    // Explicitly determine if we should show editor or formatted view
     const shouldShowEditor = Boolean(isFocused || isEditing);
     const styles = getStyles(colorScheme ?? 'light');
 
-    // Expose the TextInput methods through ref
     useImperativeHandle(ref, () => ({
       focus: () => {
         inputRef.current?.focus();
       },
     }));
 
-    // Animate focus state changes
     useEffect(() => {
       Animated.timing(animatedValue, {
         toValue: shouldShowEditor ? 1 : 0,
@@ -46,11 +44,9 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
       }).start();
     }, [shouldShowEditor, animatedValue]);
 
-    // Get animated colors
     const focusColors = getFocusColors(colorScheme ?? 'light', shouldShowEditor || false);
 
-    // Get the plugin instance and controller
-    const pluginInstance = new ParagraphPlugin();
+    const pluginInstance = new FootnotePlugin();
     const controller = pluginInstance.controller;
 
     const handleSelectionChange = (event: any) => {
@@ -71,7 +67,6 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
       }
     };
 
-    // Animated colors
     const animatedBorderColor = animatedValue.interpolate({
       inputRange: [0, 1],
       outputRange: ['rgba(0, 0, 0, 0)', focusColors.borderColor],
@@ -81,6 +76,9 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
       inputRange: [0, 1],
       outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
     });
+
+    // Get footnote label for display
+    const footnoteLabel = block.meta?.footnoteLabel || block.meta?.footnoteId || '?';
 
     return (
       <KeyboardHandler block={block} controller={controller} cursorPosition={cursorPosition}>
@@ -95,6 +93,7 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
               },
             ]}
           >
+            <Animated.Text style={styles.label}>[^{footnoteLabel}]:</Animated.Text>
             <FormattedTextInput
               ref={inputRef}
               value={block.content}
@@ -104,7 +103,7 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
               onSelectionChange={handleSelectionChange}
               onKeyPress={onKeyPress}
               onFootnotePress={onFootnotePress}
-              placeholder="Type something..."
+              placeholder="Footnote text..."
               placeholderTextColor={colors.textSecondary}
               isSelected={isSelected}
               isEditing={shouldShowEditor}
@@ -121,30 +120,36 @@ const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
   }
 );
 
-ParagraphComponent.displayName = 'ParagraphComponent';
+FootnoteComponent.displayName = 'FootnoteComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
 
   return StyleSheet.create({
     container: {
-      // Standard container spacing - handles ALL padding/margin
+      flexDirection: 'row',
       marginVertical: BLOCK_SPACING.marginVertical,
       paddingLeft: BLOCK_SPACING.paddingLeft,
       paddingRight: BLOCK_SPACING.paddingRight,
       paddingVertical: BLOCK_SPACING.paddingVertical,
-      // Always have border, color will be animated
       borderLeftWidth: BLOCK_SPACING.borderWidth,
-      borderLeftColor: 'rgba(0, 0, 0, 0)', // Will be overridden by animated value
-      backgroundColor: 'transparent', // Will be overridden by animated value
+      borderLeftColor: 'rgba(0, 0, 0, 0)',
+      backgroundColor: 'transparent',
+    },
+    label: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginRight: 8,
+      fontWeight: '600',
+      alignSelf: 'flex-start',
+      marginTop: 4,
     },
     textInput: {
-      width: '100%',
-      fontSize: 16,
+      flex: 1,
+      fontSize: 14,
       color: colors.text,
-      lineHeight: 24,
+      lineHeight: 20,
       backgroundColor: 'transparent',
-      // NO padding - container handles all spacing
       paddingHorizontal: 0,
       paddingVertical: 0,
     },
@@ -152,16 +157,16 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
 };
 
 /**
- * Paragraph block plugin
+ * Footnote block plugin
  */
-export class ParagraphPlugin extends BlockPlugin {
+export class FootnotePlugin extends BlockPlugin {
   readonly type = 'block';
-  readonly id = 'paragraph';
-  readonly name = 'Paragraph';
+  readonly id = 'footnote';
+  readonly name = 'Footnote';
   readonly version = '1.0.0';
-  readonly description = 'Basic paragraph text block';
-  readonly blockType = 'paragraph';
-  readonly component = ParagraphComponent;
+  readonly description = 'Footnote definition block';
+  readonly blockType = 'footnote';
+  readonly component = FootnoteComponent;
   readonly controller = {
     transformContent: this.transformContent.bind(this),
     handleEnter: this.handleEnter.bind(this),
@@ -171,69 +176,54 @@ export class ParagraphPlugin extends BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      // Paragraphs are default - no specific pattern needed
+      // Matches: [^id]: Footnote text
+      block: /^\[\^([^\]]+)\]:\s+(.+)$/,
     },
-    priority: 10, // Lowest priority - fallback
+    priority: 50, // Higher than paragraph
   };
 
   readonly toolbar = {
-    icon: 'text',
-    label: 'Paragraph',
-    shortcut: 'Ctrl+Alt+0',
+    icon: 'number',
+    label: 'Footnote',
+    shortcut: 'Ctrl+Alt+F',
     group: 'text',
   };
 
   readonly settings = {
-    allowedParents: ['root', 'quote', 'list', 'callout'] as EditorBlockType[],
+    allowedParents: ['root'] as EditorBlockType[],
     validation: {
-      maxLength: 10000,
+      maxLength: 1000,
     },
-    defaultMeta: {
-      textAlign: 'left',
-    },
+    defaultMeta: {},
   };
 
-  /**
-   * Handle Enter key press
-   */
   protected handleEnter(
     block: EditorBlock,
     allBlocks?: EditorBlock[],
     currentIndex?: number
   ): EditorBlock | EditorBlock[] | null {
-    // Create new paragraph on Enter
-    if (block.content.trim() === '') {
-      // If current paragraph is empty, don't create new one
-      return null; // Or convert to previous block type, depending on desired behavior
-    }
+    // Convert to paragraph on Enter
     const newParagraph: EditorBlock = {
       id: generateId(),
       type: 'paragraph',
       content: '',
-      meta: { textAlign: block.meta?.textAlign || 'left' },
+      meta: {},
     };
-    // Return both blocks - the current one stays, and we add a new one after it
     return [block, newParagraph];
   }
 
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
-    // If paragraph is empty and backspace is pressed, delete the block
-    // We return null to let the KeyboardHandler handle block deletion
     if (block.content.trim() === '') {
       return null; // Let KeyboardHandler handle block deletion
     }
-
-    // Return null to let default behavior handle non-empty paragraphs
     return null;
   }
 
   protected transformContent(content: string): string {
-    // Clean up content - remove excessive whitespace
-    return content.replace(/\s+/g, ' ').trim();
+    return content.trim();
   }
 
   public getActions(block: EditorBlock) {
-    // Return only the default actions (duplicate and delete)
     return super.getActions(block);
   }
 }
