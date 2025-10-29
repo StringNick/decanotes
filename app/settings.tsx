@@ -116,8 +116,33 @@ export default function SettingsScreen() {
 
   const getAppVersion = () => {
     const version = Constants.expoConfig?.version || '1.0.0';
-    const buildNumber = Constants.expoConfig?.ios?.buildNumber || Constants.expoConfig?.android?.versionCode;
-    return buildNumber ? `${version} (${buildNumber})` : version;
+    const commitHash = Constants.expoConfig?.extra?.commitHash;
+    return commitHash ? `${version}-${commitHash}` : version;
+  };
+
+  const handleVersionClick = () => {
+    const commitHash = Constants.expoConfig?.extra?.commitHash;
+    if (!commitHash || commitHash === 'dev') return;
+
+    const commitUrl = `https://github.com/StringNick/decanotes/commit/${commitHash}`;
+    
+    Alert.alert(
+      'View Commit',
+      `Open commit ${commitHash} on GitHub?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open',
+          onPress: () => {
+            import('expo-web-browser').then(({ openBrowserAsync }) => {
+              openBrowserAsync(commitUrl);
+            }).catch(() => {
+              Alert.alert('Commit Link', commitUrl);
+            });
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -198,7 +223,8 @@ export default function SettingsScreen() {
               title="App Version"
               subtitle={getAppVersion()}
               colors={colors}
-              showChevron={false}
+              onPress={handleVersionClick}
+              showChevron={!!Constants.expoConfig?.extra?.commitHash && Constants.expoConfig.extra.commitHash !== 'dev'}
             />
             <SettingItem
               icon={'questionmark.circle' as any}

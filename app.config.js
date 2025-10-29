@@ -1,0 +1,72 @@
+const { execSync } = require('child_process');
+
+function getCommitHash() {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch (error) {
+    return 'dev';
+  }
+}
+
+module.exports = {
+  expo: {
+    name: 'decanotes-expo',
+    slug: 'decanotes-expo',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/images/icon.png',
+    scheme: 'decanotesexpo',
+    userInterfaceStyle: 'automatic',
+    newArchEnabled: true,
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: 'com.stringnick.decanotes',
+      config: {
+        usesNonExemptEncryption: false,
+      },
+      infoPlist: {
+        NSAllowsArbitraryLoads: true,
+        NSAllowsArbitraryLoadsInWebContent: true,
+      },
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: './assets/images/adaptive-icon/foreground.png',
+        backgroundColor: '#FFFFFF',
+      },
+      edgeToEdgeEnabled: true,
+      package: 'com.anonymous.decanotesexpo',
+      permissions: ['INTERNET'],
+      newArchEnabled: true,
+    },
+    web: {
+      bundler: 'metro',
+      output: 'static',
+      favicon: './assets/images/favicon.png',
+    },
+    plugins: [
+      'expo-router',
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#FFFFFF',
+          image: './assets/images/adaptive-icon/foreground.png',
+          imageWidth: 200,
+        },
+      ],
+      'expo-font',
+      'expo-asset',
+      'expo-web-browser',
+    ],
+    experiments: {
+      typedRoutes: true,
+    },
+    extra: {
+      router: {},
+      commitHash: getCommitHash(),
+      eas: {
+        projectId: 'f0fb912e-3238-4a0f-a5c2-b99b2d2cd990',
+      },
+    },
+  },
+};
