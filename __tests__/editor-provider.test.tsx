@@ -8,13 +8,13 @@ import { EditorBlock } from '../types/editor';
 // Test component that uses the editor context
 const TestComponent: React.FC = () => {
   const context = useEditor();
-  
+
   if (!context) {
     return <Text testID="no-context">No context</Text>;
   }
 
   const { state, dispatch } = context;
-  
+
   return (
     <View testID="test-component">
       <Text testID="blocks-count">{state.blocks.length}</Text>
@@ -32,18 +32,18 @@ const TestComponent: React.FC = () => {
 // Test component with actions
 const TestComponentWithActions: React.FC = () => {
   const context = useEditor();
-  
+
   if (!context) {
     return <Text testID="no-context">No context</Text>;
   }
 
   const { state, dispatch } = context;
-  
+
   const addBlock = () => {
     const newBlock: EditorBlock = {
       id: `block-${Date.now()}`,
       type: 'paragraph',
-      content: 'New block'
+      content: 'New block',
     };
     dispatch({ type: 'ADD_BLOCK', block: newBlock });
   };
@@ -53,7 +53,7 @@ const TestComponentWithActions: React.FC = () => {
       dispatch({
         type: 'UPDATE_BLOCK',
         id: state.blocks[0].id,
-        changes: { content: 'Updated content' }
+        changes: { content: 'Updated content' },
       });
     }
   };
@@ -87,7 +87,7 @@ const TestComponentWithActions: React.FC = () => {
   const addError = () => {
     dispatch({
       type: 'ADD_ERROR',
-      error: { type: 'validation-error', message: 'Test error' }
+      error: { type: 'validation-error', message: 'Test error' },
     });
   };
 
@@ -106,23 +106,44 @@ const TestComponentWithActions: React.FC = () => {
   return (
     <View testID="test-component-with-actions">
       <TestComponent />
-      <Text testID="add-block" onPress={addBlock}>Add Block</Text>
-      <Text testID="update-block" onPress={updateFirstBlock}>Update Block</Text>
-      <Text testID="delete-block" onPress={deleteFirstBlock}>Delete Block</Text>
-      <Text testID="set-focus" onPress={setFocus}>Set Focus</Text>
-      <Text testID="set-selection" onPress={setSelection}>Set Selection</Text>
-      <Text testID="set-mode" onPress={setMode}>Set Mode</Text>
-      <Text testID="set-loading" onPress={setLoading}>Set Loading</Text>
-      <Text testID="add-error" onPress={addError}>Add Error</Text>
-      <Text testID="clear-errors" onPress={clearErrors}>Clear Errors</Text>
-      <Text testID="undo" onPress={undo}>Undo</Text>
-      <Text testID="redo" onPress={redo}>Redo</Text>
+      <Text testID="add-block" onPress={addBlock}>
+        Add Block
+      </Text>
+      <Text testID="update-block" onPress={updateFirstBlock}>
+        Update Block
+      </Text>
+      <Text testID="delete-block" onPress={deleteFirstBlock}>
+        Delete Block
+      </Text>
+      <Text testID="set-focus" onPress={setFocus}>
+        Set Focus
+      </Text>
+      <Text testID="set-selection" onPress={setSelection}>
+        Set Selection
+      </Text>
+      <Text testID="set-mode" onPress={setMode}>
+        Set Mode
+      </Text>
+      <Text testID="set-loading" onPress={setLoading}>
+        Set Loading
+      </Text>
+      <Text testID="add-error" onPress={addError}>
+        Add Error
+      </Text>
+      <Text testID="clear-errors" onPress={clearErrors}>
+        Clear Errors
+      </Text>
+      <Text testID="undo" onPress={undo}>
+        Undo
+      </Text>
+      <Text testID="redo" onPress={redo}>
+        Redo
+      </Text>
     </View>
   );
 };
 
 describe('EditorProvider', () => {
-
   describe('Context Provision', () => {
     it('should provide context to child components', () => {
       const { getByTestId } = render(
@@ -143,7 +164,7 @@ describe('EditorProvider', () => {
     it('should provide context with initial blocks', () => {
       const initialBlocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'Block 1' },
-        { id: '2', type: 'paragraph', content: 'Block 2' }
+        { id: '2', type: 'paragraph', content: 'Block 2' },
       ];
 
       const { getByTestId } = render(
@@ -158,11 +179,9 @@ describe('EditorProvider', () => {
     it('should throw error when useEditor is used outside provider', () => {
       // Suppress console.error for this test
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
-      expect(() => render(<TestComponent />)).toThrow(
-        'useEditor must be used within an EditorProvider'
-      );
-      
+
+      expect(() => render(<TestComponent />)).toThrow('useEditor must be used within an EditorProvider');
+
       consoleSpy.mockRestore();
     });
   });
@@ -176,7 +195,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('blocks-count')).toHaveTextContent('0');
-      
+
       act(() => {
         getByTestId('add-block').props.onPress();
       });
@@ -186,9 +205,7 @@ describe('EditorProvider', () => {
     });
 
     it('should handle UPDATE_BLOCK action', () => {
-      const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Original content' }
-      ];
+      const initialBlocks: EditorBlock[] = [{ id: '1', type: 'paragraph', content: 'Original content' }];
 
       const { getByTestId } = render(
         <EditorProvider initialBlocks={initialBlocks}>
@@ -206,7 +223,7 @@ describe('EditorProvider', () => {
     it('should handle DELETE_BLOCK action', () => {
       const initialBlocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'Block 1' },
-        { id: '2', type: 'paragraph', content: 'Block 2' }
+        { id: '2', type: 'paragraph', content: 'Block 2' },
       ];
 
       const { getByTestId } = render(
@@ -216,7 +233,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('blocks-count')).toHaveTextContent('2');
-      
+
       act(() => {
         getByTestId('delete-block').props.onPress();
       });
@@ -226,9 +243,7 @@ describe('EditorProvider', () => {
     });
 
     it('should handle SET_FOCUS action', () => {
-      const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Block 1' }
-      ];
+      const initialBlocks: EditorBlock[] = [{ id: '1', type: 'paragraph', content: 'Block 1' }];
 
       const { getByTestId } = render(
         <EditorProvider initialBlocks={initialBlocks}>
@@ -237,7 +252,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('focused-block')).toHaveTextContent('none');
-      
+
       act(() => {
         getByTestId('set-focus').props.onPress();
       });
@@ -246,9 +261,7 @@ describe('EditorProvider', () => {
     });
 
     it('should handle SET_SELECTION action', () => {
-      const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Block 1' }
-      ];
+      const initialBlocks: EditorBlock[] = [{ id: '1', type: 'paragraph', content: 'Block 1' }];
 
       const { getByTestId } = render(
         <EditorProvider initialBlocks={initialBlocks}>
@@ -272,7 +285,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('mode')).toHaveTextContent('edit');
-      
+
       act(() => {
         getByTestId('set-mode').props.onPress();
       });
@@ -288,7 +301,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('is-loading')).toHaveTextContent('false');
-      
+
       act(() => {
         getByTestId('set-loading').props.onPress();
       });
@@ -304,7 +317,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('errors-count')).toHaveTextContent('0');
-      
+
       act(() => {
         getByTestId('add-error').props.onPress();
       });
@@ -324,7 +337,7 @@ describe('EditorProvider', () => {
         getByTestId('add-error').props.onPress();
       });
       expect(getByTestId('errors-count')).toHaveTextContent('1');
-      
+
       // Clear errors
       act(() => {
         getByTestId('clear-errors').props.onPress();
@@ -346,7 +359,7 @@ describe('EditorProvider', () => {
         getByTestId('add-block').props.onPress();
       });
       expect(getByTestId('blocks-count')).toHaveTextContent('1');
-      
+
       // Undo should work now
       act(() => {
         getByTestId('undo').props.onPress();
@@ -366,13 +379,13 @@ describe('EditorProvider', () => {
         getByTestId('add-block').props.onPress();
       });
       expect(getByTestId('blocks-count')).toHaveTextContent('1');
-      
+
       // Undo
       act(() => {
         getByTestId('undo').props.onPress();
       });
       expect(getByTestId('blocks-count')).toHaveTextContent('0');
-      
+
       // Redo
       act(() => {
         getByTestId('redo').props.onPress();
@@ -388,7 +401,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('can-undo')).toHaveTextContent('false');
-      
+
       // Undo should not change anything
       act(() => {
         getByTestId('undo').props.onPress();
@@ -404,7 +417,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('can-redo')).toHaveTextContent('false');
-      
+
       // Redo should not change anything
       act(() => {
         getByTestId('redo').props.onPress();
@@ -417,23 +430,25 @@ describe('EditorProvider', () => {
     it('should handle MOVE_BLOCK action', () => {
       const initialBlocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'Block 1' },
-        { id: '2', type: 'paragraph', content: 'Block 2' }
+        { id: '2', type: 'paragraph', content: 'Block 2' },
       ];
 
       const TestMoveComponent: React.FC = () => {
         const context = useEditor();
         if (!context) return <Text>No context</Text>;
-        
+
         const { state, dispatch } = context;
-        
+
         const moveBlock = () => {
           dispatch({ type: 'MOVE_BLOCK', id: '1', newIndex: 1 });
         };
-        
+
         return (
           <View>
             <Text testID="first-block-id">{state.blocks[0]?.id || 'none'}</Text>
-            <Text testID="move-block" onPress={moveBlock}>Move Block</Text>
+            <Text testID="move-block" onPress={moveBlock}>
+              Move Block
+            </Text>
           </View>
         );
       };
@@ -445,7 +460,7 @@ describe('EditorProvider', () => {
       );
 
       expect(getByTestId('first-block-id')).toHaveTextContent('1');
-      
+
       act(() => {
         getByTestId('move-block').props.onPress();
       });
@@ -454,9 +469,7 @@ describe('EditorProvider', () => {
     });
 
     it('should handle DELETE_BLOCK with focus cleanup', () => {
-      const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Block 1' }
-      ];
+      const initialBlocks: EditorBlock[] = [{ id: '1', type: 'paragraph', content: 'Block 1' }];
 
       const { getByTestId } = render(
         <EditorProvider initialBlocks={initialBlocks}>
@@ -469,12 +482,12 @@ describe('EditorProvider', () => {
         getByTestId('set-focus').props.onPress();
       });
       expect(getByTestId('focused-block')).toHaveTextContent('1');
-      
+
       // Delete the focused block
       act(() => {
         getByTestId('delete-block').props.onPress();
       });
-      
+
       expect(getByTestId('blocks-count')).toHaveTextContent('0');
       expect(getByTestId('focused-block')).toHaveTextContent('none');
     });

@@ -28,7 +28,7 @@ export class LocalStorageBackend implements StorageBackend {
 
       // Save config
       await AsyncStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
-      
+
       this.ready = true;
     } catch (error) {
       console.error('Failed to initialize LocalStorageBackend:', error);
@@ -54,9 +54,7 @@ export class LocalStorageBackend implements StorageBackend {
     if (!this.ready) {
       throw new Error('Backend not initialized');
     }
-    return Array.from(this.notes.values()).sort(
-      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-    );
+    return Array.from(this.notes.values()).sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 
   async getNote(id: string): Promise<Note | null> {

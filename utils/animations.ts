@@ -58,11 +58,7 @@ export const createPressAnimation = (
 /**
  * Fade in animation
  */
-export const fadeIn = (
-  opacityValue: Animated.Value,
-  duration: number = TimingPresets.normal,
-  delay: number = 0
-) => {
+export const fadeIn = (opacityValue: Animated.Value, duration: number = TimingPresets.normal, delay: number = 0) => {
   return Animated.timing(opacityValue, {
     toValue: 1,
     duration,
@@ -75,11 +71,7 @@ export const fadeIn = (
 /**
  * Fade out animation
  */
-export const fadeOut = (
-  opacityValue: Animated.Value,
-  duration: number = TimingPresets.normal,
-  delay: number = 0
-) => {
+export const fadeOut = (opacityValue: Animated.Value, duration: number = TimingPresets.normal, delay: number = 0) => {
   return Animated.timing(opacityValue, {
     toValue: 0,
     duration,
@@ -122,10 +114,7 @@ export const slideOutToBottom = (
 /**
  * Scale in animation (pop in effect)
  */
-export const scaleIn = (
-  scaleValue: Animated.Value,
-  duration: number = TimingPresets.normal
-) => {
+export const scaleIn = (scaleValue: Animated.Value, duration: number = TimingPresets.normal) => {
   return Animated.spring(scaleValue, {
     toValue: 1,
     ...SpringPresets.bouncy,
@@ -135,10 +124,7 @@ export const scaleIn = (
 /**
  * Scale out animation (pop out effect)
  */
-export const scaleOut = (
-  scaleValue: Animated.Value,
-  duration: number = TimingPresets.fast
-) => {
+export const scaleOut = (scaleValue: Animated.Value, duration: number = TimingPresets.fast) => {
   return Animated.spring(scaleValue, {
     toValue: 0,
     ...SpringPresets.stiff,
@@ -148,21 +134,14 @@ export const scaleOut = (
 /**
  * Staggered animation for lists
  */
-export const createStaggeredAnimation = (
-  animations: Animated.CompositeAnimation[],
-  staggerDelay: number = 50
-) => {
+export const createStaggeredAnimation = (animations: Animated.CompositeAnimation[], staggerDelay: number = 50) => {
   return Animated.stagger(staggerDelay, animations);
 };
 
 /**
  * Parallax scroll animation
  */
-export const createParallaxAnimation = (
-  scrollY: Animated.Value,
-  inputRange: number[],
-  outputRange: number[]
-) => {
+export const createParallaxAnimation = (scrollY: Animated.Value, inputRange: number[], outputRange: number[]) => {
   return scrollY.interpolate({
     inputRange,
     outputRange,
@@ -206,10 +185,7 @@ export const shakeAnimation = (translateXValue: Animated.Value) => {
 /**
  * Pulse animation (for attention-grabbing elements)
  */
-export const pulseAnimation = (
-  scaleValue: Animated.Value,
-  duration: number = 1000
-) => {
+export const pulseAnimation = (scaleValue: Animated.Value, duration: number = 1000) => {
   return Animated.loop(
     Animated.sequence([
       Animated.timing(scaleValue, {
@@ -247,10 +223,7 @@ export const rotateAnimation = (
 /**
  * Continuous rotate animation (for loading spinners)
  */
-export const continuousRotateAnimation = (
-  rotateValue: Animated.Value,
-  duration: number = 1000
-) => {
+export const continuousRotateAnimation = (rotateValue: Animated.Value, duration: number = 1000) => {
   return Animated.loop(
     Animated.timing(rotateValue, {
       toValue: 1,
@@ -264,10 +237,7 @@ export const continuousRotateAnimation = (
 /**
  * Bounce animation
  */
-export const bounceAnimation = (
-  translateYValue: Animated.Value,
-  bounceHeight: number = -20
-) => {
+export const bounceAnimation = (translateYValue: Animated.Value, bounceHeight: number = -20) => {
   return Animated.sequence([
     Animated.timing(translateYValue, {
       toValue: bounceHeight,

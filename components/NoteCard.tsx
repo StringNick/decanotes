@@ -2,14 +2,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { DesignSystem, getThemeColors } from '@/constants/DesignSystem';
 import { useTheme } from '@/contexts/ThemeContext';
 import React, { useRef } from 'react';
-import {
-  Animated,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface NoteCardProps {
   id: string;
@@ -33,7 +26,7 @@ export function NoteCard({
   const { effectiveTheme } = useTheme();
   const isDark = effectiveTheme === 'dark';
   const colors = getThemeColors(isDark);
-  
+
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -41,10 +34,11 @@ export function NoteCard({
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 24) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 168) { // 7 days
+    } else if (diffInHours < 168) {
+      // 7 days
       return date.toLocaleDateString([], { weekday: 'short' });
     } else {
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -54,15 +48,11 @@ export function NoteCard({
   // Minimal background - just slightly different from main bg
   const getCardBackgroundColor = () => {
     if (color === 'default') {
-      return isDark 
-        ? 'rgba(255, 255, 255, 0.03)' 
-        : 'rgba(0, 0, 0, 0.02)';
+      return isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)';
     }
-    return isDark 
-      ? 'rgba(255, 255, 255, 0.05)' 
-      : 'rgba(0, 0, 0, 0.03)';
+    return isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
   };
-  
+
   // Animation handlers
   const handlePressIn = () => {
     Animated.parallel([
@@ -77,7 +67,7 @@ export function NoteCard({
       }),
     ]).start();
   };
-  
+
   const handlePressOut = () => {
     Animated.parallel([
       Animated.spring(scaleAnim, {
@@ -93,7 +83,7 @@ export function NoteCard({
   };
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.animatedContainer,
         {
@@ -102,12 +92,7 @@ export function NoteCard({
         },
       ]}
     >
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.pressable}
-      >
+      <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} style={styles.pressable}>
         <View
           style={[
             styles.container,
@@ -118,15 +103,10 @@ export function NoteCard({
         >
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Text 
-                style={[styles.title, { color: colors.text.primary }]} 
-                numberOfLines={1}
-              >
+              <Text style={[styles.title, { color: colors.text.primary }]} numberOfLines={1}>
                 {title || 'Untitled Note'}
               </Text>
-              <Text style={[styles.date, { color: colors.text.tertiary }]}>
-                {formatDate(lastModified)}
-              </Text>
+              <Text style={[styles.date, { color: colors.text.tertiary }]}>{formatDate(lastModified)}</Text>
             </View>
             {onOptionsPress && (
               <TouchableOpacity
@@ -134,19 +114,12 @@ export function NoteCard({
                 style={styles.optionsButton}
                 hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
               >
-                <IconSymbol
-                  name="ellipsis"
-                  size={16}
-                  color={colors.text.tertiary}
-                />
+                <IconSymbol name="ellipsis" size={16} color={colors.text.tertiary} />
               </TouchableOpacity>
             )}
           </View>
-          
-          <Text 
-            style={[styles.preview, { color: colors.text.secondary }]} 
-            numberOfLines={3}
-          >
+
+          <Text style={[styles.preview, { color: colors.text.secondary }]} numberOfLines={3}>
             {preview || 'Start writing...'}
           </Text>
         </View>

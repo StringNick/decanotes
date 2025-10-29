@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { forwardRef, memo, useImperativeHandle, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -16,9 +16,11 @@ interface CalloutConfig {
   label: string;
 }
 
+type FocusableHandle = { focus: () => void };
+
 const getCalloutConfigs = (colorScheme: 'light' | 'dark'): Record<CalloutType, CalloutConfig> => {
   const isDark = colorScheme === 'dark';
-  
+
   if (isDark) {
     return {
       note: {
@@ -26,259 +28,273 @@ const getCalloutConfigs = (colorScheme: 'light' | 'dark'): Record<CalloutType, C
         color: 'rgba(255, 255, 255, 0.8)',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderColor: 'rgba(255, 255, 255, 0.2)',
-        label: 'Note'
+        label: 'Note',
       },
       tip: {
         icon: '💡',
         color: 'rgba(255, 255, 255, 0.8)',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderColor: 'rgba(255, 255, 255, 0.2)',
-        label: 'Tip'
+        label: 'Tip',
       },
       warning: {
         icon: '⚠️',
         color: 'rgba(255, 255, 255, 0.8)',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderColor: 'rgba(255, 255, 255, 0.2)',
-        label: 'Warning'
+        label: 'Warning',
       },
       danger: {
         icon: '🚨',
         color: 'rgba(255, 255, 255, 0.8)',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderColor: 'rgba(255, 255, 255, 0.2)',
-        label: 'Danger'
+        label: 'Danger',
       },
       info: {
         icon: 'ℹ️',
         color: 'rgba(255, 255, 255, 0.8)',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderColor: 'rgba(255, 255, 255, 0.2)',
-        label: 'Info'
+        label: 'Info',
       },
       success: {
         icon: '✅',
         color: 'rgba(255, 255, 255, 0.8)',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderColor: 'rgba(255, 255, 255, 0.2)',
-        label: 'Success'
-      }
+        label: 'Success',
+      },
     };
   }
-  
+
   return {
     note: {
       icon: '📝',
       color: 'rgba(0, 0, 0, 0.8)',
       backgroundColor: 'rgba(0, 0, 0, 0.03)',
       borderColor: 'rgba(0, 0, 0, 0.15)',
-      label: 'Note'
+      label: 'Note',
     },
     tip: {
       icon: '💡',
       color: 'rgba(0, 0, 0, 0.8)',
       backgroundColor: 'rgba(0, 0, 0, 0.03)',
       borderColor: 'rgba(0, 0, 0, 0.15)',
-      label: 'Tip'
+      label: 'Tip',
     },
     warning: {
       icon: '⚠️',
       color: 'rgba(0, 0, 0, 0.8)',
       backgroundColor: 'rgba(0, 0, 0, 0.03)',
       borderColor: 'rgba(0, 0, 0, 0.15)',
-      label: 'Warning'
+      label: 'Warning',
     },
     danger: {
       icon: '🚨',
       color: 'rgba(0, 0, 0, 0.8)',
       backgroundColor: 'rgba(0, 0, 0, 0.03)',
       borderColor: 'rgba(0, 0, 0, 0.15)',
-      label: 'Danger'
+      label: 'Danger',
     },
     info: {
       icon: 'ℹ️',
       color: 'rgba(0, 0, 0, 0.8)',
       backgroundColor: 'rgba(0, 0, 0, 0.03)',
       borderColor: 'rgba(0, 0, 0, 0.15)',
-      label: 'Info'
+      label: 'Info',
     },
     success: {
       icon: '✅',
       color: 'rgba(0, 0, 0, 0.8)',
       backgroundColor: 'rgba(0, 0, 0, 0.03)',
       borderColor: 'rgba(0, 0, 0, 0.15)',
-      label: 'Success'
-    }
+      label: 'Success',
+    },
   };
 };
 
 /**
  * Callout block component with modern dark theme support
  */
-const CalloutComponent: React.FC<BlockComponentProps> = memo(({
-  block,
-  onUpdate,
-  onFocus,
-  onBlur,
-  isSelected,
-  isEditing,
-  style
-}) => {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  const CALLOUT_CONFIGS = getCalloutConfigs(colorScheme ?? 'light');
-  const [isTypeEditing, setIsTypeEditing] = useState(false);
-  const [isTitleEditing, setIsTitleEditing] = useState(false);
-  
-  const calloutType = (block.meta?.calloutType as CalloutType) || 'note';
-  const config = CALLOUT_CONFIGS[calloutType];
-  const title = block.meta?.title || config.label;
-  const showTitle = block.meta?.showTitle !== false;
+const RawCalloutComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  ({ block, onUpdate, onFocus, onBlur, isSelected, isEditing, style }, ref) => {
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const styles = getStyles(colorScheme ?? 'light');
+    const CALLOUT_CONFIGS = getCalloutConfigs(colorScheme ?? 'light');
+    const [isTypeEditing, setIsTypeEditing] = useState(false);
+    const [isTitleEditing, setIsTitleEditing] = useState(false);
+    const contentInputRef = useRef<TextInput>(null);
 
-  const handleContentChange = (text: string) => {
-    onUpdate?.({
-      ...block,
-      content: text
-    });
-  };
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        contentInputRef.current?.focus();
+      },
+    }));
 
-  const handleTypeChange = (newType: CalloutType) => {
-    const newConfig = CALLOUT_CONFIGS[newType];
-    onUpdate?.({
-      ...block,
-      meta: {
-        ...block.meta,
-        calloutType: newType,
-        title: block.meta?.title || newConfig.label
-      }
-    });
-    setIsTypeEditing(false);
-  };
+    const calloutType = (block.meta?.calloutType as CalloutType) || 'note';
+    const config = CALLOUT_CONFIGS[calloutType];
+    const title = block.meta?.title || config.label;
+    const showTitle = block.meta?.showTitle !== false;
 
-  const handleTitleChange = (newTitle: string) => {
-    onUpdate?.({
-      ...block,
-      meta: {
-        ...block.meta,
-        title: newTitle
-      }
-    });
-  };
+    const handleContentChange = (text: string) => {
+      onUpdate?.({
+        ...block,
+        content: text,
+      });
+    };
 
-  const toggleTitle = () => {
-    onUpdate?.({
-      ...block,
-      meta: {
-        ...block.meta,
-        showTitle: !showTitle
-      }
-    });
-  };
-
-  return (
-    <View style={[styles.container, style]}>
-      {/* Type selector */}
-      {isTypeEditing && (
-        <View style={styles.typeSelector}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {Object.entries(CALLOUT_CONFIGS).map(([type, typeConfig]) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.typeOption,
-                  { borderColor: typeConfig.borderColor },
-                  calloutType === type && { backgroundColor: typeConfig.backgroundColor }
-                ]}
-                onPress={() => handleTypeChange(type as CalloutType)}
-              >
-                <Text style={styles.typeIcon}>{typeConfig.icon}</Text>
-                <Text style={[styles.typeLabel, { color: typeConfig.color, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }]}>
-                  {typeConfig.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Callout content */}
-      <View style={[
-        styles.calloutContainer,
-        {
-          backgroundColor: config.backgroundColor,
-          borderLeftColor: config.borderColor
+    const handleTypeChange = (newType: CalloutType) => {
+      const newConfig = CALLOUT_CONFIGS[newType];
+      onUpdate?.({
+        ...block,
+        meta: {
+          ...block.meta,
+          calloutType: newType,
+          title: block.meta?.title || newConfig.label,
         },
-        isSelected && styles.selected,
-        isEditing && styles.editing
-      ]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.typeButton}
-            onPress={() => setIsTypeEditing(!isTypeEditing)}
-          >
-            <Text style={styles.icon}>{config.icon}</Text>
-                                        <Text style={[styles.typeText, { color: config.color, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }]}>
-              {config.label}
-            </Text>
-          </TouchableOpacity>
+      });
+      setIsTypeEditing(false);
+    };
 
-          <TouchableOpacity
-            style={styles.titleToggle}
-            onPress={toggleTitle}
-          >
-            <Text style={styles.toggleText}>
-              {showTitle ? '👁️' : '👁️‍🗨️'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+    const handleTitleChange = (newTitle: string) => {
+      onUpdate?.({
+        ...block,
+        meta: {
+          ...block.meta,
+          title: newTitle,
+        },
+      });
+    };
 
-        {/* Title */}
-        {showTitle && (
-          <TouchableOpacity
-            style={styles.titleContainer}
-            onPress={() => setIsTitleEditing(true)}
-          >
-            {isTitleEditing ? (
-              <TextInput
-                style={[styles.titleInput, { color: config.color }]}
-                value={title}
-                onChangeText={handleTitleChange}
-                onBlur={() => setIsTitleEditing(false)}
-                onSubmitEditing={() => setIsTitleEditing(false)}
-                autoFocus
-                placeholder="Enter title..."
-                placeholderTextColor={config.color + '80'}
-              />
-            ) : (
-              <Text style={[styles.title, { color: config.color }]}>
-                {title}
-              </Text>
-            )}
-          </TouchableOpacity>
+    const toggleTitle = () => {
+      onUpdate?.({
+        ...block,
+        meta: {
+          ...block.meta,
+          showTitle: !showTitle,
+        },
+      });
+    };
+
+    return (
+      <View style={[styles.container, style]}>
+        {/* Type selector */}
+        {isTypeEditing && (
+          <View style={styles.typeSelector}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {Object.entries(CALLOUT_CONFIGS).map(([type, typeConfig]) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.typeOption,
+                    { borderColor: typeConfig.borderColor },
+                    calloutType === type && { backgroundColor: typeConfig.backgroundColor },
+                  ]}
+                  onPress={() => handleTypeChange(type as CalloutType)}
+                >
+                  <Text style={styles.typeIcon}>{typeConfig.icon}</Text>
+                  <Text
+                    style={[
+                      styles.typeLabel,
+                      {
+                        color: typeConfig.color,
+                        fontWeight: '600',
+                        textShadowColor: 'rgba(0,0,0,0.1)',
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 1,
+                      },
+                    ]}
+                  >
+                    {typeConfig.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         )}
 
-        {/* Content */}
-        <TextInput
+        {/* Callout content */}
+        <View
           style={[
-            styles.contentInput,
-            { color: config.color }
+            styles.calloutContainer,
+            {
+              backgroundColor: config.backgroundColor,
+              borderLeftColor: config.borderColor,
+            },
+            isSelected && styles.selected,
+            isEditing && styles.editing,
           ]}
-          value={block.content}
-          onChangeText={handleContentChange}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          placeholder="Enter your message..."
-          placeholderTextColor={colors.textSecondary}
-          multiline
-          textAlignVertical="top"
-          scrollEnabled={false}
-        />
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.typeButton} onPress={() => setIsTypeEditing(!isTypeEditing)}>
+              <Text style={styles.icon}>{config.icon}</Text>
+              <Text
+                style={[
+                  styles.typeText,
+                  {
+                    color: config.color,
+                    fontWeight: '600',
+                    textShadowColor: 'rgba(0,0,0,0.1)',
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 1,
+                  },
+                ]}
+              >
+                {config.label}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.titleToggle} onPress={toggleTitle}>
+              <Text style={styles.toggleText}>{showTitle ? '👁️' : '👁️‍🗨️'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Title */}
+          {showTitle && (
+            <TouchableOpacity style={styles.titleContainer} onPress={() => setIsTitleEditing(true)}>
+              {isTitleEditing ? (
+                <TextInput
+                  style={[styles.titleInput, { color: config.color }]}
+                  value={title}
+                  onChangeText={handleTitleChange}
+                  onBlur={() => setIsTitleEditing(false)}
+                  onSubmitEditing={() => setIsTitleEditing(false)}
+                  autoFocus
+                  placeholder="Enter title..."
+                  placeholderTextColor={config.color + '80'}
+                />
+              ) : (
+                <Text style={[styles.title, { color: config.color }]}>{title}</Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Content */}
+          <TextInput
+            style={[styles.contentInput, { color: config.color }]}
+            value={block.content}
+            onChangeText={handleContentChange}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            placeholder="Enter your message..."
+            placeholderTextColor={colors.textSecondary}
+            multiline
+            textAlignVertical="top"
+            scrollEnabled={false}
+            ref={contentInputRef}
+          />
+        </View>
       </View>
-    </View>
-  );
-}, (prevProps, nextProps) => {
+    );
+  }
+);
+
+RawCalloutComponent.displayName = 'RawCalloutComponent';
+
+const CalloutComponent = memo(RawCalloutComponent, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
   return (
     prevProps.block.id === nextProps.block.id &&
@@ -291,10 +307,12 @@ const CalloutComponent: React.FC<BlockComponentProps> = memo(({
   );
 });
 
+CalloutComponent.displayName = 'CalloutComponent';
+
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
-  
+
   return StyleSheet.create({
     container: {
       marginVertical: 12,
@@ -411,9 +429,9 @@ export class CalloutPlugin implements BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^>\s*\[!(NOTE|TIP|WARNING|DANGER|INFO|SUCCESS)\]\s*(.*)$/m
+      block: /^>\s*\[!(NOTE|TIP|WARNING|DANGER|INFO|SUCCESS)\]\s*(.*)$/m,
     },
-    priority: 85
+    priority: 85,
   };
 
   readonly toolbar = {
@@ -428,18 +446,18 @@ export class CalloutPlugin implements BlockPlugin {
       { label: 'Danger', meta: { calloutType: 'danger' } },
       { label: 'Info', meta: { calloutType: 'info' } },
       { label: 'Success', meta: { calloutType: 'success' } },
-    ]
+    ],
   };
 
   readonly settings = {
     allowedParents: ['root', 'quote'] as EditorBlockType[],
     validation: {
-      required: ['content'] as string[]
+      required: ['content'] as string[],
     },
     defaultMeta: {
       calloutType: 'note',
-      showTitle: true
-    }
+      showTitle: true,
+    },
   };
 
   protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
@@ -448,7 +466,7 @@ export class CalloutPlugin implements BlockPlugin {
       id: this.generateId(),
       type: 'paragraph',
       content: '',
-      meta: {}
+      meta: {},
     };
   }
 
@@ -456,32 +474,35 @@ export class CalloutPlugin implements BlockPlugin {
     // Remove markdown callout syntax if present
     const lines = content.split('\n');
     const contentLines = lines.filter(line => !line.match(/^>\s*\[!(NOTE|TIP|WARNING|DANGER|INFO|SUCCESS)\]/));
-    return contentLines.map(line => line.replace(/^>\s*/, '')).join('\n').trim();
+    return contentLines
+      .map(line => line.replace(/^>\s*/, ''))
+      .join('\n')
+      .trim();
   }
 
   protected onCreate(block: EditorBlock): EditorBlock {
     const newBlock = { ...block };
-    
+
     // Parse markdown syntax if present
     const match = newBlock.content.match(/^>\s*\[!(NOTE|TIP|WARNING|DANGER|INFO|SUCCESS)\]\s*(.*)$/m);
     if (match) {
       const calloutType = match[1].toLowerCase() as CalloutType;
       const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for creation
       const title = match[2] || calloutConfigs[calloutType].label;
-      
+
       // Extract content after the callout header
       const lines = newBlock.content.split('\n');
       const contentLines = lines.slice(1).map(line => line.replace(/^>\s*/, ''));
-      
+
       newBlock.content = contentLines.join('\n').trim();
       newBlock.meta = {
         ...newBlock.meta,
         calloutType,
         title,
-        showTitle: true
+        showTitle: true,
       };
     }
-    
+
     // Ensure callout type is set
     if (!newBlock.meta?.calloutType) {
       const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for creation
@@ -489,10 +510,10 @@ export class CalloutPlugin implements BlockPlugin {
         ...newBlock.meta,
         calloutType: 'note',
         title: calloutConfigs.note.label,
-        showTitle: true
+        showTitle: true,
       };
     }
-    
+
     return newBlock;
   }
 
@@ -500,16 +521,16 @@ export class CalloutPlugin implements BlockPlugin {
     // Return only the default actions (duplicate and delete)
     // Note: CalloutPlugin doesn't extend BlockPlugin, so we need to provide default actions
     const actions: any[] = [];
-    
+
     actions.push({
       id: 'duplicate',
       label: 'Duplicate',
       icon: 'copy',
       handler: (block: EditorBlock, context: any) => {
         context.duplicateBlock();
-      }
+      },
     });
-    
+
     actions.push({
       id: 'delete',
       label: 'Delete',
@@ -517,9 +538,9 @@ export class CalloutPlugin implements BlockPlugin {
       style: 'destructive',
       handler: (block: EditorBlock, context: any) => {
         context.deleteBlock();
-      }
+      },
     });
-    
+
     return actions;
   }
 
@@ -538,7 +559,7 @@ export class CalloutPlugin implements BlockPlugin {
       id: this.generateId(),
       type: 'callout' as EditorBlockType,
       content,
-      meta
+      meta,
     };
   }
 
@@ -555,7 +576,7 @@ export class CalloutPlugin implements BlockPlugin {
       create: this.onCreate.bind(this),
       update: this.onUpdate.bind(this),
       delete: this.onDelete.bind(this),
-      actions: this.getActions.bind(this)
+      actions: this.getActions.bind(this),
     };
   }
 
@@ -581,12 +602,12 @@ export class CalloutPlugin implements BlockPlugin {
     const calloutType = (block.meta?.calloutType || 'note').toUpperCase();
     const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for backspace
     const title = block.meta?.title || calloutConfigs[block.meta?.calloutType || 'note'].label;
-    
+
     return {
       ...block,
       type: 'paragraph',
       content: `> [!${calloutType}] ${title}\n> ${block.content}`,
-      meta: {}
+      meta: {},
     };
   }
 
@@ -621,24 +642,20 @@ export class CalloutPlugin implements BlockPlugin {
       version: this.version,
       type: this.type,
       description: this.description,
-      blockType: this.blockType
+      blockType: this.blockType,
     };
   }
 
   /**
    * Create callout block with specific properties
    */
-  createCalloutBlock(
-    content: string = '',
-    calloutType: CalloutType = 'note',
-    title?: string
-  ): EditorBlock {
+  createCalloutBlock(content: string = '', calloutType: CalloutType = 'note', title?: string): EditorBlock {
     const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for creation
     const config = calloutConfigs[calloutType];
     return this.createBlock(content, {
       calloutType,
       title: title || config.label,
-      showTitle: true
+      showTitle: true,
     });
   }
 
@@ -648,16 +665,16 @@ export class CalloutPlugin implements BlockPlugin {
   parseMarkdown(text: string): EditorBlock | null {
     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
-    
+
     const calloutType = match[1].toLowerCase() as CalloutType;
     const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for parsing
     const title = match[2] || calloutConfigs[calloutType].label;
-    
+
     // Extract content after the callout header
     const lines = text.split('\n');
     const contentLines = lines.slice(1).map(line => line.replace(/^>\s*/, ''));
     const content = contentLines.join('\n').trim();
-    
+
     return this.createCalloutBlock(content, calloutType, title);
   }
 
@@ -669,14 +686,14 @@ export class CalloutPlugin implements BlockPlugin {
     const calloutConfigs = getCalloutConfigs('light'); // Default to light theme for markdown
     const title = block.meta?.title || calloutConfigs[calloutType].label;
     const content = block.content;
-    
+
     const lines = [`> [!${calloutType.toUpperCase()}] ${title}`];
-    
+
     if (content) {
       const contentLines = content.split('\n').map(line => `> ${line}`);
       lines.push(...contentLines);
     }
-    
+
     return lines.join('\n');
   }
 

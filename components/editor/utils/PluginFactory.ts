@@ -1,14 +1,8 @@
 import { ComponentType } from 'react';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { BlockPlugin } from '../plugins/BlockPlugin';
-import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
-import {
-  BlockComponentProps,
-  CustomPluginOptions,
-  MarkdownSyntax,
-  ToolbarConfig,
-  BlockSettings
-} from '../types/PluginTypes';
+// import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
+import { BlockComponentProps, CustomPluginOptions } from '../types/PluginTypes';
 
 /**
  * Factory function to create custom block plugins easily
@@ -19,11 +13,11 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
     displayName,
     component,
     markdownPattern,
-    parser,
-    serializer,
+    // parser,
+    // serializer,
     controller = {},
     toolbar = {},
-    settings = {}
+    settings = {},
   } = options;
 
   // Create a dynamic plugin class
@@ -35,23 +29,25 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
     readonly blockType = blockType;
     readonly component = component;
 
-    readonly markdownSyntax = markdownPattern ? {
-      patterns: {
-        block: markdownPattern
-      },
-      priority: 50
-    } : undefined;
+    readonly markdownSyntax = markdownPattern
+      ? {
+          patterns: {
+            block: markdownPattern,
+          },
+          priority: 50,
+        }
+      : undefined;
 
     readonly toolbar = {
       icon: 'extension',
       label: displayName,
       group: 'custom',
-      ...toolbar
+      ...toolbar,
     };
 
     readonly settings = {
       allowedParents: ['root'] as EditorBlockType[],
-      ...settings
+      ...settings,
     };
 
     // Override controller methods if provided
@@ -80,7 +76,11 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
       if (controller.handleEnter) {
         const result = controller.handleEnter(block);
         // Filter out EnhancedKeyboardResult since this method doesn't support it
-        if (result && typeof result === 'object' && ('newBlocks' in result || 'updates' in result || 'focusBlockId' in result)) {
+        if (
+          result &&
+          typeof result === 'object' &&
+          ('newBlocks' in result || 'updates' in result || 'focusBlockId' in result)
+        ) {
           // For now, just return null if it's an EnhancedKeyboardResult
           // TODO: Enhance this method to support EnhancedKeyboardResult
           return null;
@@ -126,8 +126,6 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
       }
     }
 
-
-
     protected canDrag(block: EditorBlock): boolean {
       if (controller.canDrag) {
         return controller.canDrag(block);
@@ -163,7 +161,7 @@ export function createSimpleTextPlugin({
   placeholder = 'Type something...',
   multiline = true,
   markdownPattern,
-  icon = 'text'
+  icon = 'text',
 }: {
   blockType: string;
   displayName: string;
@@ -180,9 +178,11 @@ export function createSimpleTextPlugin({
     onBlur,
     isSelected,
     isEditing,
-    style
+    style,
   }) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const React = require('react');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { View, TextInput, StyleSheet } = require('react-native');
 
     const styles = StyleSheet.create({
@@ -210,13 +210,11 @@ export function createSimpleTextPlugin({
       },
     });
 
-    return React.createElement(View, { style: [styles.container, style] },
+    return React.createElement(
+      View,
+      { style: [styles.container, style] },
       React.createElement(TextInput, {
-        style: [
-          styles.textInput,
-          isSelected && styles.selected,
-          isEditing && styles.editing
-        ],
+        style: [styles.textInput, isSelected && styles.selected, isEditing && styles.editing],
         value: block.content,
         onChangeText: (text: string) => onBlockChange({ content: text }),
         onFocus,
@@ -225,7 +223,7 @@ export function createSimpleTextPlugin({
         placeholderTextColor: '#999',
         multiline,
         textAlignVertical: multiline ? 'top' : 'center',
-        scrollEnabled: false
+        scrollEnabled: false,
       })
     );
   };
@@ -237,8 +235,8 @@ export function createSimpleTextPlugin({
     markdownPattern,
     toolbar: {
       icon,
-      label: displayName
-    }
+      label: displayName,
+    },
   });
 }
 
@@ -250,7 +248,7 @@ export function createComponentPlugin({
   displayName,
   component,
   defaultContent = '',
-  icon = 'extension'
+  icon = 'extension',
 }: {
   blockType: string;
   displayName: string;
@@ -264,13 +262,13 @@ export function createComponentPlugin({
     component,
     toolbar: {
       icon,
-      label: displayName
+      label: displayName,
     },
     settings: {
       defaultMeta: {
-        content: defaultContent
-      }
-    }
+        content: defaultContent,
+      },
+    },
   });
 }
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -7,6 +7,7 @@ import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { KeyboardHandler } from '../../core/KeyboardHandler';
 import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+import { ANIMATION_CONFIG, getFocusColors } from '../../styles/blockStyles';
 
 // Global cursor position tracking for checklist blocks
 const checklistCursorPositions: { [blockId: string]: number } = {};
@@ -16,106 +17,163 @@ export const getChecklistCursorPosition = (blockId: string): number => {
   return checklistCursorPositions[blockId] || 0;
 };
 
+const CHECKLIST_INDICATOR_WIDTH = 4;
+const CHECKLIST_INDICATOR_SPACING = 6;
+const CHECKLIST_BASE_PADDING = 12;
+
+const CHECKLIST_INDICATOR_COLORS = {
+  light: [
+    'rgba(37, 99, 235, 0.2)',
+    'rgba(14, 165, 233, 0.2)',
+    'rgba(34, 197, 94, 0.2)',
+    'rgba(249, 115, 22, 0.18)',
+    'rgba(168, 85, 247, 0.18)',
+  ],
+  dark: [
+    'rgba(148, 193, 255, 0.35)',
+    'rgba(56, 189, 248, 0.35)',
+    'rgba(16, 185, 129, 0.35)',
+    'rgba(249, 115, 22, 0.3)',
+    'rgba(241, 171, 255, 0.35)',
+  ],
+};
+
+type FocusableHandle = { focus: () => void };
+
 /**
  * Checklist block component with modern dark theme support
  */
-const ChecklistComponent: React.FC<BlockComponentProps> = ({
-  block,
-  onBlockChange,
-  onFocus,
-  onBlur,
-  isSelected,
-  isEditing,
-  style
-}) => {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  const isChecked = block.meta?.checked || false;
-  const level = block.meta?.level || 0;
-  const [cursorPosition, setCursorPosition] = useState(0);
+const ChecklistComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  ({ block, onBlockChange, onFocus, onBlur, isSelected, isFocused, isEditing, style }, ref) => {
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const styles = getStyles(colorScheme ?? 'light');
+    const isChecked = block.meta?.checked || false;
+    const level = block.meta?.level || 0;
+    const [cursorPosition, setCursorPosition] = useState(0);
+    const animatedValue = useRef(new Animated.Value(0)).current;
+    const inputRef = useRef<TextInput>(null);
 
-  // Get the plugin instance and controller
-  // Note: In a real implementation, this would be passed from BlockRenderer
-  const pluginInstance = ChecklistPlugin.getInstance();
-  const controller = pluginInstance.controller;
+    // Determine if block should show focused state
+    const shouldFocus = isFocused || isEditing;
 
-  const handleTextChange = (text: string) => {
-    onBlockChange({ content: text });
-  };
+    // Animate focus state changes
+    useEffect(() => {
+      Animated.timing(animatedValue, {
+        toValue: shouldFocus ? 1 : 0,
+        duration: ANIMATION_CONFIG.duration,
+        useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+      }).start();
+    }, [shouldFocus, animatedValue]);
 
-  const handleSelectionChange = (event: any) => {
-    const { selection } = event.nativeEvent;
-    const position = selection.start;
-    setCursorPosition(position);
-    // Store cursor position globally so handleBackspace can access it
-    checklistCursorPositions[block.id] = position;
-  };
+    // Get animated colors
+    const focusColors = getFocusColors(colorScheme ?? 'light', shouldFocus || false);
+    const indicatorPalette = CHECKLIST_INDICATOR_COLORS[colorScheme ?? 'light'];
+    const indicatorWidth =
+      level > 0 ? level * (CHECKLIST_INDICATOR_WIDTH + CHECKLIST_INDICATOR_SPACING) - CHECKLIST_INDICATOR_SPACING : 0;
 
-  const toggleChecked = () => {
-    onBlockChange({
-      ...block,
-      meta: {
-        ...block.meta,
-        checked: !isChecked
-      }
+    // Get the plugin instance and controller
+    // Note: In a real implementation, this would be passed from BlockRenderer
+    const pluginInstance = ChecklistPlugin.getInstance();
+    const controller = pluginInstance.controller;
+
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        inputRef.current?.focus();
+      },
+    }));
+
+    const handleTextChange = (text: string) => {
+      onBlockChange({ content: text });
+    };
+
+    const handleSelectionChange = (event: any) => {
+      const { selection } = event.nativeEvent;
+      const position = selection.start;
+      setCursorPosition(position);
+      // Store cursor position globally so handleBackspace can access it
+      checklistCursorPositions[block.id] = position;
+    };
+
+    const toggleChecked = () => {
+      onBlockChange({
+        ...block,
+        meta: {
+          ...block.meta,
+          checked: !isChecked,
+        },
+      });
+    };
+
+    // Animated background color
+    const animatedBackgroundColor = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
     });
-  };
 
-  return (
-    <KeyboardHandler
-      block={block}
-      controller={controller}
-      cursorPosition={cursorPosition}
-    >
-      {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
-        <View style={[styles.container, style]}>
-          <View style={[
-            styles.checklistItem,
-            { marginLeft: level * 20 },
-            isSelected && styles.selected,
-            isEditing && styles.editing
-          ]}>
-            <TouchableOpacity
-              style={styles.checkboxContainer}
-              onPress={toggleChecked}
-            >
-              <View style={[
-                styles.checkbox,
-                isChecked && styles.checkedBox
-              ]}>
-                {isChecked && (
-                  <Text style={styles.checkmark}>✓</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-
-            <FormattedTextInput
-              value={block.content}
-              onChangeText={handleTextChange}
-              onSelectionChange={handleSelectionChange}
-              onFocus={onFocus}
-              onBlur={onBlur}
-              onKeyPress={onKeyPress}
-                          placeholder="Checklist item"
-            placeholderTextColor={colors.textSecondary}
-              isSelected={isSelected}
-              isEditing={isEditing}
-              multiline
-              textAlignVertical="top"
-              scrollEnabled={false}
-              preventNewlines={preventNewlines}
+    return (
+      <KeyboardHandler block={block} controller={controller} cursorPosition={cursorPosition}>
+        {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
+          <View style={[styles.container, style]}>
+            <Animated.View
               style={[
-                styles.textInput,
-                isChecked && styles.checkedText
+                styles.checklistItem,
+                {
+                  backgroundColor: animatedBackgroundColor,
+                  paddingLeft: CHECKLIST_BASE_PADDING,
+                },
               ]}
-            />
+            >
+              {level > 0 && (
+                <View pointerEvents="none" style={[styles.indicatorContainer, { width: indicatorWidth }]}>
+                  {Array.from({ length: level }).map((_, idx) => (
+                    <View
+                      key={`indicator-${idx}`}
+                      style={[
+                        styles.indicatorBar,
+                        {
+                          marginRight: idx === level - 1 ? 0 : CHECKLIST_INDICATOR_SPACING,
+                          backgroundColor: indicatorPalette[idx % indicatorPalette.length],
+                          opacity: shouldFocus ? 0.9 : 0.5,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+              <TouchableOpacity style={styles.checkboxContainer} onPress={toggleChecked}>
+                <View style={[styles.checkbox, isChecked && styles.checkedBox]}>
+                  {isChecked && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+
+              <FormattedTextInput
+                value={block.content}
+                onChangeText={handleTextChange}
+                onSelectionChange={handleSelectionChange}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                onKeyPress={onKeyPress}
+                placeholder="Checklist item"
+                placeholderTextColor={colors.textSecondary}
+                isSelected={isSelected}
+                isEditing={isEditing}
+                multiline
+                textAlignVertical="top"
+                scrollEnabled={false}
+                preventNewlines={preventNewlines}
+                ref={inputRef}
+                style={[styles.textInput, isChecked && styles.checkedText]}
+              />
+            </Animated.View>
           </View>
-        </View>
-      )}
-    </KeyboardHandler>
-  );
-};
+        )}
+      </KeyboardHandler>
+    );
+  }
+);
+
+ChecklistComponent.displayName = 'ChecklistComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
@@ -126,27 +184,20 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     checklistItem: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       paddingVertical: 6,
       paddingHorizontal: 8,
       borderRadius: 8,
       minHeight: 39,
-    },
-    selected: {
-      // Minimal visual feedback for selection
-    },
-    editing: {
-      backgroundColor: colors.surface,
-      borderColor: colors.teal,
-      borderWidth: 1,
-      borderRadius: 8,
+      backgroundColor: 'transparent', // Will be overridden by animated value
     },
     checkboxContainer: {
-      paddingRight: 12,
       paddingVertical: 0,
       justifyContent: 'center',
       alignItems: 'center',
       minHeight: 27,
+      marginLeft: 4,
+      marginRight: 12,
     },
     checkbox: {
       width: 20,
@@ -172,8 +223,9 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       fontSize: 16,
       lineHeight: 24,
       color: colors.text,
+      // NO padding - container/parent handles all spacing
       paddingVertical: 0,
-      paddingHorizontal: 8,
+      paddingHorizontal: 0,
       minHeight: 27,
       textAlignVertical: 'center',
     },
@@ -181,6 +233,18 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       textDecorationLine: 'line-through',
       color: colors.textSecondary,
       opacity: 0.7,
+    },
+    indicatorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      marginRight: 12,
+      height: 24,
+    },
+    indicatorBar: {
+      width: CHECKLIST_INDICATOR_WIDTH,
+      height: 12,
+      borderRadius: CHECKLIST_INDICATOR_WIDTH,
     },
   });
 };
@@ -213,27 +277,27 @@ export class ChecklistPlugin implements BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^(\s*)- \[([ x])\]\s+(.+)$/
+      block: /^(\s*)- \[([ x])\]\s+(.+)$/,
     },
-    priority: 85
+    priority: 85,
   };
 
   readonly toolbar = {
     icon: 'check-square',
     label: 'Checklist',
     shortcut: 'Ctrl+Shift+C',
-    group: 'text'
+    group: 'text',
   };
 
   readonly settings = {
     allowedParents: ['root', 'quote', 'callout', 'checklist'] as EditorBlockType[],
     validation: {
-      required: ['content'] as string[]
+      required: ['content'] as string[],
     },
     defaultMeta: {
       checked: false,
-      level: 0
-    }
+      level: 0,
+    },
   };
 
   protected handleKeyPress(event: any, block: EditorBlock): boolean | void {
@@ -246,28 +310,32 @@ export class ChecklistPlugin implements BlockPlugin {
   /**
    * Handle Enter key
    */
-  protected handleEnter(block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number): EditorBlock | EditorBlock[] | null {
+  protected handleEnter(
+    block: EditorBlock,
+    allBlocks?: EditorBlock[],
+    currentIndex?: number
+  ): EditorBlock | EditorBlock[] | null {
     // If content is empty, convert to paragraph
     if (block.content.trim() === '') {
       return {
         ...block,
         type: 'paragraph',
         content: '',
-        meta: {}
+        meta: {},
       };
     }
-    
+
     // Create a new checklist item with the same indentation level
     const level = block.meta?.level || 0;
-    
+
     const newItem: EditorBlock = {
       id: this.generateId(),
       type: 'checklist',
       content: '',
       meta: {
         checked: false,
-        level: level
-      }
+        level: level,
+      },
     };
 
     // Return both blocks - the current one stays, and we add a new one after it
@@ -283,7 +351,7 @@ export class ChecklistPlugin implements BlockPlugin {
       return {
         ...block,
         type: 'paragraph',
-        meta: {}
+        meta: {},
       };
     }
 
@@ -294,8 +362,8 @@ export class ChecklistPlugin implements BlockPlugin {
         ...block,
         meta: {
           ...block.meta,
-          level: newLevel
-        }
+          level: newLevel,
+        },
       };
     }
 
@@ -310,15 +378,13 @@ export class ChecklistPlugin implements BlockPlugin {
         ...block,
         type: 'paragraph',
         content: `${indent}- [${checkState}] ${block.content}`,
-        meta: {}
+        meta: {},
       };
     }
 
     // For normal backspace operations (not at beginning), let default behavior handle it
     return null;
   }
-
-
 
   protected onCreate(block: EditorBlock): EditorBlock {
     const newBlock = { ...block };
@@ -337,7 +403,7 @@ export class ChecklistPlugin implements BlockPlugin {
       newBlock.meta = {
         ...newBlock.meta,
         checked,
-        level
+        level,
       };
     }
 
@@ -346,7 +412,7 @@ export class ChecklistPlugin implements BlockPlugin {
       newBlock.meta = {
         ...newBlock.meta,
         checked: false,
-        level: newBlock.meta?.level || 0
+        level: newBlock.meta?.level || 0,
       };
     }
 
@@ -357,16 +423,16 @@ export class ChecklistPlugin implements BlockPlugin {
     // Return only the default actions (duplicate and delete)
     // Note: ChecklistPlugin implements BlockPlugin but doesn't extend it
     const actions: any[] = [];
-    
+
     actions.push({
       id: 'duplicate',
       label: 'Duplicate',
       icon: 'copy',
       handler: (block: EditorBlock, context: any) => {
         context.duplicateBlock();
-      }
+      },
     });
-    
+
     actions.push({
       id: 'delete',
       label: 'Delete',
@@ -374,9 +440,9 @@ export class ChecklistPlugin implements BlockPlugin {
       style: 'destructive',
       handler: (block: EditorBlock, context: any) => {
         context.deleteBlock();
-      }
+      },
     });
-    
+
     return actions;
   }
 
@@ -400,7 +466,7 @@ export class ChecklistPlugin implements BlockPlugin {
       onCreate: this.onCreate.bind(this),
       onUpdate: this.onUpdate.bind(this),
       onDelete: this.onDelete.bind(this),
-      getActions: this.getActions.bind(this)
+      getActions: this.getActions.bind(this),
     };
   }
 
@@ -450,7 +516,7 @@ export class ChecklistPlugin implements BlockPlugin {
       version: this.version,
       type: this.type,
       description: this.description,
-      blockType: this.blockType
+      blockType: this.blockType,
     };
   }
 
@@ -462,21 +528,17 @@ export class ChecklistPlugin implements BlockPlugin {
       id: this.generateId(),
       type: 'checklist' as EditorBlockType,
       content,
-      meta
+      meta,
     };
   }
 
   /**
    * Create checklist item with specific properties
    */
-  createChecklistItem(
-    content: string = '',
-    checked: boolean = false,
-    level: number = 0
-  ): EditorBlock {
+  createChecklistItem(content: string = '', checked: boolean = false, level: number = 0): EditorBlock {
     return this.createBlock(content, {
       checked,
-      level: Math.max(0, Math.min(5, level))
+      level: Math.max(0, Math.min(5, level)),
     });
   }
 
@@ -532,8 +594,8 @@ export class ChecklistPlugin implements BlockPlugin {
           ...block,
           meta: {
             ...block.meta,
-            checked: true
-          }
+            checked: true,
+          },
         };
       }
       return block;
@@ -550,8 +612,8 @@ export class ChecklistPlugin implements BlockPlugin {
           ...block,
           meta: {
             ...block.meta,
-            checked: false
-          }
+            checked: false,
+          },
         };
       }
       return block;

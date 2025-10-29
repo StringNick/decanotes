@@ -10,7 +10,7 @@ interface NotesData {
 
 /**
  * Renterd storage backend
- * 
+ *
  * Integrates with Sia Renterd for decentralized storage.
  * All notes are stored as a single JSON object in the 'decanotes' bucket.
  */
@@ -34,16 +34,13 @@ export class RenterdBackend implements StorageBackend {
     }
 
     try {
-      const response = await fetch(
-        `${this.config.host}/api/bus/bucket/${BUCKET_NAME}`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': this.getAuthHeader(),
-          },
-        }
-      );
+      const response = await fetch(`${this.config.host}/api/bus/bucket/${BUCKET_NAME}`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: this.getAuthHeader(),
+        },
+      });
       return response.ok;
     } catch (error) {
       console.error('Error checking bucket:', error);
@@ -61,7 +58,7 @@ export class RenterdBackend implements StorageBackend {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': this.getAuthHeader(),
+          Authorization: this.getAuthHeader(),
         },
         body: JSON.stringify({
           name: BUCKET_NAME,
@@ -80,7 +77,7 @@ export class RenterdBackend implements StorageBackend {
 
   private async ensureBucketExists(): Promise<void> {
     const exists = await this.checkBucketExists();
-    
+
     if (!exists) {
       const created = await this.createBucket();
       if (!created) {
@@ -95,16 +92,13 @@ export class RenterdBackend implements StorageBackend {
     }
 
     try {
-      const response = await fetch(
-        `${this.config.host}/api/worker/object/${NOTES_OBJECT_KEY}?bucket=${BUCKET_NAME}`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/octet-stream',
-            'Authorization': this.getAuthHeader(),
-          },
-        }
-      );
+      const response = await fetch(`${this.config.host}/api/worker/object/${NOTES_OBJECT_KEY}?bucket=${BUCKET_NAME}`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/octet-stream',
+          Authorization: this.getAuthHeader(),
+        },
+      });
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -116,7 +110,7 @@ export class RenterdBackend implements StorageBackend {
 
       const text = await response.text();
       const data = JSON.parse(text) as NotesData;
-      
+
       // Parse dates
       data.notes = data.notes.map(note => ({
         ...note,
@@ -124,7 +118,7 @@ export class RenterdBackend implements StorageBackend {
         updatedAt: new Date(note.updatedAt),
         lastModified: new Date(note.lastModified),
       }));
-      
+
       return data;
     } catch (error) {
       console.error('Error downloading notes:', error);
@@ -139,14 +133,14 @@ export class RenterdBackend implements StorageBackend {
 
     try {
       const jsonData = JSON.stringify(data, null, 2);
-      
+
       const response = await fetch(
         `${this.config.host}/api/worker/object/${NOTES_OBJECT_KEY}?bucket=${BUCKET_NAME}&mimetype=application/json`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/octet-stream',
-            'Authorization': this.getAuthHeader(),
+            Authorization: this.getAuthHeader(),
           },
           body: jsonData,
         }
@@ -163,12 +157,12 @@ export class RenterdBackend implements StorageBackend {
     if (config.type !== 'renterd') {
       throw new Error('Invalid config type for RenterdBackend');
     }
-    
+
     this.config = config;
-    
+
     // Ensure bucket exists
     await this.ensureBucketExists();
-    
+
     // Load existing notes
     const data = await this.downloadNotesData();
     if (data) {
@@ -176,7 +170,7 @@ export class RenterdBackend implements StorageBackend {
     } else {
       this.notes = [];
     }
-    
+
     this.ready = true;
   }
 
@@ -184,18 +178,15 @@ export class RenterdBackend implements StorageBackend {
     if (!this.config) {
       return false;
     }
-    
+
     try {
-      const response = await fetch(
-        `${this.config.host}/api/bus/bucket/${BUCKET_NAME}`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': this.getAuthHeader(),
-          },
-        }
-      );
+      const response = await fetch(`${this.config.host}/api/bus/bucket/${BUCKET_NAME}`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: this.getAuthHeader(),
+        },
+      });
 
       // Connection successful if we get 200 or 404 (bucket doesn't exist yet)
       return response.ok || response.status === 404;

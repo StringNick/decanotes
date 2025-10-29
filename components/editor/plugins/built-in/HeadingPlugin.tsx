@@ -1,103 +1,160 @@
-import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { NativeSyntheticEvent, StyleSheet, Text, TextInput, TextInputKeyPressEventData, View } from 'react-native';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Animated, NativeSyntheticEvent, StyleSheet, TextInput, TextInputKeyPressEventData } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
+import { ANIMATION_CONFIG, BLOCK_SPACING, getHeadingFocusColors } from '../../styles/blockStyles';
 import { BlockComponentProps } from '../../types/PluginTypes';
 import { BlockPlugin } from '../BlockPlugin';
 
 // Global cursor position tracker for heading blocks
 let headingCursorPositions: { [blockId: string]: number } = {};
 
+type FocusableHandle = { focus: () => void };
+
 /**
  * Heading block component with modern minimalist design
  */
-const HeadingComponent = forwardRef<TextInput, BlockComponentProps>(({
-  block,
-  isSelected,
-  isFocused,
-  isEditing,
-  isDragging,
-  onBlockChange,
-  onFocus,
-  onBlur,
-  onKeyPress,
-  theme,
-  readOnly
-}, ref) => {
-  const inputRef = useRef<TextInput>(null);
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const level = block.meta?.level || 1;
-  const headingStyle = getHeadingStyle(level, colorScheme ?? 'light');
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const styles = getStyles(colorScheme ?? 'light', level, isEditing || false);
+const HeadingComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  (
+    {
+      block,
+      isSelected,
+      isFocused,
+      isEditing,
+      isDragging,
+      onBlockChange,
+      onFocus,
+      onBlur,
+      onKeyPress,
+      theme,
+      readOnly,
+    },
+    ref
+  ) => {
+    const inputRef = useRef<TextInput>(null);
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const level = block.meta?.level || 1;
+    const headingStyle = getHeadingStyle(level, colorScheme ?? 'light');
+    const [cursorPosition, setCursorPosition] = useState(0);
+    const animatedValue = useRef(new Animated.Value(0)).current;
 
-  // Expose the TextInput methods through ref
-  useImperativeHandle(ref, () => inputRef.current as TextInput);
+    // Expose the TextInput methods through ref
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        inputRef.current?.focus();
+      },
+    }));
 
-  const handleTextChange = (text: string) => {
-    onBlockChange({ content: text });
-  };
+    // Determine if block should show focused state
+    const shouldFocus = isFocused || isEditing;
 
-  const handleKeyPress = (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    const key = event.nativeEvent.key;
+    // Animate focus state changes
+    useEffect(() => {
+      Animated.timing(animatedValue, {
+        toValue: shouldFocus ? 1 : 0,
+        duration: ANIMATION_CONFIG.duration,
+        useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+      }).start();
+    }, [shouldFocus, animatedValue]);
 
-    // Check if backspace is pressed at position 0
-    if (key === 'Backspace' && cursorPosition === 0 && block.content.length > 0) {
-      // Convert heading back to paragraph with markdown syntax
-      const level = block.meta?.level || 1;
-      const markdownPrefix = '#'.repeat(level);
+    // Get animated border color
+    const focusColors = getHeadingFocusColors(colorScheme ?? 'light', level, shouldFocus || false);
+    const styles = getStyles(colorScheme ?? 'light', level);
 
-      onBlockChange({
-        type: 'paragraph' as EditorBlockType,
-        content: `${markdownPrefix}${block.content}`,
-        meta: {}
-      });
+    const handleTextChange = (text: string) => {
+      // If we're editing and had a custom ID, preserve it
+      if (isEditing && block.meta?.headingId) {
+        // Only update if not manually editing the {#id} part
+        if (!text.includes('{#')) {
+          onBlockChange({ content: `${text} {#${block.meta.headingId}}` });
+        } else {
+          onBlockChange({ content: text });
+        }
+      } else {
+        onBlockChange({ content: text });
+      }
+    };
 
-      // Prevent default backspace behavior
-      event.preventDefault();
-      return;
-    }
+    // Extract display text and headingId from content
+    const getDisplayContent = () => {
+      if (isEditing) {
+        // Show everything in edit mode
+        return block.content;
+      }
+      // In view mode, hide {#id} suffix
+      const match = block.content.match(/^(.+?)\s*\{#[\w-]+\}\s*$/);
+      if (match) {
+        return match[1].trim();
+      }
+      return block.content;
+    };
 
-    // Call the original onKeyPress if provided
-    if (onKeyPress) {
-      onKeyPress(event);
-    }
-  };
+    const displayContent = getDisplayContent();
 
-  const handleSelectionChange = (event: any) => {
-    const { selection } = event.nativeEvent;
-    const position = selection.start;
-    setCursorPosition(position);
-    // Store cursor position globally so handleBackspace can access it
-    headingCursorPositions[block.id] = position;
-  };
+    const handleKeyPress = (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+      const key = event.nativeEvent.key;
 
-  return (
-    <View style={styles.container}>
-      <FormattedTextInput
-        ref={inputRef}
-        value={block.content}
-        onChangeText={handleTextChange}
-        onSelectionChange={handleSelectionChange}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        onKeyPress={handleKeyPress}
-        placeholder={`Heading ${level}`}
-        placeholderTextColor={colors.textSecondary}
-        isSelected={isSelected}
-        isEditing={isEditing}
-        preventNewlines={true}
-        style={[
-          headingStyle,
-          styles.textInput,
-        ]}
-      />
-    </View>
-  );
-});
+      // Check if backspace is pressed at position 0
+      if (key === 'Backspace' && cursorPosition === 0 && block.content.length > 0) {
+        // Convert heading back to paragraph with markdown syntax
+        const level = block.meta?.level || 1;
+        const markdownPrefix = '#'.repeat(level);
+
+        onBlockChange({
+          type: 'paragraph' as EditorBlockType,
+          content: `${markdownPrefix}${block.content}`,
+          meta: {},
+        });
+
+        // Prevent default backspace behavior
+        event.preventDefault();
+        return;
+      }
+
+      // Call the original onKeyPress if provided
+      if (onKeyPress) {
+        onKeyPress(event);
+      }
+    };
+
+    const handleSelectionChange = (event: any) => {
+      const { selection } = event.nativeEvent;
+      const position = selection.start;
+      setCursorPosition(position);
+      // Store cursor position globally so handleBackspace can access it
+      headingCursorPositions[block.id] = position;
+    };
+
+    // Animated border color
+    const animatedBorderColor = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['rgba(0, 0, 0, 0)', focusColors.borderColor],
+    });
+
+    return (
+      <Animated.View style={[styles.container, { borderLeftColor: animatedBorderColor }]}>
+        <FormattedTextInput
+          ref={inputRef}
+          value={displayContent}
+          onChangeText={handleTextChange}
+          onSelectionChange={handleSelectionChange}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          onKeyPress={handleKeyPress}
+          placeholder={`Heading ${level}`}
+          placeholderTextColor={colors.textSecondary}
+          isSelected={isSelected}
+          isEditing={isEditing}
+          preventNewlines={true}
+          style={[headingStyle, styles.textInput]}
+        />
+      </Animated.View>
+    );
+  }
+);
 
 HeadingComponent.displayName = 'HeadingComponent';
 
@@ -131,27 +188,23 @@ const getHeadingStyle = (level: number, colorScheme: 'light' | 'dark') => {
   }
 };
 
-const getStyles = (colorScheme: 'light' | 'dark', level: number, isEditing: boolean) => {
-  const colors = Colors[colorScheme];
-  const isDark = colorScheme === 'dark';
-
-  // Subtle border color that's always present but more visible when editing
-  const borderOpacity = isEditing ? 0.4 : 0;
-  const borderColor = isDark
-    ? `rgba(100, 181, 246, ${borderOpacity})`
-    : `rgba(33, 150, 243, ${borderOpacity})`;
-
+const getStyles = (colorScheme: 'light' | 'dark', level: number) => {
   return StyleSheet.create({
     container: {
-      marginVertical: level === 1 ? 8 : level === 2 ? 6 : 4,
-      paddingLeft: 8,
-      borderLeftWidth: 2,
-      borderLeftColor: borderColor,
+      // Use consistent spacing for all heading levels to prevent layout jumps
+      marginVertical: BLOCK_SPACING.marginVertical,
+      paddingLeft: BLOCK_SPACING.paddingLeft,
+      paddingRight: BLOCK_SPACING.paddingRight,
+      paddingVertical: BLOCK_SPACING.paddingVertical,
+      // Always have border, color will be animated
+      borderLeftWidth: BLOCK_SPACING.borderWidth,
+      borderLeftColor: 'rgba(0, 0, 0, 0)', // Will be overridden by animated value
     },
     textInput: {
       width: '100%',
-      paddingRight: 4,
-      paddingVertical: 2,
+      // NO padding on input - container handles all padding
+      paddingHorizontal: 0,
+      paddingVertical: 0,
       backgroundColor: 'transparent',
     },
   });
@@ -170,9 +223,9 @@ export class HeadingPlugin extends BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^(#{1,6})\s+(.+)$/
+      block: /^(#{1,6})\s+(.+)$/,
     },
-    priority: 80
+    priority: 80,
   };
 
   readonly toolbar = {
@@ -187,18 +240,18 @@ export class HeadingPlugin extends BlockPlugin {
       { label: 'Heading 4', shortcut: 'Ctrl+Alt+4', meta: { level: 4 } },
       { label: 'Heading 5', shortcut: 'Ctrl+Alt+5', meta: { level: 5 } },
       { label: 'Heading 6', shortcut: 'Ctrl+Alt+6', meta: { level: 6 } },
-    ]
+    ],
   };
 
   readonly settings = {
     allowedParents: ['root', 'quote', 'callout'] as EditorBlockType[],
     validation: {
       required: [],
-      maxLength: 200
+      maxLength: 200,
     },
     defaultMeta: {
-      level: 1
-    }
+      level: 1,
+    },
   };
 
   /**
@@ -208,22 +261,22 @@ export class HeadingPlugin extends BlockPlugin {
   protected handleBackspace(block: EditorBlock): EditorBlock | null {
     // Get the current cursor position for this block
     const cursorPosition = headingCursorPositions[block.id] || 0;
-    
+
     // Only convert to paragraph with markdown syntax if cursor is at position 0
     if (cursorPosition === 0) {
       const level = block.meta?.level || 1;
       const markdownPrefix = '#'.repeat(level);
-      
+
       // Convert heading back to paragraph with markdown syntax (no space to prevent auto-conversion)
-       return {
-         ...block,
-         type: 'paragraph',
-         content: `${markdownPrefix}${block.content}`,
-         meta: {}
-       };
+      return {
+        ...block,
+        type: 'paragraph',
+        content: `${markdownPrefix}${block.content}`,
+        meta: {},
+      };
     }
-    
+
     // If cursor is not at position 0, let default backspace behavior handle it
     return null;
   }
-};
+}

@@ -22,23 +22,30 @@ export interface ExtendedMarkdownEditorProps {
   onKeyDown?: (event: KeyboardEvent) => void;
   style?: any;
   autoFocus?: boolean;
-  
+
   // Plugin system props
   plugins?: (BlockPlugin | MarkdownPlugin)[];
   customBlocks?: Record<string, ComponentType<any>>; // Legacy support
-  
+
   // Advanced configuration
   config?: EditorConfig;
-  
+
   // Event handlers
   onPluginEvent?: (event: PluginEvent) => void;
   onError?: (error: EditorError) => void;
   onBlocksChange?: (blocks: EditorBlock[]) => void;
   onEditingChange?: (isEditing: boolean) => void;
-  
+
   // Plugin arrays
   blockPlugins?: BlockPlugin[];
   markdownPlugins?: MarkdownPlugin[];
+
+  // Keyboard dock props
+  keyboardHeight?: number;
+  keyboardDockVisible?: boolean;
+  keyboardDockBlockSection?: React.ReactNode;
+  keyboardDockFormattingSection?: React.ReactNode;
+  keyboardDockActionSection?: React.ReactNode;
 }
 
 // Editor configuration
@@ -51,21 +58,21 @@ export interface EditorConfig {
     autoSave?: boolean;
     collaboration?: boolean;
   };
-  
+
   // Toolbar configuration
   toolbar?: {
     enabled?: boolean;
     position?: 'top' | 'bottom';
     items?: string[];
   };
-  
+
   // Drag and drop settings
   dragAndDrop?: {
     enabled?: boolean;
     allowFileUpload?: boolean;
     allowBlockReordering?: boolean;
   };
-  
+
   // Behavior settings
   behavior?: {
     autoFocus?: boolean;
@@ -74,7 +81,7 @@ export interface EditorConfig {
     createBlockOnEnter?: boolean;
     mergeBlocksOnBackspace?: boolean;
   };
-  
+
   // UI settings
   ui?: {
     showLineNumbers?: boolean;
@@ -82,21 +89,21 @@ export interface EditorConfig {
     compactMode?: boolean;
     animationsEnabled?: boolean;
   };
-  
+
   // Performance settings
   performance?: {
     virtualScrolling?: boolean;
     debounceMs?: number;
     maxBlocks?: number;
   };
-  
+
   // History settings
   historyDebounceMs?: number;
   maxHistorySize?: number;
-  
+
   // Debug settings
   debug?: boolean;
-  
+
   // Theme settings
   theme?: {
     colors?: {
@@ -118,7 +125,7 @@ export interface EditorConfig {
       fontFamily?: string;
     };
   };
-  
+
   // Keyboard settings
   keyboard?: {
     enabled?: boolean;
@@ -158,6 +165,7 @@ export interface EditorState {
   blocks: ExtendedBlock[];
   focusedBlockId: string | null;
   selectedBlocks: string[];
+  highlightedBlockId: string | null; // NEW: For Notion-style highlight navigation (separate from focus)
   mode: EditorMode;
   isDirty: boolean;
   isLoading: boolean;
@@ -172,7 +180,7 @@ export interface EditorState {
 }
 
 // Editor actions
-export type EditorAction = 
+export type EditorAction =
   | { type: 'SET_BLOCKS'; blocks: ExtendedBlock[] }
   | { type: 'ADD_BLOCK'; block: ExtendedBlock; index?: number }
   | { type: 'UPDATE_BLOCK'; id: string; changes: Partial<ExtendedBlock> }
@@ -180,6 +188,8 @@ export type EditorAction =
   | { type: 'MOVE_BLOCK'; id: string; newIndex: number }
   | { type: 'SET_FOCUS'; blockId: string | null }
   | { type: 'SET_SELECTION'; blockIds: string[] }
+  | { type: 'SET_HIGHLIGHT'; blockId: string | null } // NEW: Highlight block (Notion-style)
+  | { type: 'CLEAR_HIGHLIGHT' } // NEW: Clear highlight
   | { type: 'SET_MODE'; mode: EditorMode }
   | { type: 'SET_LOADING'; isLoading: boolean }
   | { type: 'ADD_ERROR'; error: EditorError }
@@ -207,38 +217,43 @@ export type EditorAction =
 export interface EditorContextInterface {
   state: EditorState;
   dispatch: (action: EditorAction) => void;
-  
+  pluginRegistry: any; // PluginRegistry instance
+
   // Block operations
-  createBlock: (type: EditorBlockType | string, content?: string, index?: number) => void;
+  createBlock: (type: EditorBlockType | string, content?: string, index?: number, meta?: Record<string, any>) => string;
   updateBlock: (id: string, changes: Partial<ExtendedBlock>) => void;
   deleteBlock: (id: string) => void;
   moveBlock: (id: string, newIndex: number) => void;
   duplicateBlock: (id: string) => void;
-  
+
   // Selection operations
   selectBlock: (id: string) => void;
   selectBlocks: (ids: string[]) => void;
   clearSelection: () => void;
-  
+
   // Focus operations
   focusBlock: (id: string) => void;
   focusNext: () => void;
   focusPrevious: () => void;
-  
+
+  // Highlight operations (NEW: Notion-style navigation)
+  highlightBlock: (id: string, duration?: number) => void;
+  clearHighlight: () => void;
+
   // Mode operations
   setMode: (mode: EditorMode) => void;
   toggleMode: () => void;
-  
+
   // History operations
   undo: () => void;
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
-  
+
   // Plugin operations
   getPlugin: (id: string) => BlockPlugin | MarkdownPlugin | null;
   executePluginAction: (pluginId: string, actionId: string, data?: any) => void;
-  
+
   // Utility operations
   getMarkdown: () => string;
   setMarkdown: (markdown: string) => void;
@@ -252,16 +267,16 @@ export interface ExtendedMarkdownEditorRef extends MarkdownEditorRef {
   registerPlugin: (plugin: BlockPlugin | MarkdownPlugin) => void;
   unregisterPlugin: (pluginId: string) => void;
   getRegisteredPlugins: () => (BlockPlugin | MarkdownPlugin)[];
-  
+
   // Advanced operations
   selectBlocks: (ids: string[]) => void;
   duplicateBlock: (id: string) => void;
   validateContent: () => EditorError[];
-  
+
   // History operations
   undo: () => void;
   redo: () => void;
-  
+
   // Export/Import
   exportToFormat: (format: 'markdown' | 'html' | 'json') => string;
   importFromFormat: (content: string, format: 'markdown' | 'html' | 'json') => void;

@@ -1,4 +1,5 @@
 import { EditorBlock, EditorBlockType, FormattedTextSegment } from '../types/editor';
+import { replaceEmojiShortcodes } from './emojiMap';
 
 // Unique id generator for blocks
 export const generateId = (): string => {
@@ -81,7 +82,7 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
     if (quoteMatch) {
       const [, markers, content] = quoteMatch;
       const quoteDepth = markers.length;
-      
+
       // Check if we can combine with the current block
       if (currentBlock && currentBlock.type === 'quote' && currentBlock.meta?.depth === quoteDepth) {
         // Combine with previous quote block
@@ -117,7 +118,11 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
     const checklistMatch = trimmedLine.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
     if (checklistMatch) {
       const [, checked, content] = checklistMatch;
-      if (!currentBlock || currentBlock.type !== 'checklist' || currentBlock.meta?.checked !== (checked.toLowerCase() === 'x')) {
+      if (
+        !currentBlock ||
+        currentBlock.type !== 'checklist' ||
+        currentBlock.meta?.checked !== (checked.toLowerCase() === 'x')
+      ) {
         if (currentBlock) blocks.push(currentBlock);
         currentBlock = {
           id: generateId(),
@@ -128,6 +133,39 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
       } else {
         currentBlock.content += '\n' + content;
       }
+      continue;
+    }
+
+    // footnote definitions [^id]: text
+    const footnoteMatch = trimmedLine.match(/^\[\^([^\]]+)\]:\s+(.+)$/);
+    if (footnoteMatch) {
+      const [, footnoteId, content] = footnoteMatch;
+      if (currentBlock) blocks.push(currentBlock);
+      blocks.push({
+        id: generateId(),
+        type: 'footnote',
+        content,
+        meta: { footnoteId, footnoteLabel: `[^${footnoteId}]` },
+      });
+      currentBlock = null;
+      continue;
+    }
+
+    // definition lists (Term / : Definition)
+    const defTermMatch = trimmedLine.match(/^([^:]+)$/);
+    const defDefMatch = lines[i + 1]?.trim().match(/^:\s+(.+)$/);
+    if (defTermMatch && defDefMatch && i + 1 < lines.length) {
+      const term = defTermMatch[1].trim();
+      const definition = defDefMatch[1];
+      if (currentBlock) blocks.push(currentBlock);
+      blocks.push({
+        id: generateId(),
+        type: 'definition-list',
+        content: term,
+        meta: { term, definition },
+      });
+      currentBlock = null;
+      i++; // skip the definition line
       continue;
     }
 
@@ -156,7 +194,7 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
       // Check if this is the start of a table
       if (!currentBlock || currentBlock.type !== 'table') {
         if (currentBlock) blocks.push(currentBlock);
-        
+
         // Look ahead to collect all table lines
         const tableLines: string[] = [line];
         let j = i + 1;
@@ -172,7 +210,7 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
           const parseTableRow = (line: string): string[] => {
             return line
               .split('|')
-              .slice(1, -1)  // Remove first and last empty elements
+              .slice(1, -1) // Remove first and last empty elements
               .map(cell => cell.trim());
           };
 
@@ -189,13 +227,11 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
             if (startsWithColon && endsWithColon) return 'center';
             if (endsWithColon) return 'right';
             if (startsWithColon) return 'left';
-            return 'left';  // default
+            return 'left'; // default
           }) as ('left' | 'center' | 'right')[];
 
           // Validate that second row is actually an alignment row
-          const isValidAlignmentRow = alignmentCells.every(cell =>
-            /^:?-+:?$/.test(cell)
-          );
+          const isValidAlignmentRow = alignmentCells.every(cell => /^:?-+:?$/.test(cell));
 
           if (isValidAlignmentRow && headers.length > 0) {
             // Parse data rows
@@ -205,7 +241,7 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
               id: generateId(),
               type: 'table',
               content: '',
-              meta: { headers, rows, alignments }
+              meta: { headers, rows, alignments },
             });
             currentBlock = null;
           }
@@ -248,7 +284,10 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
         const depth = block.meta?.depth || 1;
         const prefix = '>'.repeat(depth);
         md = block.content.trim()
-          ? block.content.split('\n').map(l => `${prefix} ${l}`).join('\n')
+          ? block.content
+              .split('\n')
+              .map(l => `${prefix} ${l}`)
+              .join('\n')
           : `${prefix} `;
         break;
       }
@@ -265,7 +304,10 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
         const checked = block.meta?.checked ? 'x' : ' ';
         const depth = block.meta?.depth || 0;
         const indent = '  '.repeat(depth);
-        md = block.content.split('\n').map(it => `${indent}- [${checked}] ${it}`).join('\n');
+        md = block.content
+          .split('\n')
+          .map(it => `${indent}- [${checked}] ${it}`)
+          .join('\n');
         break;
       }
       case 'divider':
@@ -314,6 +356,14 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
         md = lines.join('\n');
         break;
       }
+      case 'footnote': {
+        md = `[^${block.meta?.footnoteId}]: ${block.content}`;
+        break;
+      }
+      case 'definition-list': {
+        md = `${block.meta?.term || block.content}\n: ${block.meta?.definition || ''}`;
+        break;
+      }
       default:
         md = block.content;
     }
@@ -322,7 +372,12 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
     if (next) {
       if (block.type === 'quote' && next.type === 'quote' && block.meta?.depth === next.meta?.depth) {
         out.push('\n');
-      } else if (block.type === 'list' && next.type === 'list' && block.meta?.ordered === next.meta?.ordered && block.meta?.depth === next.meta?.depth) {
+      } else if (
+        block.type === 'list' &&
+        next.type === 'list' &&
+        block.meta?.ordered === next.meta?.ordered &&
+        block.meta?.depth === next.meta?.depth
+      ) {
         out.push('\n');
       } else if (block.type === 'checklist' && next.type === 'checklist') {
         out.push('\n');
@@ -339,7 +394,7 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
  */
 export const parseRawText = (
   text: string,
-  currentBlock: EditorBlock,
+  currentBlock: EditorBlock
 ): { type: EditorBlockType; content: string; meta?: EditorBlock['meta'] } => {
   // empty – keep quote/list/checklist types so user can continue editing
   if (!text.trim()) {
@@ -431,27 +486,78 @@ export const parseRawText = (
  * Convert inline markdown formatting to segment array.
  */
 export const processInlineFormatting = (text: string): FormattedTextSegment[] => {
+  // First, replace emoji shortcodes with actual emoji
+  const processedText = replaceEmojiShortcodes(text);
+
   const segments: FormattedTextSegment[] = [];
   let i = 0;
-  while (i < text.length) {
+  while (i < processedText.length) {
     let handled = false;
 
-    // code span
-    if (text[i] === '`') {
-      const end = text.indexOf('`', i + 1);
+    // Footnote references [^1] or [^note]
+    if (processedText.slice(i).match(/^\[\^([^\]]+)\]/)) {
+      const match = processedText.slice(i).match(/^\[\^([^\]]+)\]/);
+      if (match) {
+        segments.push({
+          text: match[0],
+          type: 'footnote-ref',
+          meta: { footnoteId: match[1] },
+        });
+        i += match[0].length;
+        handled = true;
+      }
+    }
+
+    // Auto-link URLs (http:// or https://)
+    if (!handled && (processedText.slice(i).startsWith('http://') || processedText.slice(i).startsWith('https://'))) {
+      const urlMatch = processedText.slice(i).match(/^https?:\/\/[^\s]+/);
+      if (urlMatch) {
+        segments.push({
+          text: urlMatch[0],
+          type: 'link',
+          meta: { url: urlMatch[0] },
+        });
+        i += urlMatch[0].length;
+        handled = true;
+      }
+    }
+
+    // code span (must be checked before other markers)
+    if (!handled && processedText[i] === '`') {
+      const end = processedText.indexOf('`', i + 1);
       if (end !== -1) {
-        segments.push({ text: text.slice(i + 1, end), type: 'code' });
+        segments.push({ text: processedText.slice(i + 1, end), type: 'code' });
         i = end + 1;
         handled = true;
       }
     }
 
-    // bold ** or __
-    if (!handled && (text.slice(i).startsWith('**') || text.slice(i).startsWith('__'))) {
-      const marker = text.slice(i).startsWith('**') ? '**' : '__';
-      const end = text.indexOf(marker, i + marker.length);
+    // highlight ==text==
+    if (!handled && processedText.slice(i).startsWith('==')) {
+      const end = processedText.indexOf('==', i + 2);
       if (end !== -1) {
-        const inner = processInlineFormatting(text.slice(i + marker.length, end));
+        segments.push({ text: processedText.slice(i + 2, end), type: 'highlight' });
+        i = end + 2;
+        handled = true;
+      }
+    }
+
+    // strikethrough ~~text~~
+    if (!handled && processedText.slice(i).startsWith('~~')) {
+      const end = processedText.indexOf('~~', i + 2);
+      if (end !== -1) {
+        segments.push({ text: processedText.slice(i + 2, end), type: 'strikethrough' });
+        i = end + 2;
+        handled = true;
+      }
+    }
+
+    // bold ** or __
+    if (!handled && (processedText.slice(i).startsWith('**') || processedText.slice(i).startsWith('__'))) {
+      const marker = processedText.slice(i).startsWith('**') ? '**' : '__';
+      const end = processedText.indexOf(marker, i + marker.length);
+      if (end !== -1) {
+        const inner = processInlineFormatting(processedText.slice(i + marker.length, end));
         inner.forEach(seg => {
           if (seg.type === 'italic') segments.push({ ...seg, type: 'bold-italic' });
           else if (seg.type === 'normal') segments.push({ ...seg, type: 'bold' });
@@ -462,12 +568,36 @@ export const processInlineFormatting = (text: string): FormattedTextSegment[] =>
       }
     }
 
+    // superscript X^2^
+    if (!handled && processedText[i] === '^') {
+      const end = processedText.indexOf('^', i + 1);
+      if (end !== -1 && end > i + 1) {
+        segments.push({ text: processedText.slice(i + 1, end), type: 'superscript' });
+        i = end + 1;
+        handled = true;
+      }
+    }
+
+    // subscript H~2~O
+    if (!handled && processedText[i] === '~' && !processedText.slice(i).startsWith('~~')) {
+      const end = processedText.indexOf('~', i + 1);
+      if (end !== -1 && end > i + 1) {
+        segments.push({ text: processedText.slice(i + 1, end), type: 'subscript' });
+        i = end + 1;
+        handled = true;
+      }
+    }
+
     // italic * or _ (single)
-    if (!handled && ((text[i] === '*' && text[i + 1] !== '*') || (text[i] === '_' && text[i + 1] !== '_'))) {
-      const marker = text[i];
-      const end = text.indexOf(marker, i + 1);
+    if (
+      !handled &&
+      ((processedText[i] === '*' && processedText[i + 1] !== '*') ||
+        (processedText[i] === '_' && processedText[i + 1] !== '_'))
+    ) {
+      const marker = processedText[i];
+      const end = processedText.indexOf(marker, i + 1);
       if (end !== -1) {
-        const inner = processInlineFormatting(text.slice(i + 1, end));
+        const inner = processInlineFormatting(processedText.slice(i + 1, end));
         inner.forEach(seg => {
           if (seg.type === 'bold') segments.push({ ...seg, type: 'bold-italic' });
           else if (seg.type === 'normal') segments.push({ ...seg, type: 'italic' });
@@ -480,18 +610,32 @@ export const processInlineFormatting = (text: string): FormattedTextSegment[] =>
 
     if (!handled) {
       let normal = '';
-      while (i < text.length && text[i] !== '`' && !text.slice(i).startsWith('**') && !text.slice(i).startsWith('__') && !(text[i] === '*' && text[i + 1] !== '*') && !(text[i] === '_' && text[i + 1] !== '_')) {
-        normal += text[i];
+      while (
+        i < processedText.length &&
+        processedText[i] !== '`' &&
+        !processedText.slice(i).startsWith('[^') && // footnote ref
+        !processedText.slice(i).startsWith('http://') && // auto-link
+        !processedText.slice(i).startsWith('https://') && // auto-link
+        !processedText.slice(i).startsWith('==') &&
+        !processedText.slice(i).startsWith('~~') &&
+        !processedText.slice(i).startsWith('**') &&
+        !processedText.slice(i).startsWith('__') &&
+        processedText[i] !== '^' &&
+        processedText[i] !== '~' &&
+        !(processedText[i] === '*' && processedText[i + 1] !== '*') &&
+        !(processedText[i] === '_' && processedText[i + 1] !== '_')
+      ) {
+        normal += processedText[i];
         i++;
       }
       if (!normal) {
-        normal = text[i];
+        normal = processedText[i];
         i++;
       }
       segments.push({ text: normal, type: 'normal' });
     }
   }
-  return segments.length ? segments : [{ text, type: 'normal' }];
+  return segments.length ? segments : [{ text: processedText, type: 'normal' }];
 };
 
 /**
@@ -501,8 +645,11 @@ export const getDisplayValue = (block: EditorBlock, isActive: boolean): string =
   if (!isActive) return block.content;
   const indent = (d = 0) => '  '.repeat(d);
   switch (block.type) {
-    case 'heading':
-      return `${'#'.repeat(block.meta?.level || 1)} ${block.content}`;
+    case 'heading': {
+      const headingText = `${'#'.repeat(block.meta?.level || 1)} ${block.content}`;
+      const headingId = block.meta?.headingId ? ` {#${block.meta.headingId}}` : '';
+      return headingText + headingId;
+    }
     case 'code': {
       const lang = block.meta?.language ? ` ${block.meta.language}` : '';
       return `\`\`\`${lang}${block.content ? '\n' + block.content : ''}`;
@@ -511,20 +658,29 @@ export const getDisplayValue = (block: EditorBlock, isActive: boolean): string =
       const depth = block.meta?.depth || 1;
       const prefix = '>'.repeat(depth);
       if (!block.content.trim()) return `${prefix} `;
-      return block.content.split('\n').map(l => `${prefix} ${l}`).join('\n');
+      return block.content
+        .split('\n')
+        .map(l => `${prefix} ${l}`)
+        .join('\n');
     }
     case 'list': {
       const depth = block.meta?.depth || 0;
       const ordered = block.meta?.ordered;
-      return block.content.split('\n').map((item, idx) => {
-        const pre = ordered ? `${idx + 1}. ` : `${indent(depth)}- `;
-        return `${pre}${item}`;
-      }).join('\n');
+      return block.content
+        .split('\n')
+        .map((item, idx) => {
+          const pre = ordered ? `${idx + 1}. ` : `${indent(depth)}- `;
+          return `${pre}${item}`;
+        })
+        .join('\n');
     }
     case 'checklist': {
       const depth = block.meta?.depth || 0;
       const check = block.meta?.checked ? 'x' : ' ';
-      return block.content.split('\n').map(i => `${indent(depth)}- [${check}] ${i}`).join('\n');
+      return block.content
+        .split('\n')
+        .map(i => `${indent(depth)}- [${check}] ${i}`)
+        .join('\n');
     }
     case 'divider':
       return '---';

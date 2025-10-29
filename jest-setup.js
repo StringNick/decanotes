@@ -5,7 +5,7 @@ jest.mock('expo', () => ({}));
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(),
   notificationAsync: jest.fn(),
-  selectionAsync: jest.fn()
+  selectionAsync: jest.fn(),
 }));
 
 jest.mock('@expo/vector-icons', () => ({
@@ -13,8 +13,6 @@ jest.mock('@expo/vector-icons', () => ({
   MaterialIcons: ({ name, size, color, ...props }) => `MaterialIcons-${name}`,
   FontAwesome: ({ name, size, color, ...props }) => `FontAwesome-${name}`,
 }));
-
-
 
 // Mock Expo modules core
 jest.mock('expo-modules-core', () => ({
@@ -45,39 +43,39 @@ jest.mock('react-native/Libraries/TurboModule/TurboModuleRegistry', () => ({
 
 // Mock React Native - comprehensive approach
 global.__DEV__ = true;
-global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
-global.cancelAnimationFrame = (id) => clearTimeout(id);
+global.requestAnimationFrame = cb => setTimeout(cb, 0);
+global.cancelAnimationFrame = id => clearTimeout(id);
 
 // Mock React Native completely without spreading actual RN
 jest.mock('react-native', () => {
   const React = require('react');
-  const mockComponent = (name) => {
-    const Component = (props) => React.createElement(name, props, props.children);
+  const mockComponent = name => {
+    const Component = props => React.createElement(name, props, props.children);
     Component.displayName = name;
     return Component;
   };
-  
+
   const mockPixelRatio = {
     get: () => 2,
     getFontScale: () => 1,
-    getPixelSizeForLayoutSize: (size) => size * 2,
-    roundToNearestPixel: (size) => size
+    getPixelSizeForLayoutSize: size => size * 2,
+    roundToNearestPixel: size => size,
   };
-  
+
   const mockDimensions = {
     get: () => ({ width: 375, height: 667, scale: 2, fontScale: 1 }),
     addEventListener: jest.fn(),
-    removeEventListener: jest.fn()
+    removeEventListener: jest.fn(),
   };
-  
+
   const mockStyleSheet = {
-    create: (styles) => styles,
-    flatten: (style) => style,
+    create: styles => styles,
+    flatten: style => style,
     absoluteFill: {},
     absoluteFillObject: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
-    hairlineWidth: 1
+    hairlineWidth: 1,
   };
-  
+
   return {
     // Core components
     View: mockComponent('View'),
@@ -91,7 +89,7 @@ jest.mock('react-native', () => {
     FlatList: mockComponent('FlatList'),
     SectionList: mockComponent('SectionList'),
     ActivityIndicator: mockComponent('ActivityIndicator'),
-    
+
     // APIs
     PixelRatio: mockPixelRatio,
     Dimensions: mockDimensions,
@@ -99,11 +97,11 @@ jest.mock('react-native', () => {
     Platform: {
       OS: 'ios',
       Version: '14.0',
-      select: (obj) => obj.ios || obj.default,
+      select: obj => obj.ios || obj.default,
       isPad: false,
-      isTVOS: false
+      isTVOS: false,
     },
-    
+
     // Animated
     Animated: {
       View: mockComponent('Animated.View'),
@@ -113,12 +111,12 @@ jest.mock('react-native', () => {
         setValue: jest.fn(),
         interpolate: jest.fn(() => 'interpolated-value'),
         addListener: jest.fn(() => 'listener-id'),
-        removeListener: jest.fn()
+        removeListener: jest.fn(),
       })),
       timing: jest.fn(() => ({ start: jest.fn(), stop: jest.fn() })),
       spring: jest.fn(() => ({ start: jest.fn(), stop: jest.fn() })),
-      event: jest.fn(() => jest.fn())
-    }
+      event: jest.fn(() => jest.fn()),
+    },
   };
 });
 
@@ -126,10 +124,7 @@ jest.mock('react-native', () => {
 const originalError = console.error;
 beforeAll(() => {
   console.error = (...args) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is deprecated')
-    ) {
+    if (typeof args[0] === 'string' && args[0].includes('Warning: ReactDOM.render is deprecated')) {
       return;
     }
     originalError.call(console, ...args);

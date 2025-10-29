@@ -1,14 +1,16 @@
-import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
 import { generateId } from '../../../../utils/markdownParser';
 import { FormattedTextInput } from '../../components/FormattedTextInput';
 import { KeyboardHandler } from '../../core/KeyboardHandler';
+import { ANIMATION_CONFIG, getFocusColors } from '../../styles/blockStyles';
 import { BlockComponentProps, BlockPlugin, EnhancedKeyboardResult } from '../../types/PluginTypes';
 
 type ListType = 'ordered' | 'unordered';
+type FocusableHandle = { focus: () => void };
 
 // Global cursor position tracking for list blocks
 const listCursorPositions: { [blockId: string]: number } = {};
@@ -18,120 +20,174 @@ export const getListCursorPosition = (blockId: string): number => {
   return listCursorPositions[blockId] || 0;
 };
 
+const LEVEL_INDICATOR_WIDTH = 4;
+const LEVEL_INDICATOR_SPACING = 6;
+const LIST_BASE_PADDING = 12;
+
+const LIST_INDICATOR_COLORS = {
+  light: [
+    'rgba(37, 99, 235, 0.2)',
+    'rgba(14, 165, 233, 0.2)',
+    'rgba(34, 197, 94, 0.2)',
+    'rgba(249, 115, 22, 0.18)',
+    'rgba(168, 85, 247, 0.18)',
+  ],
+  dark: [
+    'rgba(148, 193, 255, 0.35)',
+    'rgba(56, 189, 248, 0.35)',
+    'rgba(16, 185, 129, 0.35)',
+    'rgba(249, 115, 22, 0.3)',
+    'rgba(241, 171, 255, 0.35)',
+  ],
+};
+
 /**
  * List block component with modern dark theme support
  */
-const ListComponent: React.FC<BlockComponentProps> = ({
-  block,
-  onBlockChange,
-  onFocus,
-  onBlur,
-  isSelected,
-  isEditing,
-  style
-}) => {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  const listType = (block.meta?.listType as ListType) || 'unordered';
-  const level = block.meta?.level || 0;
-  const index = block.meta?.index || 1;
+const ListComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  ({ block, onBlockChange, onFocus, onBlur, isSelected, isFocused, isEditing, style }, ref) => {
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const styles = getStyles(colorScheme ?? 'light');
+    const listType = (block.meta?.listType as ListType) || 'unordered';
+    const level = block.meta?.level || 0;
+    const index = block.meta?.index || 1;
+    const animatedValue = useRef(new Animated.Value(0)).current;
 
-  const [cursorPosition, setCursorPosition] = useState(0);
+    const [cursorPosition, setCursorPosition] = useState(0);
+    const inputRef = useRef<TextInput>(null);
 
-  // Get the plugin instance and controller (memoized to prevent recreation on every render)
-  const controller = useMemo(() => {
-    const pluginInstance = new ListPlugin();
-    return pluginInstance.controller;
-  }, []);
+    // Determine if block should show focused state
+    const shouldFocus = isFocused || isEditing;
 
-  const handleTextChange = (text: string) => {
-    onBlockChange({ content: text });
-  };
+    // Animate focus state changes
+    useEffect(() => {
+      Animated.timing(animatedValue, {
+        toValue: shouldFocus ? 1 : 0,
+        duration: ANIMATION_CONFIG.duration,
+        useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+      }).start();
+    }, [shouldFocus, animatedValue]);
 
-  const handleSelectionChange = (event: any) => {
-    const { selection } = event.nativeEvent;
-    const position = selection.start;
-    setCursorPosition(position);
-    // Store cursor position globally so handleBackspace can access it
-    listCursorPositions[block.id] = position;
-  };
+    // Get animated colors
+    const focusColors = getFocusColors(colorScheme ?? 'light', shouldFocus || false);
+    const indicatorPalette = LIST_INDICATOR_COLORS[colorScheme ?? 'light'];
+    const indicatorWidth =
+      level > 0 ? level * (LEVEL_INDICATOR_WIDTH + LEVEL_INDICATOR_SPACING) - LEVEL_INDICATOR_SPACING : 0;
 
-  const toggleListType = () => {
-    onBlockChange({
-      meta: {
-        ...block.meta,
-        listType: listType === 'ordered' ? 'unordered' : 'ordered'
+    // Get the plugin instance and controller (memoized to prevent recreation on every render)
+    const controller = useMemo(() => {
+      const pluginInstance = new ListPlugin();
+      return pluginInstance.controller;
+    }, []);
+
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        inputRef.current?.focus();
+      },
+    }));
+
+    const handleTextChange = (text: string) => {
+      onBlockChange({ content: text });
+    };
+
+    const handleSelectionChange = (event: any) => {
+      const { selection } = event.nativeEvent;
+      const position = selection.start;
+      setCursorPosition(position);
+      // Store cursor position globally so handleBackspace can access it
+      listCursorPositions[block.id] = position;
+    };
+
+    const renderBullet = () => {
+      if (listType === 'ordered') {
+        return <Text style={styles.bullet}>{index}.</Text>;
+      } else {
+        const bullets = ['•', '◦', '▪'];
+        const bulletIndex = Math.min(level, bullets.length - 1);
+        return <Text style={styles.bullet}>{bullets[bulletIndex]}</Text>;
       }
+    };
+
+    // Animated background color
+    const animatedBackgroundColor = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
     });
-  };
 
-  const renderBullet = () => {
-    if (listType === 'ordered') {
-      return (
-        <Text style={styles.bullet}>
-          {index}.
-        </Text>
-      );
-    } else {
-      const bullets = ['•', '◦', '▪'];
-      const bulletIndex = Math.min(level, bullets.length - 1);
-      return (
-        <Text style={styles.bullet}>
-          {bullets[bulletIndex]}
-        </Text>
-      );
-    }
-  };
-
-  return (
-    <KeyboardHandler
-      block={block}
-      controller={controller}
-      cursorPosition={cursorPosition}
-    >
-      {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
-        <View style={[styles.container, style]}>
-          <View style={[
-            styles.listItem,
-            { marginLeft: level * 20 },
-            isSelected && styles.selected,
-            isEditing && styles.editing
-          ]}>
-            <TouchableOpacity
-              style={styles.bulletContainer}
-              onPress={toggleListType}
+    return (
+      <KeyboardHandler block={block} controller={controller} cursorPosition={cursorPosition}>
+        {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
+          <View style={[styles.container, style]}>
+            <Animated.View
+              style={[
+                styles.listItem,
+                {
+                  backgroundColor: animatedBackgroundColor,
+                  paddingLeft: LIST_BASE_PADDING,
+                },
+              ]}
             >
-              {renderBullet()}
-            </TouchableOpacity>
+              {level > 0 && (
+                <View
+                  style={[
+                    styles.indicatorContainer,
+                    {
+                      width: indicatorWidth,
+                    },
+                  ]}
+                  pointerEvents="none"
+                >
+                  {Array.from({ length: level }).map((_, idx) => (
+                    <View
+                      key={`indicator-${idx}`}
+                      style={[
+                        styles.indicatorBar,
+                        {
+                          marginRight: idx === level - 1 ? 0 : LEVEL_INDICATOR_SPACING,
+                          backgroundColor: indicatorPalette[idx % indicatorPalette.length],
+                          opacity: shouldFocus ? 0.9 : 0.5,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+              <View style={styles.bulletContainer} pointerEvents="none">
+                {renderBullet()}
+              </View>
 
-            <FormattedTextInput
-              value={block.content}
-              onChangeText={handleTextChange}
-              onSelectionChange={handleSelectionChange}
-              onFocus={onFocus}
-              onBlur={onBlur}
-              onKeyPress={onKeyPress}
-              placeholder="List item"
-              placeholderTextColor={colors.textSecondary}
-              isSelected={isSelected}
-              isEditing={isEditing}
-              multiline
-              textAlignVertical="center"
-              scrollEnabled={false}
-              preventNewlines={preventNewlines}
-              style={styles.textInput}
-            />
+              <FormattedTextInput
+                value={block.content}
+                onChangeText={handleTextChange}
+                onSelectionChange={handleSelectionChange}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                onKeyPress={onKeyPress}
+                placeholder="List item"
+                placeholderTextColor={colors.textSecondary}
+                isSelected={isSelected}
+                isEditing={isEditing}
+                multiline
+                textAlignVertical="center"
+                scrollEnabled={false}
+                preventNewlines={preventNewlines}
+                ref={inputRef}
+                style={styles.textInput}
+              />
+            </Animated.View>
           </View>
-        </View>
-      )}
-    </KeyboardHandler>
-  );
-};
+        )}
+      </KeyboardHandler>
+    );
+  }
+);
+
+ListComponent.displayName = 'ListComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     container: {
       marginVertical: 0,
@@ -143,14 +199,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingVertical: 6,
       paddingHorizontal: 8,
       borderRadius: 8,
-    },
-    selected: {
-      // Minimal visual feedback for selection
-    },
-    editing: {
-      backgroundColor: colors.surface,
-      borderColor: colors.teal,
-      borderWidth: 1,
+      backgroundColor: 'transparent', // Will be overridden by animated value
     },
     bulletContainer: {
       width: 28,
@@ -174,6 +223,18 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: 0,
       minHeight: 24,
     },
+    indicatorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      marginRight: 12,
+      height: 20,
+    },
+    indicatorBar: {
+      width: LEVEL_INDICATOR_WIDTH,
+      height: 12,
+      borderRadius: LEVEL_INDICATOR_WIDTH,
+    },
   });
 };
 
@@ -193,14 +254,14 @@ export class ListPlugin implements BlockPlugin {
     handleEnter: this.handleEnter.bind(this),
     handleKeyPress: this.handleKeyPress.bind(this),
     onCreate: this.onCreate.bind(this),
-    getActions: this.getActions.bind(this)
+    getActions: this.getActions.bind(this),
   };
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^(\s*)([-*+]|\d+\.)\s+(.+)$/
+      block: /^(\s*)([-*+]|\d+\.)\s+(.+)$/,
     },
-    priority: 80
+    priority: 80,
   };
 
   readonly toolbar = {
@@ -211,7 +272,7 @@ export class ListPlugin implements BlockPlugin {
     variants: [
       { label: 'Bullet List', shortcut: 'Ctrl+Shift+8', meta: { listType: 'unordered' } },
       { label: 'Numbered List', shortcut: 'Ctrl+Shift+7', meta: { listType: 'ordered' } },
-    ]
+    ],
   };
 
   readonly settings = {
@@ -220,9 +281,29 @@ export class ListPlugin implements BlockPlugin {
     defaultMeta: {
       listType: 'unordered',
       level: 0,
-      index: 1
-    }
+      index: 1,
+    },
   };
+
+  createBlock(content: string = '', meta: Record<string, any> = {}): EditorBlock {
+    const listType = meta.listType ?? this.settings.defaultMeta.listType;
+    const level = meta.level ?? this.settings.defaultMeta.level;
+    const baseMeta: Record<string, any> = {
+      listType,
+      level,
+      ...(listType === 'ordered' ? { index: meta.index ?? this.settings.defaultMeta.index } : {}),
+    };
+
+    return {
+      id: generateId(),
+      type: 'list',
+      content,
+      meta: {
+        ...baseMeta,
+        ...meta,
+      },
+    };
+  }
 
   protected handleKeyPress(event: any, block: EditorBlock): boolean | void {
     // Note: Tab indentation is not currently supported due to architectural limitations
@@ -231,21 +312,25 @@ export class ListPlugin implements BlockPlugin {
     return false;
   }
 
-  protected handleEnter(block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number): EditorBlock | EditorBlock[] | EnhancedKeyboardResult | null {
+  protected handleEnter(
+    block: EditorBlock,
+    allBlocks?: EditorBlock[],
+    currentIndex?: number
+  ): EditorBlock | EditorBlock[] | EnhancedKeyboardResult | null {
     // If content is empty, convert to paragraph
     if (block.content.trim() === '') {
       return {
         ...block,
         type: 'paragraph',
         content: '',
-        meta: {}
+        meta: {},
       };
     }
 
     // Create new list item
     const listType = block.meta?.listType || 'unordered';
     const level = block.meta?.level || 0;
-    const currentIndexValue = listType === 'ordered' ? (block.meta?.index || 1) : 1;
+    const currentIndexValue = listType === 'ordered' ? block.meta?.index || 1 : 1;
 
     const newListItem: EditorBlock = {
       id: generateId(),
@@ -254,52 +339,62 @@ export class ListPlugin implements BlockPlugin {
       meta: {
         listType,
         level,
-        index: currentIndexValue + 1
-      }
+        ...(listType === 'ordered' ? { index: currentIndexValue + 1 } : {}),
+      },
     };
 
     // For ordered lists, we need to update the numbering of subsequent items
     if (listType === 'ordered' && allBlocks && currentIndex !== undefined) {
       const updates: { blockId: string; updates: Partial<EditorBlock> }[] = [];
-      
-      // Find all subsequent list items at the same level and update their indices
-      for (let i = currentIndex + 2; i < allBlocks.length; i++) {
+
+      let nextIndexValue = currentIndexValue + 2;
+
+      // Find all subsequent list items and update indices for same-level ordered items
+      for (let i = currentIndex + 1; i < allBlocks.length; i++) {
         const subsequentBlock = allBlocks[i];
-        
-        // Check if it's a list item at the same level
-        if (subsequentBlock.type === 'list' && 
-            subsequentBlock.meta?.listType === 'ordered' && 
-            subsequentBlock.meta?.level === level) {
-          
+
+        if (subsequentBlock.type !== 'list') {
+          break;
+        }
+
+        const subsequentMeta = subsequentBlock.meta || {};
+        const subsequentLevel = subsequentMeta.level || 0;
+
+        if (subsequentLevel < level) {
+          break;
+        }
+
+        if (subsequentLevel > level) {
+          // Skip nested items; they maintain their numbering within the nested scope
+          continue;
+        }
+
+        if (subsequentMeta.listType === 'ordered') {
           // Update the index by incrementing it
-          const newIndex = (subsequentBlock.meta?.index || 1) + 1;
           updates.push({
             blockId: subsequentBlock.id,
             updates: {
               meta: {
-                ...subsequentBlock.meta,
-                index: newIndex
-              }
-            }
+                ...subsequentMeta,
+                index: nextIndexValue++,
+              },
+            },
           });
-        } else if (subsequentBlock.type !== 'list' || 
-                   subsequentBlock.meta?.level !== level) {
-          // Stop when we encounter a different block type or level
+        } else {
           break;
         }
       }
-      
+
       return {
         newBlocks: [block, newListItem],
         updates,
-        focusBlockId: newListItem.id
+        focusBlockId: newListItem.id,
       };
     }
-    
+
     // For unordered lists, just return the blocks
     return [block, newListItem];
   }
-
 
   protected transformContent(content: string): string {
     // Remove markdown list syntax if present
@@ -325,7 +420,7 @@ export class ListPlugin implements BlockPlugin {
         ...newBlock.meta,
         listType,
         level,
-        index
+        index,
       };
     }
 
@@ -335,7 +430,7 @@ export class ListPlugin implements BlockPlugin {
         ...newBlock.meta,
         listType: 'unordered',
         level: 0,
-        index: 1
+        index: 1,
       };
     }
 
@@ -346,16 +441,16 @@ export class ListPlugin implements BlockPlugin {
     // Return only the default actions (duplicate and delete)
     // Note: ListPlugin implements BlockPlugin but doesn't extend it
     const actions: any[] = [];
-    
+
     actions.push({
       id: 'duplicate',
       label: 'Duplicate',
       icon: 'copy',
       handler: (block: EditorBlock, context: any) => {
         context.duplicateBlock();
-      }
+      },
     });
-    
+
     actions.push({
       id: 'delete',
       label: 'Delete',
@@ -363,9 +458,9 @@ export class ListPlugin implements BlockPlugin {
       style: 'destructive',
       handler: (block: EditorBlock, context: any) => {
         context.deleteBlock();
-      }
+      },
     });
-    
+
     return actions;
   }
 
@@ -385,8 +480,8 @@ export class ListPlugin implements BlockPlugin {
       meta: {
         listType,
         level: Math.max(0, Math.min(5, level)),
-        index: Math.max(1, index)
-      }
+        index: Math.max(1, index),
+      },
     };
   }
 
@@ -412,8 +507,8 @@ export class ListPlugin implements BlockPlugin {
       meta: {
         listType,
         level,
-        index
-      }
+        index,
+      },
     };
   }
 
@@ -435,17 +530,53 @@ export class ListPlugin implements BlockPlugin {
    * Reorder list indices
    */
   reorderList(blocks: EditorBlock[]): EditorBlock[] {
-    const listBlocks = blocks.filter(block => block.type === 'list');
-    let currentIndex = 1;
+    const results: EditorBlock[] = [];
+    const levelCounters = new Map<number, number>();
 
-    return listBlocks.map(block => {
-      if (block.meta?.listType === 'ordered') {
-        const level = block.meta?.level || 0;
-        if (level === 0) {
-          block.meta.index = currentIndex++;
-        }
+    for (let i = 0; i < blocks.length; i += 1) {
+      const block = blocks[i];
+
+      if (block.type !== 'list') {
+        levelCounters.clear();
+        results.push(block);
+        continue;
       }
-      return block;
-    });
+
+      const level = block.meta?.level ?? 0;
+
+      if (block.meta?.listType !== 'ordered') {
+        levelCounters.delete(level);
+        results.push(block);
+        continue;
+      }
+
+      const previous = results.length > 0 ? results[results.length - 1] : null;
+      const previousIsSibling =
+        previous &&
+        previous.type === 'list' &&
+        previous.meta?.listType === 'ordered' &&
+        (previous.meta?.level ?? 0) === level;
+
+      const previousValue = levelCounters.get(level) ?? 0;
+      let indexValue: number;
+
+      if (previousIsSibling) {
+        indexValue = previousValue + 1;
+      } else {
+        indexValue = previousValue > 0 ? previousValue + 1 : 1;
+      }
+
+      levelCounters.set(level, indexValue);
+
+      results.push({
+        ...block,
+        meta: {
+          ...(block.meta ?? {}),
+          index: indexValue,
+        },
+      });
+    }
+
+    return results;
   }
 }

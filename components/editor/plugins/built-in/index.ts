@@ -1,15 +1,17 @@
 // Export all built-in plugins
-export { ParagraphPlugin } from './ParagraphPlugin';
-export { HeadingPlugin } from './HeadingPlugin';
-export { CodePlugin } from './CodePlugin';
-export { QuotePlugin } from './QuotePlugin';
-export { ListPlugin } from './ListPlugin';
-export { ChecklistPlugin } from './ChecklistPlugin';
-export { ImagePlugin } from './ImagePlugin';
-export { VideoPlugin } from './VideoPlugin';
 export { CalloutPlugin } from './CalloutPlugin';
+export { ChecklistPlugin } from './ChecklistPlugin';
+export { CodePlugin } from './CodePlugin';
+export { DefinitionListPlugin } from './DefinitionListPlugin';
 export { DividerPlugin } from './DividerPlugin';
+export { FootnotePlugin } from './FootnotePlugin';
+export { HeadingPlugin } from './HeadingPlugin';
+export { ImagePlugin } from './ImagePlugin';
+export { ListPlugin } from './ListPlugin';
+export { ParagraphPlugin } from './ParagraphPlugin';
+export { QuotePlugin } from './QuotePlugin';
 export { TablePlugin } from './TablePlugin';
+export { VideoPlugin } from './VideoPlugin';
 
 // Export plugin collections
 export const BUILT_IN_BLOCK_PLUGINS = [
@@ -23,13 +25,12 @@ export const BUILT_IN_BLOCK_PLUGINS = [
   'video',
   'callout',
   'divider',
-  'table'
+  'table',
+  'footnote',
+  'definition-list',
 ] as const;
 
-export const BUILT_IN_MARKDOWN_PLUGINS = [
-  'video-markdown',
-  'callout-markdown'
-] as const;
+export const BUILT_IN_MARKDOWN_PLUGINS = ['video-markdown', 'callout-markdown'] as const;
 
-export type BuiltInBlockPlugin = typeof BUILT_IN_BLOCK_PLUGINS[number];
-export type BuiltInMarkdownPlugin = typeof BUILT_IN_MARKDOWN_PLUGINS[number];
+export type BuiltInBlockPlugin = (typeof BUILT_IN_BLOCK_PLUGINS)[number];
+export type BuiltInMarkdownPlugin = (typeof BUILT_IN_MARKDOWN_PLUGINS)[number];

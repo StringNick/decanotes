@@ -15,16 +15,16 @@ interface StorageContextType {
   isLoading: boolean;
   needsCredentials: boolean; // True if backend needs credentials on startup
   savedBackendType: StorageBackendType | null; // The saved backend type
-  
+
   // Notes state
   notes: Note[];
   currentNote: Note | null;
   hasUnsavedChanges: boolean;
-  
+
   // Auth actions
   signIn: (backendType: StorageBackendType, config: StorageConfig) => Promise<void>;
   signOut: () => Promise<void>;
-  
+
   // Note actions
   loadNotes: () => Promise<void>;
   loadNote: (id: string) => Promise<Note | null>;
@@ -33,7 +33,7 @@ interface StorageContextType {
   setCurrentNote: (note: Note | null) => void;
   markAsChanged: () => void;
   clearUnsavedChanges: () => void;
-  
+
   // Backend actions
   sync: () => Promise<void>;
 }
@@ -61,11 +61,11 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     try {
       // Load saved backend type
       const backendTypeStr = await AsyncStorage.getItem(BACKEND_TYPE_KEY);
-      
+
       if (backendTypeStr) {
         const backendType = backendTypeStr as StorageBackendType;
         setSavedBackendType(backendType);
-        
+
         // Check if this backend needs credentials
         if (requiresCredentials(backendType)) {
           // Don't auto-login, wait for user to enter credentials
@@ -83,7 +83,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
               backendType,
               config,
             });
-            
+
             // Load notes
             const loadedNotes = await newBackend.getNotes();
             setNotes(loadedNotes);
@@ -118,20 +118,20 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (backendType: StorageBackendType, config: StorageConfig) => {
     try {
       setIsLoading(true);
-      
+
       // Create and initialize backend
       const newBackend = createBackend(backendType);
       await newBackend.initialize(config);
-      
+
       // Test connection
       const isConnected = await newBackend.testConnection();
       if (!isConnected) {
         throw new Error('Failed to connect to storage backend');
       }
-      
+
       // Save backend type (always)
       await AsyncStorage.setItem(BACKEND_TYPE_KEY, backendType);
-      
+
       // Save config only for non-secure backends
       if (!requiresCredentials(backendType)) {
         await AsyncStorage.setItem(BACKEND_CONFIG_KEY, JSON.stringify(config));
@@ -142,19 +142,19 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
           await AsyncStorage.setItem(BACKEND_CONFIG_KEY, JSON.stringify(safeConfig));
         }
       }
-      
+
       // Update auth state
       const newAuthState: AuthState = {
         isAuthenticated: true,
         backendType,
         config,
       };
-      
+
       setSavedBackendType(backendType);
       setNeedsCredentials(false);
       setBackend(newBackend);
       setAuthState(newAuthState);
-      
+
       // Load notes
       const loadedNotes = await newBackend.getNotes();
       setNotes(loadedNotes);
@@ -188,16 +188,16 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       // Disconnect backend
       if (backend) {
         await backend.disconnect();
       }
-      
+
       // Clear all auth data
       await AsyncStorage.removeItem(BACKEND_TYPE_KEY);
       await AsyncStorage.removeItem(BACKEND_CONFIG_KEY);
-      
+
       setBackend(null);
       setAuthState({ isAuthenticated: false });
       setSavedBackendType(null);
@@ -217,7 +217,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     if (!backend) {
       throw new Error('No backend available');
     }
-    
+
     try {
       const loadedNotes = await backend.getNotes();
       setNotes(loadedNotes);
@@ -227,78 +227,87 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     }
   }, [backend]);
 
-  const loadNote = useCallback(async (id: string): Promise<Note | null> => {
-    if (!backend) {
-      throw new Error('No backend available');
-    }
-    
-    try {
-      const note = await backend.getNote(id);
-      if (note) {
-        setCurrentNote(note);
-        setHasUnsavedChanges(false);
+  const loadNote = useCallback(
+    async (id: string): Promise<Note | null> => {
+      if (!backend) {
+        throw new Error('No backend available');
       }
-      return note;
-    } catch (error) {
-      console.error('Failed to load note:', error);
-      throw error;
-    }
-  }, [backend]);
 
-  const saveNote = useCallback(async (note: Note): Promise<Note> => {
-    if (!backend) {
-      throw new Error('No backend available');
-    }
-    
-    try {
-      const savedNote = await backend.saveNote(note);
-      
-      // Update notes list
-      setNotes(prevNotes => {
-        const index = prevNotes.findIndex(n => n.id === savedNote.id);
-        if (index >= 0) {
-          const newNotes = [...prevNotes];
-          newNotes[index] = savedNote;
-          return newNotes;
-        } else {
-          return [savedNote, ...prevNotes];
+      try {
+        const note = await backend.getNote(id);
+        if (note) {
+          setCurrentNote(note);
+          setHasUnsavedChanges(false);
         }
-      });
-      
-      // Update current note if it matches
-      if (currentNote?.id === savedNote.id) {
-        setCurrentNote(savedNote);
+        return note;
+      } catch (error) {
+        console.error('Failed to load note:', error);
+        throw error;
       }
-      
-      setHasUnsavedChanges(false);
-      return savedNote;
-    } catch (error) {
-      console.error('Failed to save note:', error);
-      throw error;
-    }
-  }, [backend, currentNote]);
+    },
+    [backend]
+  );
 
-  const deleteNote = useCallback(async (id: string) => {
-    if (!backend) {
-      throw new Error('No backend available');
-    }
-    
-    try {
-      await backend.deleteNote(id);
-      
-      // Update notes list
-      setNotes(prevNotes => prevNotes.filter(n => n.id !== id));
-      
-      // Clear current note if it was deleted
-      if (currentNote?.id === id) {
-        setCurrentNote(null);
-        setHasUnsavedChanges(false);
+  const saveNote = useCallback(
+    async (note: Note): Promise<Note> => {
+      if (!backend) {
+        throw new Error('No backend available');
       }
-    } catch (error) {
-      console.error('Failed to delete note:', error);
-      throw error;
-    }
-  }, [backend, currentNote]);
+
+      try {
+        const savedNote = await backend.saveNote(note);
+
+        // Update notes list
+        setNotes(prevNotes => {
+          const index = prevNotes.findIndex(n => n.id === savedNote.id);
+          if (index >= 0) {
+            const newNotes = [...prevNotes];
+            newNotes[index] = savedNote;
+            return newNotes;
+          } else {
+            return [savedNote, ...prevNotes];
+          }
+        });
+
+        // Update current note if it matches
+        if (currentNote?.id === savedNote.id) {
+          setCurrentNote(savedNote);
+        }
+
+        setHasUnsavedChanges(false);
+        return savedNote;
+      } catch (error) {
+        console.error('Failed to save note:', error);
+        throw error;
+      }
+    },
+    [backend, currentNote]
+  );
+
+  const deleteNote = useCallback(
+    async (id: string) => {
+      if (!backend) {
+        throw new Error('No backend available');
+      }
+
+      try {
+        await backend.deleteNote(id);
+
+        // Update notes list
+        setNotes(prevNotes => prevNotes.filter(n => n.id !== id));
+
+        // Clear current note if it was deleted
+        if (currentNote?.id === id) {
+          setCurrentNote(null);
+          setHasUnsavedChanges(false);
+        }
+      } catch (error) {
+        console.error('Failed to delete note:', error);
+        throw error;
+      }
+    },
+    [backend, currentNote]
+  );
 
   const markAsChanged = useCallback(() => {
     setHasUnsavedChanges(true);
@@ -312,7 +321,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     if (!backend) {
       throw new Error('No backend available');
     }
-    
+
     try {
       await backend.sync();
       await loadNotes();
@@ -342,11 +351,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     sync,
   };
 
-  return (
-    <StorageContext.Provider value={value}>
-      {children}
-    </StorageContext.Provider>
-  );
+  return <StorageContext.Provider value={value}>{children}</StorageContext.Provider>;
 }
 
 export function useStorage() {

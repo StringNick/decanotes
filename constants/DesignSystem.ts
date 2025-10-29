@@ -7,69 +7,69 @@
 export const Colors = {
   // Primary Brand Colors - Enhanced with modern vibrant palette
   primary: {
-    purple: '#A78BFA',      // Vibrant purple (Tailwind violet-400)
-    purpleDark: '#7C3AED',  // Deeper purple for accents
-    teal: '#14B8A6',        // Modern teal (Tailwind teal-500)
-    tealDark: '#0D9488',    // Deeper teal
-    blue: '#60A5FA',        // Modern blue (Tailwind blue-400)
-    blueDark: '#3B82F6',    // Deeper blue
-    dark: '#0A0A0A',        // True dark for OLED screens
-    accent: '#F472B6',      // Pink accent for highlights
+    purple: '#A78BFA', // Vibrant purple (Tailwind violet-400)
+    purpleDark: '#7C3AED', // Deeper purple for accents
+    teal: '#14B8A6', // Modern teal (Tailwind teal-500)
+    tealDark: '#0D9488', // Deeper teal
+    blue: '#60A5FA', // Modern blue (Tailwind blue-400)
+    blueDark: '#3B82F6', // Deeper blue
+    dark: '#0A0A0A', // True dark for OLED screens
+    accent: '#F472B6', // Pink accent for highlights
   },
 
   // Neutral Palette - Refined for better contrast
   neutral: {
     white: '#FFFFFF',
     gray50: '#FAFAFA',
-    gray100: '#F4F4F5',     // Zinc-100
-    gray200: '#E4E4E7',     // Zinc-200
-    gray300: '#D4D4D8',     // Zinc-300
-    gray400: '#A1A1AA',     // Zinc-400
-    gray500: '#71717A',     // Zinc-500
-    gray600: '#52525B',     // Zinc-600
-    gray700: '#3F3F46',     // Zinc-700
-    gray800: '#27272A',     // Zinc-800
-    gray850: '#1C1C1F',     // Between 800-900
-    gray900: '#18181B',     // Zinc-900
-    gray950: '#0F0F11',     // Deeper black
+    gray100: '#F4F4F5', // Zinc-100
+    gray200: '#E4E4E7', // Zinc-200
+    gray300: '#D4D4D8', // Zinc-300
+    gray400: '#A1A1AA', // Zinc-400
+    gray500: '#71717A', // Zinc-500
+    gray600: '#52525B', // Zinc-600
+    gray700: '#3F3F46', // Zinc-700
+    gray800: '#27272A', // Zinc-800
+    gray850: '#1C1C1F', // Between 800-900
+    gray900: '#18181B', // Zinc-900
+    gray950: '#0F0F11', // Deeper black
     black: '#000000',
   },
 
   // Semantic Colors - Modern palette
   semantic: {
-    success: '#10B981',     // Emerald-500
+    success: '#10B981', // Emerald-500
     successLight: '#34D399', // Emerald-400
-    warning: '#F59E0B',     // Amber-500
+    warning: '#F59E0B', // Amber-500
     warningLight: '#FBBF24', // Amber-400
-    error: '#EF4444',       // Red-500
-    errorLight: '#F87171',  // Red-400
-    info: '#3B82F6',        // Blue-500
-    infoLight: '#60A5FA',   // Blue-400
+    error: '#EF4444', // Red-500
+    errorLight: '#F87171', // Red-400
+    info: '#3B82F6', // Blue-500
+    infoLight: '#60A5FA', // Blue-400
   },
 
   // Note Colors (Modern, vibrant yet subtle palette with glassmorphism support)
   notes: {
     light: {
       default: '#FFFFFF',
-      cream: '#FEF3C7',       // Amber-100
-      sage: '#D1FAE5',        // Emerald-100
-      sky: '#DBEAFE',         // Blue-100
-      lavender: '#E9D5FF',    // Purple-200
-      peach: '#FED7AA',       // Orange-200
-      mint: '#A7F3D0',        // Emerald-200
-      rose: '#FECDD3',        // Rose-200
-      indigo: '#C7D2FE',      // Indigo-200
+      cream: '#FEF3C7', // Amber-100
+      sage: '#D1FAE5', // Emerald-100
+      sky: '#DBEAFE', // Blue-100
+      lavender: '#E9D5FF', // Purple-200
+      peach: '#FED7AA', // Orange-200
+      mint: '#A7F3D0', // Emerald-200
+      rose: '#FECDD3', // Rose-200
+      indigo: '#C7D2FE', // Indigo-200
     },
     dark: {
-      default: '#18181B',     // Zinc-900
-      cream: '#3F2410',       // Amber-900/80
-      sage: '#14362B',        // Emerald-950
-      sky: '#1E3A5F',         // Blue-950
-      lavender: '#3B1E54',    // Purple-950
-      peach: '#431407',       // Orange-950
-      mint: '#0A2922',        // Emerald-950
-      rose: '#4C0519',        // Rose-950
-      indigo: '#1E1B4B',      // Indigo-950
+      default: '#18181B', // Zinc-900
+      cream: '#3F2410', // Amber-900/80
+      sage: '#14362B', // Emerald-950
+      sky: '#1E3A5F', // Blue-950
+      lavender: '#3B1E54', // Purple-950
+      peach: '#431407', // Orange-950
+      mint: '#0A2922', // Emerald-950
+      rose: '#4C0519', // Rose-950
+      indigo: '#1E1B4B', // Indigo-950
     },
   },
 
@@ -88,7 +88,7 @@ export const Colors = {
       tertiary: '#9CA3AF',
       inverse: '#000000',
       muted: '#6B7280',
-    }
+    },
   },
 
   // Background Colors - Enhanced with glassmorphism
@@ -114,7 +114,7 @@ export const Colors = {
       blur: 'rgba(0, 0, 0, 0.85)',
       glass: 'rgba(24, 24, 27, 0.7)',
       glassStrong: 'rgba(24, 24, 27, 0.9)',
-    }
+    },
   },
 
   // Glassmorphism presets
@@ -128,7 +128,7 @@ export const Colors = {
       soft: 'rgba(24, 24, 27, 0.6)',
       medium: 'rgba(24, 24, 27, 0.75)',
       strong: 'rgba(24, 24, 27, 0.9)',
-    }
+    },
   },
 };
 
@@ -285,7 +285,7 @@ export const getThemeColors = (isDark: boolean) => ({
 // Theme-aware component factory functions
 export const createComponents = (isDark: boolean) => {
   const themeColors = getThemeColors(isDark);
-  
+
   return {
     // Button Variants
     button: {
@@ -366,13 +366,9 @@ export const createComponents = (isDark: boolean) => {
         borderRadius: BorderRadius.md,
       },
       focusedBlock: {
-        backgroundColor: isDark 
-          ? 'rgba(139, 95, 191, 0.1)' 
-          : 'rgba(139, 95, 191, 0.05)',
+        backgroundColor: isDark ? 'rgba(139, 95, 191, 0.1)' : 'rgba(139, 95, 191, 0.05)',
         borderWidth: 1,
-        borderColor: isDark 
-          ? 'rgba(139, 95, 191, 0.3)' 
-          : 'rgba(139, 95, 191, 0.2)',
+        borderColor: isDark ? 'rgba(139, 95, 191, 0.3)' : 'rgba(139, 95, 191, 0.2)',
       },
       input: {
         fontSize: Typography.sizes.md,
@@ -480,7 +476,7 @@ export const createTextStyle = (
 ) => {
   const themeColors = isDark !== undefined ? getThemeColors(isDark) : null;
   const defaultColor = themeColors ? themeColors.text.primary : Colors.text.light.primary;
-  
+
   return {
     fontSize: Typography.sizes[size],
     fontFamily: Typography.fonts[weight],
@@ -489,10 +485,7 @@ export const createTextStyle = (
   };
 };
 
-export const createSpacingStyle = (
-  horizontal: keyof typeof Spacing,
-  vertical?: keyof typeof Spacing
-) => ({
+export const createSpacingStyle = (horizontal: keyof typeof Spacing, vertical?: keyof typeof Spacing) => ({
   paddingHorizontal: Spacing[horizontal],
   paddingVertical: Spacing[vertical || horizontal],
 });
@@ -501,7 +494,7 @@ export const createSpacingStyle = (
 export const createEditorTheme = (isDark: boolean) => {
   const themeColors = getThemeColors(isDark);
   const components = createComponents(isDark);
-  
+
   return {
     // Core editor styles
     container: components.editor.container,
@@ -509,7 +502,7 @@ export const createEditorTheme = (isDark: boolean) => {
     focusedBlock: components.editor.focusedBlock,
     input: components.editor.input,
     placeholder: components.editor.placeholder,
-    
+
     // Typography styles
     heading1: createTextStyle('4xl', 'bold', themeColors.text.primary, isDark),
     heading2: createTextStyle('3xl', 'semibold', themeColors.text.primary, isDark),
@@ -517,7 +510,7 @@ export const createEditorTheme = (isDark: boolean) => {
     heading4: createTextStyle('xl', 'semibold', themeColors.text.primary, isDark),
     heading5: createTextStyle('lg', 'semibold', themeColors.text.primary, isDark),
     heading6: createTextStyle('md', 'semibold', themeColors.text.primary, isDark),
-    
+
     // Code styles
     code: {
       ...createTextStyle('sm', 'mono', themeColors.text.primary, isDark),
@@ -533,7 +526,7 @@ export const createEditorTheme = (isDark: boolean) => {
       borderWidth: 1,
       borderColor: isDark ? Colors.neutral.gray700 : Colors.neutral.gray200,
     },
-    
+
     // Quote styles
     quoteBlock: {
       backgroundColor: isDark ? 'rgba(139, 95, 191, 0.1)' : 'rgba(139, 95, 191, 0.05)',
@@ -543,7 +536,7 @@ export const createEditorTheme = (isDark: boolean) => {
       paddingVertical: Spacing.sm,
       marginVertical: Spacing.sm,
     },
-    
+
     // Text formatting
     bold: {
       fontFamily: Typography.fonts.bold,
@@ -563,26 +556,23 @@ export const createEditorTheme = (isDark: boolean) => {
       borderRadius: BorderRadius.sm,
       color: themeColors.text.primary,
     },
-    
+
     // Toolbar styles
     toolbar: components.editor.toolbar,
     toolbarButton: components.editor.toolbarButton,
-    
+
     // Colors for easy access
     colors: themeColors,
   };
 };
 
 // Create shadow styles with theme awareness
-export const createShadowStyle = (
-  size: keyof typeof Shadows,
-  isDark: boolean = false
-) => {
+export const createShadowStyle = (size: keyof typeof Shadows, isDark: boolean = false) => {
   const shadow = Shadows[size];
   if (typeof shadow === 'function') {
     return shadow;
   }
-  
+
   return {
     ...shadow,
     shadowOpacity: isDark ? shadow.shadowOpacity * 0.5 : shadow.shadowOpacity,
@@ -590,10 +580,7 @@ export const createShadowStyle = (
 };
 
 // Create responsive spacing
-export const createResponsiveSpacing = (
-  base: keyof typeof Spacing,
-  multiplier: number = 1
-) => ({
+export const createResponsiveSpacing = (base: keyof typeof Spacing, multiplier: number = 1) => ({
   padding: Spacing[base] * multiplier,
   margin: Spacing[base] * multiplier * 0.5,
 });
@@ -608,14 +595,14 @@ export const DesignSystem = {
   Shadows,
   Gradients,
   Animations,
-  
+
   // Component factories
   Components,
   createComponents,
-  
+
   // Theme helpers
   createEditorTheme,
-  
+
   // Style helpers
   getThemeColors,
   createTextStyle,

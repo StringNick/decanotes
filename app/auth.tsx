@@ -1,37 +1,37 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { DesignSystem } from '@/constants/DesignSystem';
+import { BorderRadius, Components, createTextStyle, Shadows, Spacing, Typography } from '@/constants/DesignSystem';
+import { useStorage } from '@/contexts/StorageContext';
+import type { StorageBackendType } from '@/types/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useStorage } from '@/contexts/StorageContext';
-import type { StorageBackendType } from '@/types/storage';
 
 type AuthMethod = StorageBackendType;
 
 export default function AuthScreen() {
   const { signIn, savedBackendType, needsCredentials } = useStorage();
   const [activeMethod, setActiveMethod] = useState<AuthMethod>('local');
-  
+
   // Renterd fields
   const [renterdHost, setRenterdHost] = useState('');
   const [renterdPassword, setRenterdPassword] = useState('');
-  
-  // IPFS fields (for future)
-  const [ipfsNode, setIpfsNode] = useState('');
-  const [ipfsApiKey, setIpfsApiKey] = useState('');
-  
+
+  // IPFS fields (for future) - commented out until implemented
+  // const [ipfsNode, setIpfsNode] = useState('');
+  // const [ipfsApiKey, setIpfsApiKey] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
 
   // Set active method based on saved backend type
@@ -82,10 +82,10 @@ export default function AuthScreen() {
 
     setIsLoading(true);
     try {
-      await signIn('renterd', { 
-        type: 'renterd', 
-        host: renterdHost, 
-        password: renterdPassword 
+      await signIn('renterd', {
+        type: 'renterd',
+        host: renterdHost,
+        password: renterdPassword,
       });
       router.replace('/');
     } catch (error) {
@@ -96,16 +96,13 @@ export default function AuthScreen() {
     }
   };
 
-  const handleIpfsAuth = async () => {
-    // IPFS not yet implemented
-    Alert.alert('Coming Soon', 'IPFS backend will be available soon!');
-  };
+  // IPFS handler - commented out until implemented
+  // const handleIpfsAuth = async () => {
+  //   Alert.alert('Coming Soon', 'IPFS backend will be available soon!');
+  // };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <LinearGradient
         colors={['#8B5FBF', '#4FC3E7']}
         style={styles.background}
@@ -120,9 +117,7 @@ export default function AuthScreen() {
             </Text>
             {needsCredentials && savedBackendType && (
               <View style={styles.infoBox}>
-                <Text style={styles.infoText}>
-                  Using {savedBackendType === 'renterd' ? 'Sia Renterd' : 'IPFS'}
-                </Text>
+                <Text style={styles.infoText}>Using {savedBackendType === 'renterd' ? 'Sia Renterd' : 'IPFS'}</Text>
               </View>
             )}
           </View>
@@ -130,54 +125,30 @@ export default function AuthScreen() {
           <View style={styles.authContainer}>
             <View style={styles.methodSelector}>
               <TouchableOpacity
-                style={[
-                  styles.methodButton,
-                  activeMethod === 'local' && styles.activeMethodButton,
-                ]}
+                style={[styles.methodButton, activeMethod === 'local' && styles.activeMethodButton]}
                 onPress={() => setActiveMethod('local')}
               >
                 <IconSymbol
-                  name="folder.fill"
+                  name={'folder.fill' as any}
                   size={18}
-                  color={
-                    activeMethod === 'local'
-                      ? '#FFFFFF'
-                      : '#6B7280'
-                  }
+                  color={activeMethod === 'local' ? '#FFFFFF' : '#6B7280'}
                 />
-                <Text
-                  style={[
-                    styles.methodText,
-                    activeMethod === 'local' && styles.activeMethodText,
-                  ]}
-                >
-                  Local{"\n"}Storage
+                <Text style={[styles.methodText, activeMethod === 'local' && styles.activeMethodText]}>
+                  Local{'\n'}Storage
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.methodButton,
-                  activeMethod === 'renterd' && styles.activeMethodButton,
-                ]}
+                style={[styles.methodButton, activeMethod === 'renterd' && styles.activeMethodButton]}
                 onPress={() => setActiveMethod('renterd')}
               >
                 <IconSymbol
-                  name="network"
+                  name={'network' as any}
                   size={18}
-                  color={
-                    activeMethod === 'renterd'
-                      ? '#FFFFFF'
-                      : '#6B7280'
-                  }
+                  color={activeMethod === 'renterd' ? '#FFFFFF' : '#6B7280'}
                 />
-                <Text
-                  style={[
-                    styles.methodText,
-                    activeMethod === 'renterd' && styles.activeMethodText,
-                  ]}
-                >
-                  Sia{"\n"}Renterd
+                <Text style={[styles.methodText, activeMethod === 'renterd' && styles.activeMethodText]}>
+                  Sia{'\n'}Renterd
                 </Text>
               </TouchableOpacity>
 
@@ -190,23 +161,8 @@ export default function AuthScreen() {
                 onPress={() => setActiveMethod('ipfs')}
               >
                 <View style={styles.methodButtonContent}>
-                  <IconSymbol
-                    name="globe"
-                    size={18}
-                    color={
-                      activeMethod === 'ipfs'
-                        ? '#FFFFFF'
-                        : '#6B7280'
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.methodText,
-                      activeMethod === 'ipfs' && styles.activeMethodText,
-                    ]}
-                  >
-                    IPFS
-                  </Text>
+                  <IconSymbol name="globe" size={18} color={activeMethod === 'ipfs' ? '#FFFFFF' : '#6B7280'} />
+                  <Text style={[styles.methodText, activeMethod === 'ipfs' && styles.activeMethodText]}>IPFS</Text>
                 </View>
                 <View style={styles.soonBadge}>
                   <Text style={styles.soonText}>Soon</Text>
@@ -218,21 +174,15 @@ export default function AuthScreen() {
               {activeMethod === 'local' ? (
                 <>
                   <Text style={styles.helperText}>
-                    Store your notes locally on this device. Your notes will be
-                    saved securely on your device only.
+                    Store your notes locally on this device. Your notes will be saved securely on your device only.
                   </Text>
 
                   <TouchableOpacity
-                    style={[
-                      styles.authButton,
-                      isLoading && styles.disabledButton,
-                    ]}
+                    style={[styles.authButton, isLoading && styles.disabledButton]}
                     onPress={handleLocalStorageAuth}
                     disabled={isLoading}
                   >
-                    <Text style={styles.authButtonText}>
-                      {isLoading ? 'Initializing...' : 'Use Local Storage'}
-                    </Text>
+                    <Text style={styles.authButtonText}>{isLoading ? 'Initializing...' : 'Use Local Storage'}</Text>
                   </TouchableOpacity>
                 </>
               ) : activeMethod === 'renterd' ? (
@@ -266,41 +216,28 @@ export default function AuthScreen() {
                   </View>
 
                   <Text style={styles.helperText}>
-                    Connect to your Sia Renterd instance to store notes
-                    on the decentralized Sia network.
+                    Connect to your Sia Renterd instance to store notes on the decentralized Sia network.
                   </Text>
 
                   <TouchableOpacity
                     style={[
                       styles.authButton,
-                      (!renterdHost.trim() || !renterdPassword.trim() || isLoading) &&
-                        styles.disabledButton,
+                      (!renterdHost.trim() || !renterdPassword.trim() || isLoading) && styles.disabledButton,
                     ]}
                     onPress={handleRenterdAuth}
                     disabled={!renterdHost.trim() || !renterdPassword.trim() || isLoading}
                   >
-                    <Text style={styles.authButtonText}>
-                      {isLoading ? 'Connecting...' : 'Connect to Renterd'}
-                    </Text>
+                    <Text style={styles.authButtonText}>{isLoading ? 'Connecting...' : 'Connect to Renterd'}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
                   <Text style={styles.helperText}>
-                    IPFS backend will be available soon! Connect to IPFS
-                    for decentralized storage.
+                    IPFS backend will be available soon! Connect to IPFS for decentralized storage.
                   </Text>
 
-                  <TouchableOpacity
-                    style={[
-                      styles.authButton,
-                      styles.disabledButton,
-                    ]}
-                    disabled
-                  >
-                    <Text style={styles.authButtonText}>
-                      Coming Soon
-                    </Text>
+                  <TouchableOpacity style={[styles.authButton, styles.disabledButton]} disabled>
+                    <Text style={styles.authButtonText}>Coming Soon</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -308,9 +245,7 @@ export default function AuthScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Your keys, your notes. Fully decentralized.
-            </Text>
+            <Text style={styles.footerText}>Your keys, your notes. Fully decentralized.</Text>
           </View>
         </ScrollView>
       </LinearGradient>
@@ -328,44 +263,44 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: DesignSystem.Spacing.xl,
+    padding: Spacing.xl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: DesignSystem.Spacing['4xl'],
+    marginBottom: Spacing['4xl'],
   },
   appTitle: {
-    ...DesignSystem.createTextStyle('5xl', 'bold', '#FFFFFF'),
-    marginBottom: DesignSystem.Spacing.sm,
+    ...createTextStyle('5xl', 'bold', '#FFFFFF'),
+    marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
-    ...DesignSystem.createTextStyle('lg', 'primary', '#FFFFFF'),
+    ...createTextStyle('lg', 'primary', '#FFFFFF'),
     opacity: 0.9,
     textAlign: 'center',
   },
   authContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: DesignSystem.BorderRadius['2xl'],
-    padding: DesignSystem.Spacing.xl,
-    ...DesignSystem.Shadows.xl,
+    borderRadius: BorderRadius['2xl'],
+    padding: Spacing.xl,
+    ...Shadows.xl,
   },
   methodSelector: {
     flexDirection: 'row',
-    marginBottom: DesignSystem.Spacing.xl,
+    marginBottom: Spacing.xl,
     backgroundColor: '#FAFAFA',
-    borderRadius: DesignSystem.BorderRadius.lg,
-    padding: DesignSystem.Spacing.xs,
-    gap: DesignSystem.Spacing.xs,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xs,
+    gap: Spacing.xs,
   },
   methodButton: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: DesignSystem.Spacing.md,
-    paddingHorizontal: DesignSystem.Spacing.xs,
-    borderRadius: DesignSystem.BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+    borderRadius: BorderRadius.md,
     position: 'relative',
     minHeight: 60,
   },
@@ -373,7 +308,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: DesignSystem.Spacing.xs,
+    gap: Spacing.xs,
   },
   disabledMethodButton: {
     opacity: 0.6,
@@ -382,8 +317,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
   },
   methodText: {
-    ...DesignSystem.createTextStyle('xs', 'medium'),
-    marginTop: DesignSystem.Spacing.xs,
+    ...createTextStyle('xs', 'medium'),
+    marginTop: Spacing.xs,
     textAlign: 'center',
     flexShrink: 1,
     lineHeight: 14,
@@ -392,40 +327,40 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   formContainer: {
-    gap: DesignSystem.Spacing.lg,
+    gap: Spacing.lg,
   },
   inputContainer: {
-    gap: DesignSystem.Spacing.sm,
+    gap: Spacing.sm,
   },
   inputLabel: {
-    ...DesignSystem.createTextStyle('md', 'semibold'),
+    ...createTextStyle('md', 'semibold'),
   },
   textInput: {
-    ...DesignSystem.Components.input.default,
+    ...Components.input.default,
     minHeight: 48,
   },
   helperText: {
-    ...DesignSystem.createTextStyle('sm', 'primary'),
+    ...createTextStyle('sm', 'primary'),
     textAlign: 'center',
-    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.relaxed,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.relaxed,
   },
   authButton: {
-    ...DesignSystem.Components.button.primary,
+    ...Components.button.primary,
     alignItems: 'center',
-    marginTop: DesignSystem.Spacing.md,
+    marginTop: Spacing.md,
   },
   disabledButton: {
     opacity: 0.5,
   },
   authButtonText: {
-    ...DesignSystem.createTextStyle('md', 'semibold', '#FFFFFF'),
+    ...createTextStyle('md', 'semibold', '#FFFFFF'),
   },
   footer: {
     alignItems: 'center',
-    marginTop: DesignSystem.Spacing.xl,
+    marginTop: Spacing.xl,
   },
   footerText: {
-    ...DesignSystem.createTextStyle('sm', 'primary', '#FFFFFF'),
+    ...createTextStyle('sm', 'primary', '#FFFFFF'),
     opacity: 0.8,
     textAlign: 'center',
   },
@@ -436,20 +371,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FCD34D',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: DesignSystem.BorderRadius.sm,
+    borderRadius: BorderRadius.sm,
   },
   soonText: {
-    ...DesignSystem.createTextStyle('xs', 'semibold', '#92400E'),
+    ...createTextStyle('xs', 'semibold', '#92400E'),
   },
   infoBox: {
-    marginTop: DesignSystem.Spacing.lg,
+    marginTop: Spacing.lg,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: DesignSystem.Spacing.base,
-    paddingVertical: DesignSystem.Spacing.sm,
-    borderRadius: DesignSystem.BorderRadius.md,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
   },
   infoText: {
-    ...DesignSystem.createTextStyle('sm', 'medium', '#FFFFFF'),
+    ...createTextStyle('sm', 'medium', '#FFFFFF'),
     textAlign: 'center',
   },
 });

@@ -3,6 +3,7 @@ import { EditorBlockType, EditorMode } from '../../../types/editor';
 import { PluginRegistry } from '../plugins/PluginRegistry';
 import { EditorAction, EditorContextInterface, EditorError, EditorState, ExtendedBlock } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
+import { parseMarkdownToBlocks, serializeBlocksToMarkdown } from '../utils/MarkdownRegistry';
 
 // Create the editor context
 const EditorContext = createContext<EditorContextInterface | null>(null);
@@ -12,6 +13,7 @@ const initialState: EditorState = {
   blocks: [],
   focusedBlockId: null,
   selectedBlocks: [],
+  highlightedBlockId: null, // NEW: For Notion-style highlight navigation
   mode: 'edit',
   isDirty: false,
   isLoading: false,
@@ -21,8 +23,8 @@ const initialState: EditorState = {
     present: [],
     future: [],
     canUndo: false,
-    canRedo: false
-  }
+    canRedo: false,
+  },
 };
 
 // Editor reducer
@@ -37,15 +39,15 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
           ...state.history,
           past: [...state.history.past, state.blocks],
           present: action.blocks,
-          future: []
-        }
+          future: [],
+        },
       };
 
     case 'ADD_BLOCK':
       const newBlocks = [...state.blocks];
       const insertIndex = action.index ?? newBlocks.length;
       newBlocks.splice(insertIndex, 0, action.block);
-      
+
       return {
         ...state,
         blocks: newBlocks,
@@ -54,17 +56,15 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
           ...state.history,
           past: [...state.history.past, state.blocks],
           present: newBlocks,
-          future: []
-        }
+          future: [],
+        },
       };
 
     case 'UPDATE_BLOCK':
       return {
         ...state,
-        blocks: state.blocks.map(block => 
-          block.id === action.id ? { ...block, ...action.changes } : block
-        ),
-        isDirty: true
+        blocks: state.blocks.map(block => (block.id === action.id ? { ...block, ...action.changes } : block)),
+        isDirty: true,
       };
 
     case 'DELETE_BLOCK':
@@ -73,7 +73,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         blocks: state.blocks.filter(block => block.id !== action.id),
         focusedBlockId: state.focusedBlockId === action.id ? null : state.focusedBlockId,
         selectedBlocks: state.selectedBlocks.filter(id => id !== action.id),
-        isDirty: true
+        isDirty: true,
       };
 
     case 'MOVE_BLOCK':
@@ -86,43 +86,55 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       return {
         ...state,
         blocks: blocksToMove,
-        isDirty: true
+        isDirty: true,
       };
 
     case 'SET_FOCUS':
       return {
         ...state,
-        focusedBlockId: action.blockId
+        focusedBlockId: action.blockId,
       };
 
     case 'SET_SELECTION':
       return {
         ...state,
-        selectedBlocks: action.blockIds
+        selectedBlocks: action.blockIds,
+      };
+
+    case 'SET_HIGHLIGHT':
+      return {
+        ...state,
+        highlightedBlockId: action.blockId,
+      };
+
+    case 'CLEAR_HIGHLIGHT':
+      return {
+        ...state,
+        highlightedBlockId: null,
       };
 
     case 'SET_MODE':
       return {
         ...state,
-        mode: action.mode
+        mode: action.mode,
       };
 
     case 'SET_LOADING':
       return {
         ...state,
-        isLoading: action.isLoading
+        isLoading: action.isLoading,
       };
 
     case 'ADD_ERROR':
       return {
         ...state,
-        errors: [...state.errors, action.error]
+        errors: [...state.errors, action.error],
       };
 
     case 'CLEAR_ERRORS':
       return {
         ...state,
-        errors: []
+        errors: [],
       };
 
     case 'UNDO':
@@ -137,8 +149,8 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
           present: previous,
           future: [state.blocks, ...state.history.future],
           canUndo: newPast.length > 0,
-          canRedo: true
-        }
+          canRedo: true,
+        },
       };
 
     case 'REDO':
@@ -153,8 +165,8 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
           present: next,
           future: newFuture,
           canUndo: true,
-          canRedo: newFuture.length > 0
-        }
+          canRedo: newFuture.length > 0,
+        },
       };
 
     case 'INDENT_BLOCK':
@@ -235,35 +247,38 @@ interface EditorProviderProps {
 }
 
 // Editor provider component
-export default function EditorProvider({ 
-  children, 
-  initialBlocks = [], 
-  plugins = [],
-  onError 
-}: EditorProviderProps) {
+export default function EditorProvider({ children, initialBlocks = [], plugins = [], onError }: EditorProviderProps) {
   const [state, dispatch] = useReducer(editorReducer, {
     ...initialState,
-    blocks: initialBlocks
+    blocks: initialBlocks,
   });
-  
-  const [pluginRegistry] = React.useState(() => new PluginRegistry());
 
-  // Register plugins on mount
+  const [pluginRegistry] = React.useState(() => new PluginRegistry());
+  const [registeredPluginIds] = React.useState(() => new Set<string>());
+
+  // Register plugins on mount - idempotent registration
   useEffect(() => {
     plugins.forEach(plugin => {
+      // Skip if already registered
+      if (registeredPluginIds.has(plugin.id)) {
+        return;
+      }
+
       try {
         pluginRegistry.register(plugin);
+        registeredPluginIds.add(plugin.id);
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         const editorError: EditorError = {
           type: 'plugin-error',
-          message: `Failed to register plugin: ${error}`,
-          source: plugin.id
+          message: `Failed to register plugin: ${errorMessage}`,
+          source: plugin.id,
         };
         dispatch({ type: 'ADD_ERROR', error: editorError });
         onError?.(editorError);
       }
     });
-  }, [plugins, pluginRegistry, onError]);
+  }, [plugins, pluginRegistry, registeredPluginIds, onError]);
 
   // Generate unique ID
   const generateId = useCallback(() => {
@@ -271,15 +286,43 @@ export default function EditorProvider({
   }, []);
 
   // Block operations
-  const createBlock = useCallback((type: EditorBlockType | string, content = '', index?: number) => {
-    const newBlock: ExtendedBlock = {
-      id: generateId(),
-      type: type as EditorBlockType,
-      content,
-      meta: {}
-    };
-    dispatch({ type: 'ADD_BLOCK', block: newBlock, index });
-  }, [generateId]);
+  const createBlock = useCallback(
+    (type: EditorBlockType | string, content = '', index?: number, meta?: Record<string, any>) => {
+      const plugin = pluginRegistry.getBlockPlugin(type as string);
+
+      let newBlock: ExtendedBlock;
+
+      if (plugin && typeof (plugin as any).createBlock === 'function') {
+        const pluginBlock = (plugin as any).createBlock(content, meta ?? {});
+        newBlock = {
+          id: pluginBlock.id,
+          type: (pluginBlock.type || type) as EditorBlockType,
+          content: pluginBlock.content ?? '',
+          meta: pluginBlock.meta ? { ...pluginBlock.meta } : {},
+          pluginId: plugin.id,
+        };
+      } else {
+        newBlock = {
+          id: generateId(),
+          type: type as EditorBlockType,
+          content,
+          meta: meta ? { ...meta } : {},
+        };
+      }
+
+      dispatch({ type: 'ADD_BLOCK', block: newBlock, index });
+      if (__DEV__) {
+        console.log('[EditorProvider] createBlock', {
+          id: newBlock.id,
+          type,
+          index,
+          meta,
+        });
+      }
+      return newBlock.id;
+    },
+    [generateId, pluginRegistry]
+  );
 
   const updateBlock = useCallback((id: string, changes: Partial<ExtendedBlock>) => {
     dispatch({ type: 'UPDATE_BLOCK', id, changes });
@@ -293,17 +336,20 @@ export default function EditorProvider({
     dispatch({ type: 'MOVE_BLOCK', id, newIndex });
   }, []);
 
-  const duplicateBlock = useCallback((id: string) => {
-    const block = state.blocks.find(b => b.id === id);
-    if (block) {
-      const duplicated: ExtendedBlock = {
-        ...block,
-        id: generateId()
-      };
-      const index = state.blocks.findIndex(b => b.id === id) + 1;
-      dispatch({ type: 'ADD_BLOCK', block: duplicated, index });
-    }
-  }, [state.blocks, generateId]);
+  const duplicateBlock = useCallback(
+    (id: string) => {
+      const block = state.blocks.find(b => b.id === id);
+      if (block) {
+        const duplicated: ExtendedBlock = {
+          ...block,
+          id: generateId(),
+        };
+        const index = state.blocks.findIndex(b => b.id === id) + 1;
+        dispatch({ type: 'ADD_BLOCK', block: duplicated, index });
+      }
+    },
+    [state.blocks, generateId]
+  );
 
   // Selection operations
   const selectBlock = useCallback((id: string) => {
@@ -341,6 +387,22 @@ export default function EditorProvider({
     }
   }, [state.focusedBlockId, state.blocks]);
 
+  // Highlight operations (NEW: Notion-style navigation)
+  const highlightBlock = useCallback((id: string, duration = 2000) => {
+    dispatch({ type: 'SET_HIGHLIGHT', blockId: id });
+
+    // Auto-clear highlight after duration
+    const timer = setTimeout(() => {
+      dispatch({ type: 'CLEAR_HIGHLIGHT' });
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const clearHighlight = useCallback(() => {
+    dispatch({ type: 'CLEAR_HIGHLIGHT' });
+  }, []);
+
   // Mode operations
   const setMode = useCallback((mode: EditorMode) => {
     dispatch({ type: 'SET_MODE', mode });
@@ -371,86 +433,53 @@ export default function EditorProvider({
   }, [state.history.future.length]);
 
   // Plugin operations
-  const getPlugin = useCallback((id: string) => {
-    return pluginRegistry.getPlugin(id);
-  }, [pluginRegistry]);
+  const getPlugin = useCallback(
+    (id: string) => {
+      return pluginRegistry.getPlugin(id);
+    },
+    [pluginRegistry]
+  );
 
-  const executePluginAction = useCallback((pluginId: string, actionId: string, data?: any) => {
-    const plugin = pluginRegistry.getPlugin(pluginId);
-    if (plugin && plugin.type === 'block') {
-      const blockPlugin = plugin as BlockPlugin;
-      // Execute plugin action logic here
-      console.log(`Executing action ${actionId} on plugin ${pluginId}`, data);
-    }
-  }, [pluginRegistry]);
-
-  // Content operations
-  const getMarkdown = useCallback(() => {
-    // Convert blocks to markdown
-    return state.blocks.map(block => {
-      switch (block.type) {
-        case 'heading':
-          const level = block.meta?.level || 1;
-          return `${'#'.repeat(level)} ${block.content}`;
-        case 'code':
-          const language = block.meta?.language || '';
-          return `\`\`\`${language}\n${block.content}\n\`\`\``;
-        case 'quote':
-          return `> ${block.content}`;
-        default:
-          return block.content;
+  const executePluginAction = useCallback(
+    (pluginId: string, actionId: string, data?: any) => {
+      const plugin = pluginRegistry.getPlugin(pluginId);
+      if (plugin && plugin.type === 'block') {
+        // const blockPlugin = plugin as BlockPlugin;
+        // Execute plugin action logic here
+        console.log(`Executing action ${actionId} on plugin ${pluginId}`, data);
       }
-    }).join('\n\n');
+    },
+    [pluginRegistry]
+  );
+
+  // Content operations using MarkdownRegistry
+  const getMarkdown = useCallback(() => {
+    return serializeBlocksToMarkdown(state.blocks);
   }, [state.blocks]);
 
-  const setMarkdown = useCallback((markdown: string) => {
-    // Parse markdown to blocks (simplified)
-    const lines = markdown.split('\n');
-    const newBlocks: ExtendedBlock[] = [];
-    
-    lines.forEach(line => {
-      if (line.startsWith('#')) {
-        const level = line.match(/^#+/)?.[0].length || 1;
-        const content = line.replace(/^#+\s*/, '');
-        newBlocks.push({
-          id: generateId(),
-          type: 'heading',
-          content,
-          meta: { level }
-        });
-      } else if (line.startsWith('>')) {
-        const content = line.replace(/^>\s*/, '');
-        newBlocks.push({
-          id: generateId(),
-          type: 'quote',
-          content
-        });
-      } else if (line.trim()) {
-        newBlocks.push({
-          id: generateId(),
-          type: 'paragraph',
-          content: line
-        });
-      }
-    });
-    
-    dispatch({ type: 'SET_BLOCKS', blocks: newBlocks });
-  }, [generateId]);
+  const setMarkdown = useCallback(
+    (markdown: string) => {
+      const blockPlugins = pluginRegistry.getAllBlockPlugins();
+      const newBlocks = parseMarkdownToBlocks(markdown, blockPlugins);
+      dispatch({ type: 'SET_BLOCKS', blocks: newBlocks });
+    },
+    [pluginRegistry]
+  );
 
   const validate = useCallback((): EditorError[] => {
     const errors: EditorError[] = [];
-    
+
     state.blocks.forEach(block => {
       const plugin = pluginRegistry.getBlockPlugin(block.type);
       if (!plugin) {
         errors.push({
           type: 'validation-error',
           message: `No plugin found for block type: ${block.type}`,
-          source: block.id
+          source: block.id,
         });
       }
     });
-    
+
     return errors;
   }, [state.blocks, pluginRegistry]);
 
@@ -463,6 +492,7 @@ export default function EditorProvider({
   const contextValue: EditorContextInterface = {
     state,
     dispatch,
+    pluginRegistry,
     createBlock,
     updateBlock,
     deleteBlock,
@@ -474,6 +504,8 @@ export default function EditorProvider({
     focusBlock,
     focusNext,
     focusPrevious,
+    highlightBlock,
+    clearHighlight,
     setMode,
     toggleMode,
     undo,
@@ -485,14 +517,10 @@ export default function EditorProvider({
     getMarkdown,
     setMarkdown,
     validate,
-    reset
+    reset,
   };
 
-  return (
-    <EditorContext.Provider value={contextValue}>
-      {children}
-    </EditorContext.Provider>
-  );
+  return <EditorContext.Provider value={contextValue}>{children}</EditorContext.Provider>;
 }
 
 // Export the context for use in other components

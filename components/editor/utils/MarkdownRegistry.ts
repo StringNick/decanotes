@@ -1,6 +1,7 @@
 import { EditorBlock } from '../../../types/editor';
+import { replaceEmojiShortcodes } from '../../../utils/emojiMap';
 import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
-import { MarkdownSyntax, MarkdownParser, MarkdownSerializer } from '../types/PluginTypes';
+import { MarkdownParser, MarkdownSerializer, MarkdownSyntax } from '../types/PluginTypes';
 
 /**
  * Registry for custom markdown syntax extensions
@@ -38,8 +39,7 @@ class MarkdownRegistry {
    * Get all registered syntax rules sorted by priority
    */
   getSyntaxRules(): MarkdownSyntax[] {
-    return Array.from(this.syntaxRules.values())
-      .sort((a, b) => b.priority - a.priority);
+    return Array.from(this.syntaxRules.values()).sort((a, b) => b.priority - a.priority);
   }
 
   /**
@@ -77,7 +77,7 @@ class MarkdownRegistry {
             id: this.generateId(),
             type: 'code',
             content: currentBlock.trim(),
-            meta: { language: codeBlockLanguage }
+            meta: { language: codeBlockLanguage },
           });
           currentBlock = '';
           inCodeBlock = false;
@@ -117,6 +117,30 @@ class MarkdownRegistry {
       }
 
       if (!parsed) {
+        // Check for definition list (Term on current line, : Definition on next)
+        if (i + 1 < lines.length) {
+          const nextLine = lines[i + 1];
+          const defMatch = nextLine.match(/^:\s+(.+)$/);
+          if (defMatch && line.trim() && !line.match(/^[#>*\-+\d[\]!`]/)) {
+            // This is a definition list
+            if (currentBlock.trim()) {
+              blocks.push(this.parseTextBlock(currentBlock.trim()));
+              currentBlock = '';
+            }
+            blocks.push({
+              id: this.generateId(),
+              type: 'definition-list',
+              content: line.trim(),
+              meta: {
+                term: line.trim(),
+                definition: defMatch[1],
+              },
+            });
+            i++; // Skip the definition line
+            continue;
+          }
+        }
+
         // Check for built-in markdown patterns
         const block = this.parseBuiltInMarkdown(line);
         if (block) {
@@ -144,7 +168,7 @@ class MarkdownRegistry {
           id: this.generateId(),
           type: 'code',
           content: currentBlock.trim(),
-          meta: { language: codeBlockLanguage }
+          meta: { language: codeBlockLanguage },
         });
       } else {
         blocks.push(this.parseTextBlock(currentBlock.trim()));
@@ -158,79 +182,66 @@ class MarkdownRegistry {
    * Serialize blocks to markdown using registered serializers
    */
   serializeToMarkdown(blocks: EditorBlock[]): string {
-    return blocks.map(block => {
-      // Try custom serializers first
-      for (const serializer of this.serializers.values()) {
-        if (serializer.canSerialize(block)) {
-          const result = serializer.serializeBlock(block);
-          if (result) return result;
+    return blocks
+      .map(block => {
+        // Try custom serializers first
+        for (const serializer of this.serializers.values()) {
+          if (serializer.canSerialize(block)) {
+            const result = serializer.serializeBlock(block);
+            if (result) return result;
+          }
         }
-      }
 
-      // Fall back to built-in serialization
-      return this.serializeBuiltInBlock(block);
-    }).join('\n\n');
+        // Fall back to built-in serialization
+        return this.serializeBuiltInBlock(block);
+      })
+      .join('\n\n');
   }
 
   /**
-   * Parse built-in markdown patterns
+   * Parse built-in markdown patterns (delegates to shared function)
    */
   private parseBuiltInMarkdown(line: string): EditorBlock | null {
-    // Headings
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
-    if (headingMatch) {
-      return {
-        id: this.generateId(),
-        type: 'heading',
-        content: headingMatch[2],
-        meta: { level: headingMatch[1].length }
-      };
-    }
-
-    // Quotes
-    if (line.startsWith('> ')) {
-      return {
-        id: this.generateId(),
-        type: 'quote',
-        content: line.substring(2)
-      };
-    }
-
-    // Lists
-    const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
-    if (listMatch) {
-      const isOrdered = /\d+\./.test(listMatch[2]);
-      return {
-        id: this.generateId(),
-        type: 'list',
-        content: listMatch[3],
-        meta: {
-          ordered: isOrdered,
-          depth: Math.floor(listMatch[1].length / 2)
-        }
-      };
-    }
-
-    // Horizontal rule
-    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
-      return {
-        id: this.generateId(),
-        type: 'divider',
-        content: ''
-      };
-    }
-
-    return null;
+    return parseBuiltInMarkdownLine(line);
   }
 
   /**
-   * Parse text block (paragraph)
+   * Parse text block (paragraph, footnote, or definition-list)
    */
   private parseTextBlock(content: string): EditorBlock {
+    // Check for footnote definition: [^id]: text
+    const footnoteMatch = content.match(/^\[\^([^\]]+)\]:\s+(.+)$/);
+    if (footnoteMatch) {
+      return {
+        id: this.generateId(),
+        type: 'footnote',
+        content: footnoteMatch[2],
+        meta: {
+          footnoteId: footnoteMatch[1],
+          footnoteLabel: `[^${footnoteMatch[1]}]`,
+        },
+      };
+    }
+
+    // Check for definition list: Term\n: Definition
+    const definitionMatch = content.match(/^(.+)\n:\s+(.+)$/);
+    if (definitionMatch) {
+      return {
+        id: this.generateId(),
+        type: 'definition-list',
+        content: definitionMatch[1],
+        meta: {
+          term: definitionMatch[1],
+          definition: definitionMatch[2],
+        },
+      };
+    }
+
+    // Default to paragraph
     return {
       id: this.generateId(),
       type: 'paragraph',
-      content
+      content,
     };
   }
 
@@ -239,24 +250,58 @@ class MarkdownRegistry {
    */
   private serializeBuiltInBlock(block: EditorBlock): string {
     switch (block.type) {
-      case 'heading':
+      case 'heading': {
         const level = block.meta?.level || 1;
-        return `${'#'.repeat(level)} ${block.content}`;
-      
+        const headingText = `${'#'.repeat(level)} ${block.content}`;
+        const headingId = block.meta?.headingId ? ` {#${block.meta.headingId}}` : '';
+        return headingText + headingId;
+      }
+
       case 'quote':
         return `> ${block.content}`;
-      
+
       case 'code':
         const language = block.meta?.language || '';
         return `\`\`\`${language}\n${block.content}\n\`\`\``;
-      
+
       case 'list':
         const indent = '  '.repeat(block.meta?.depth || 0);
         const marker = block.meta?.ordered ? '1.' : '-';
         return `${indent}${marker} ${block.content}`;
-      
+
+      case 'checklist': {
+        const checkIndent = '  '.repeat(block.meta?.level || 0);
+        const checked = block.meta?.checked ? 'x' : ' ';
+        return `${checkIndent}- [${checked}] ${block.content}`;
+      }
+
       case 'divider':
         return '---';
+
+      case 'image': {
+        const alt = block.meta?.alt || 'Image';
+        const url = block.meta?.url || block.content;
+        const caption = block.meta?.caption || '';
+        if (caption) {
+          return `![${alt}](${url} "${caption}")`;
+        }
+        return `![${alt}](${url})`;
+      }
+
+      case 'video': {
+        const url = block.meta?.url || block.content;
+        const caption = block.meta?.caption || '';
+        if (caption) {
+          return `!video[${caption}](${url})`;
+        }
+        return `!video[](${url})`;
+      }
+
+      case 'callout': {
+        const calloutType = block.meta?.calloutType || 'info';
+        const emoji = block.meta?.emoji || '💡';
+        return `> [!${calloutType}] ${emoji}\n> ${block.content}`;
+      }
 
       case 'table': {
         const headers = block.meta?.headers || [];
@@ -291,6 +336,14 @@ class MarkdownRegistry {
         });
 
         return lines.join('\n');
+      }
+
+      case 'footnote': {
+        return `[^${block.meta?.footnoteId}]: ${block.content}`;
+      }
+
+      case 'definition-list': {
+        return `${block.meta?.term || block.content}\n: ${block.meta?.definition || ''}`;
       }
 
       case 'paragraph':
@@ -329,11 +382,11 @@ export function registerMarkdownSyntax(
   serializer?: MarkdownSerializer
 ): void {
   globalMarkdownRegistry.registerSyntax(id, syntax);
-  
+
   if (parser) {
     globalMarkdownRegistry.registerParser(id, parser);
   }
-  
+
   if (serializer) {
     globalMarkdownRegistry.registerSerializer(id, serializer);
   }
@@ -361,9 +414,9 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
   let codeBlockContent = '';
 
   // Get plugins that can parse markdown (have parseMarkdown method)
-  const markdownCapablePlugins = plugins.filter(plugin =>
-    plugin.type === 'block' && typeof plugin.parseMarkdown === 'function'
-  ).sort((a, b) => (b.markdownSyntax?.priority || 0) - (a.markdownSyntax?.priority || 0));
+  const markdownCapablePlugins = plugins
+    .filter(plugin => plugin.type === 'block' && typeof plugin.parseMarkdown === 'function')
+    .sort((a, b) => (b.markdownSyntax?.priority || 0) - (a.markdownSyntax?.priority || 0));
 
   // Get table plugin specifically
   const tablePlugin = markdownCapablePlugins.find(p => p.blockType === 'table');
@@ -379,7 +432,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
           id: generateId(),
           type: 'code',
           content: codeBlockContent.trim(),
-          meta: { language: codeBlockLanguage }
+          meta: { language: codeBlockLanguage },
         });
         codeBlockContent = '';
         inCodeBlock = false;
@@ -390,7 +443,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
           blocks.push({
             id: generateId(),
             type: 'paragraph',
-            content: currentBlock.trim()
+            content: currentBlock.trim(),
           });
           currentBlock = '';
         }
@@ -411,7 +464,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
         blocks.push({
           id: generateId(),
           type: 'paragraph',
-          content: currentBlock.trim()
+          content: currentBlock.trim(),
         });
         currentBlock = '';
       }
@@ -448,7 +501,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
             blocks.push({
               id: generateId(),
               type: 'paragraph',
-              content: currentBlock.trim()
+              content: currentBlock.trim(),
             });
             currentBlock = '';
           }
@@ -469,7 +522,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
           blocks.push({
             id: generateId(),
             type: 'paragraph',
-            content: currentBlock.trim()
+            content: currentBlock.trim(),
           });
           currentBlock = '';
         }
@@ -482,7 +535,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
           blocks.push({
             id: generateId(),
             type: 'paragraph',
-            content: currentBlock.trim()
+            content: currentBlock.trim(),
           });
           currentBlock = '';
         }
@@ -497,13 +550,13 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
         id: generateId(),
         type: 'code',
         content: codeBlockContent.trim(),
-        meta: { language: codeBlockLanguage }
+        meta: { language: codeBlockLanguage },
       });
     } else {
       blocks.push({
         id: generateId(),
         type: 'paragraph',
-        content: currentBlock.trim()
+        content: currentBlock.trim(),
       });
     }
   }
@@ -512,17 +565,46 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
 }
 
 /**
- * Parse built-in markdown patterns (extracted for reuse)
+ * Shared built-in markdown parser (used by both registry and plugin-based parsing)
+ * Supports all extended markdown features including heading IDs, footnotes, emoji
  */
 function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
-  // Headings
-  const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+  // Headings (with optional custom ID: ### Heading {#custom-id})
+  const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+\{#([a-z0-9-_]+)\})?$/i);
   if (headingMatch) {
+    const content = replaceEmojiShortcodes(headingMatch[2].trim());
+    const headingId = headingMatch[3]; // custom ID if provided
     return {
       id: generateId(),
       type: 'heading',
-      content: headingMatch[2],
-      meta: { level: headingMatch[1].length }
+      content,
+      meta: {
+        level: headingMatch[1].length,
+        ...(headingId && { headingId }),
+      },
+    };
+  }
+
+  // Callout (GitHub-style alerts)
+  const calloutMatch = line.match(/^>\s+\[!(\w+)\]\s+(.*)$/);
+  if (calloutMatch) {
+    const calloutType = calloutMatch[1].toLowerCase() as any;
+    const content = calloutMatch[2];
+    const emojiMap: Record<string, string> = {
+      note: '📝',
+      tip: '💡',
+      info: 'ℹ️',
+      warning: '⚠️',
+      danger: '🚨',
+    };
+    return {
+      id: generateId(),
+      type: 'callout',
+      content: content,
+      meta: {
+        calloutType,
+        emoji: emojiMap[calloutType] || '💡',
+      },
     };
   }
 
@@ -531,11 +613,42 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
     return {
       id: generateId(),
       type: 'quote',
-      content: line.substring(2)
+      content: line.substring(2),
     };
   }
 
-  // Lists
+  // Checklist (- [ ] or - [x])
+  const checklistMatch = line.match(/^(\s*)-\s+\[([ x])\]\s+(.+)$/);
+  if (checklistMatch) {
+    const indentation = checklistMatch[1];
+    const checkState = checklistMatch[2];
+    const content = checklistMatch[3];
+    const level = Math.floor(indentation.length / 2);
+    const checked = checkState === 'x';
+
+    return {
+      id: generateId(),
+      type: 'checklist',
+      content: content,
+      meta: { checked, level },
+    };
+  }
+
+  // Footnote definitions [^id]: text
+  const footnoteMatch = line.match(/^\[\^([^\]]+)\]:\s+(.+)$/);
+  if (footnoteMatch) {
+    return {
+      id: generateId(),
+      type: 'footnote',
+      content: footnoteMatch[2],
+      meta: {
+        footnoteId: footnoteMatch[1],
+        footnoteLabel: `[^${footnoteMatch[1]}]`,
+      },
+    };
+  }
+
+  // Lists (must come after checklist)
   const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
   if (listMatch) {
     const isOrdered = /\d+\./.test(listMatch[2]);
@@ -545,8 +658,37 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       content: listMatch[3],
       meta: {
         ordered: isOrdered,
-        depth: Math.floor(listMatch[1].length / 2)
-      }
+        depth: Math.floor(listMatch[1].length / 2),
+      },
+    };
+  }
+
+  // Image (![alt](url) or ![alt](url "caption"))
+  const imageMatch = line.match(/^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]*)")?\)$/);
+  if (imageMatch) {
+    return {
+      id: generateId(),
+      type: 'image',
+      content: imageMatch[2],
+      meta: {
+        alt: imageMatch[1] || 'Image',
+        url: imageMatch[2],
+        caption: imageMatch[3] || '',
+      },
+    };
+  }
+
+  // Video (!video[caption](url))
+  const videoMatch = line.match(/^!video\[([^\]]*)\]\(([^)]+)\)$/);
+  if (videoMatch) {
+    return {
+      id: generateId(),
+      type: 'video',
+      content: videoMatch[2],
+      meta: {
+        url: videoMatch[2],
+        caption: videoMatch[1] || '',
+      },
     };
   }
 
@@ -555,7 +697,7 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
     return {
       id: generateId(),
       type: 'divider',
-      content: ''
+      content: '',
     };
   }
 
@@ -593,7 +735,7 @@ export function createSimpleMarkdownPlugin({
   blockType,
   priority = 50,
   parseContent,
-  serializeContent
+  serializeContent,
 }: {
   id: string;
   name: string;
@@ -609,7 +751,7 @@ export function createSimpleMarkdownPlugin({
     readonly version = '1.0.0';
     readonly syntax = {
       patterns: { block: pattern },
-      priority
+      priority,
     };
 
     protected parseInline(text: string): string | null {
@@ -624,7 +766,7 @@ export function createSimpleMarkdownPlugin({
           id: this.generateId(),
           type: blockType as any,
           content,
-          meta
+          meta,
         };
       }
       return null;

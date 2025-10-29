@@ -1,165 +1,199 @@
-import React, { useState, memo, useRef, useCallback } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity, ScrollView, NativeSyntheticEvent, TextInputContentSizeChangeEventData } from 'react-native';
-import { BlockPlugin } from '../../types/PluginTypes';
-import { BlockComponentProps } from '../../types/PluginTypes';
-import { EditorBlock, EditorBlockType } from '../../../../types/editor';
-import { generateId } from '../../../../utils/markdownParser';
+import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import {
+  Animated,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputContentSizeChangeEventData,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
+import { EditorBlock, EditorBlockType } from '../../../../types/editor';
+import { generateId } from '../../../../utils/markdownParser';
+import { ANIMATION_CONFIG, getCodeFocusColors } from '../../styles/blockStyles';
+import { BlockComponentProps, BlockPlugin } from '../../types/PluginTypes';
+
+type FocusableHandle = { focus: () => void };
 
 /**
  * Code block component with modern dark theme support
  */
-const CodeComponent: React.FC<BlockComponentProps> = memo(({
-  block,
-  isSelected,
-  isFocused,
-  isDragging,
-  onBlockChange,
-  onFocus,
-  onBlur,
-  onKeyPress,
-  theme,
-  readOnly
-}) => {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  const [isLanguageEditing, setIsLanguageEditing] = useState(false);
-  const [contentHeight, setContentHeight] = useState(0);
-  const language = block.meta?.language || 'text';
-  const showLineNumbers = block.meta?.showLineNumbers !== false;
+const RawCodeComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  (
+    {
+      block,
+      isSelected,
+      isFocused,
+      isEditing,
+      isDragging,
+      onBlockChange,
+      onFocus,
+      onBlur,
+      onKeyPress,
+      theme,
+      readOnly,
+    },
+    ref
+  ) => {
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const styles = getStyles(colorScheme ?? 'light');
+    const [isLanguageEditing, setIsLanguageEditing] = useState(false);
+    const language = block.meta?.language || 'text';
+    const showLineNumbers = block.meta?.showLineNumbers !== false;
+    const animatedValue = useRef(new Animated.Value(0)).current;
+    const codeInputRef = useRef<TextInput>(null);
 
-  const handleCodeChange = (text: string) => {
-    onBlockChange({ content: text });
-  };
+    // Determine if block should show focused state
+    const shouldFocus = isFocused || isEditing;
 
-  const handleLanguageChange = (newLanguage: string) => {
-    onBlockChange({
-      ...block,
-      meta: {
-        ...block.meta,
-        language: newLanguage
-      }
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        codeInputRef.current?.focus();
+      },
+    }));
+
+    // Animate focus state changes
+    useEffect(() => {
+      Animated.timing(animatedValue, {
+        toValue: shouldFocus ? 1 : 0,
+        duration: ANIMATION_CONFIG.duration,
+        useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+      }).start();
+    }, [shouldFocus, animatedValue]);
+
+    // Get animated colors
+    const focusColors = getCodeFocusColors(colorScheme ?? 'light', shouldFocus || false);
+
+    const handleCodeChange = (text: string) => {
+      onBlockChange({ content: text });
+    };
+
+    const handleLanguageChange = (newLanguage: string) => {
+      onBlockChange({
+        ...block,
+        meta: {
+          ...block.meta,
+          language: newLanguage,
+        },
+      });
+      setIsLanguageEditing(false);
+    };
+
+    const toggleLineNumbers = () => {
+      onBlockChange({
+        ...block,
+        meta: {
+          ...block.meta,
+          showLineNumbers: !showLineNumbers,
+        },
+      });
+    };
+
+    const handleContentSizeChange = useCallback((_e: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
+      // Content size tracking for future enhancements
+    }, []);
+
+    const getLineNumbers = () => {
+      if (!showLineNumbers) return null;
+
+      // Count lines in content
+      const lines = block.content ? block.content.split('\n') : [''];
+      const lineCount = lines.length;
+
+      // Render each line number separately to match TextInput line rendering
+      return Array.from({ length: lineCount }, (_, index) => (
+        <Text key={index} style={styles.lineNumber}>
+          {index + 1}
+        </Text>
+      ));
+    };
+
+    // Animated background color
+    const animatedBackgroundColor = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [
+        colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+        focusColors.backgroundColor,
+      ],
     });
-    setIsLanguageEditing(false);
-  };
 
-  const toggleLineNumbers = () => {
-    onBlockChange({
-      ...block,
-      meta: {
-        ...block.meta,
-        showLineNumbers: !showLineNumbers
-      }
-    });
-  };
+    return (
+      <Animated.View style={[styles.container, { backgroundColor: animatedBackgroundColor }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.languageButton}
+            onPress={() => setIsLanguageEditing(true)}
+            disabled={readOnly}
+          >
+            <Text style={styles.languageText}>{language}</Text>
+          </TouchableOpacity>
 
-  const handleContentSizeChange = useCallback((e: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
-    setContentHeight(e.nativeEvent.contentSize.height);
-  }, []);
-
-  const getLineNumbers = () => {
-    if (!showLineNumbers) return null;
-    
-    // Count lines in content
-    const lines = block.content ? block.content.split('\n') : [''];
-    const lineCount = lines.length;
-    
-    // Render each line number separately to match TextInput line rendering
-    return Array.from({ length: lineCount }, (_, index) => (
-      <Text key={index} style={styles.lineNumber}>
-        {index + 1}
-      </Text>
-    ));
-  };
-
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.languageButton}
-          onPress={() => setIsLanguageEditing(true)}
-          disabled={readOnly}
-        >
-          <Text style={styles.languageText}>{language}</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.lineNumbersButton}
-          onPress={toggleLineNumbers}
-          disabled={readOnly}
-        >
-          <Text style={styles.buttonText}>
-            {showLineNumbers ? '🔢' : '📝'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Language selector */}
-      {isLanguageEditing && !readOnly && (
-        <View style={styles.languageSelector}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {COMMON_LANGUAGES.map((lang) => (
-              <TouchableOpacity
-                key={lang}
-                style={[
-                  styles.languageOption,
-                  language === lang && styles.selectedLanguage
-                ]}
-                onPress={() => handleLanguageChange(lang)}
-              >
-                <Text style={styles.languageOptionText}>{lang}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <TouchableOpacity style={styles.lineNumbersButton} onPress={toggleLineNumbers} disabled={readOnly}>
+            <Text style={styles.buttonText}>{showLineNumbers ? '🔢' : '📝'}</Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-      {/* Code editor */}
-      <ScrollView 
-        horizontal
-        showsHorizontalScrollIndicator={true}
-        style={[
-          styles.codeContainer,
-          isSelected && styles.selected,
-          isFocused && styles.editing
-        ]}
-      >
-        <View style={styles.codeWrapper}>
-          {showLineNumbers && (
-            <View style={styles.lineNumbersContainer} pointerEvents="none">
-              {getLineNumbers()}
-            </View>
-          )}
-          
-          <TextInput
-            style={[
-              styles.codeInput,
-              showLineNumbers && styles.codeInputWithNumbers
-            ]}
-            value={block.content}
-            onChangeText={handleCodeChange}
-            onContentSizeChange={handleContentSizeChange}
-            onFocus={onFocus}
-            onBlur={onBlur}
-            onKeyPress={onKeyPress}
-            placeholder="Enter your code..."
-            placeholderTextColor={colors.textMuted}
-            multiline
-            textAlignVertical="top"
-            scrollEnabled={false}
-            autoCapitalize="none"
-            autoCorrect={false}
-            spellCheck={false}
-            editable={!readOnly}
-          />
-        </View>
-      </ScrollView>
-    </View>
-  );
-}, (prevProps, nextProps) => {
+        {/* Language selector */}
+        {isLanguageEditing && !readOnly && (
+          <View style={styles.languageSelector}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {COMMON_LANGUAGES.map(lang => (
+                <TouchableOpacity
+                  key={lang}
+                  style={[styles.languageOption, language === lang && styles.selectedLanguage]}
+                  onPress={() => handleLanguageChange(lang)}
+                >
+                  <Text style={styles.languageOptionText}>{lang}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Code editor */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.codeContainer}>
+          <View style={styles.codeWrapper}>
+            {showLineNumbers && (
+              <View style={styles.lineNumbersContainer} pointerEvents="none">
+                {getLineNumbers()}
+              </View>
+            )}
+
+            <TextInput
+              style={[styles.codeInput, showLineNumbers && styles.codeInputWithNumbers]}
+              value={block.content}
+              onChangeText={handleCodeChange}
+              onContentSizeChange={handleContentSizeChange}
+              onFocus={onFocus}
+              onBlur={onBlur}
+              onKeyPress={onKeyPress}
+              placeholder="Enter your code..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              textAlignVertical="top"
+              scrollEnabled={false}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              editable={!readOnly}
+              ref={codeInputRef}
+            />
+          </View>
+        </ScrollView>
+      </Animated.View>
+    );
+  }
+);
+
+RawCodeComponent.displayName = 'RawCodeComponent';
+
+const CodeComponent = memo(RawCodeComponent, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
   return (
     prevProps.block.id === nextProps.block.id &&
@@ -167,27 +201,52 @@ const CodeComponent: React.FC<BlockComponentProps> = memo(({
     prevProps.block.meta?.language === nextProps.block.meta?.language &&
     prevProps.block.meta?.showLineNumbers === nextProps.block.meta?.showLineNumbers &&
     prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isFocused === nextProps.isFocused &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.readOnly === nextProps.readOnly
   );
 });
 
+CodeComponent.displayName = 'CodeComponent';
+
 const COMMON_LANGUAGES = [
-  'text', 'javascript', 'typescript', 'python', 'java', 'cpp', 'c',
-  'csharp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin',
-  'html', 'css', 'scss', 'json', 'xml', 'yaml', 'markdown',
-  'sql', 'bash', 'shell', 'powershell'
+  'text',
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'cpp',
+  'c',
+  'csharp',
+  'php',
+  'ruby',
+  'go',
+  'rust',
+  'swift',
+  'kotlin',
+  'html',
+  'css',
+  'scss',
+  'json',
+  'xml',
+  'yaml',
+  'markdown',
+  'sql',
+  'bash',
+  'shell',
+  'powershell',
 ];
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
-  
+
   return StyleSheet.create({
     container: {
-      marginVertical: 12,
+      marginVertical: 8,
       borderRadius: 8,
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+      // Background will be animated
+      backgroundColor: 'transparent',
       overflow: 'hidden',
     },
     header: {
@@ -264,12 +323,6 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       minHeight: 100,
       backgroundColor: 'transparent',
     },
-    selected: {
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-    },
-    editing: {
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-    },
     codeWrapper: {
       position: 'relative',
       flexDirection: 'row',
@@ -333,28 +386,28 @@ export class CodePlugin implements BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^```([a-zA-Z0-9]*)?\n([\s\S]*?)\n```$/
+      block: /^```([a-zA-Z0-9]*)?\n([\s\S]*?)\n```$/,
     },
-    priority: 90
+    priority: 90,
   };
 
   readonly toolbar = {
     icon: 'code',
     label: 'Code Block',
     shortcut: 'Ctrl+Alt+C',
-    group: 'code'
+    group: 'code',
   };
 
   readonly settings = {
     allowedParents: ['root', 'quote', 'callout'] as EditorBlockType[],
     validation: {
-      required: ['content'] as string[]
+      required: ['content'] as string[],
     },
     defaultMeta: {
       language: 'text',
       showLineNumbers: true,
-      theme: 'default'
-    }
+      theme: 'default',
+    },
   };
 
   /**
@@ -372,7 +425,7 @@ export class CodePlugin implements BlockPlugin {
       id: this.generateId(),
       type: 'code' as EditorBlockType,
       content,
-      meta
+      meta,
     };
   }
 
@@ -389,7 +442,7 @@ export class CodePlugin implements BlockPlugin {
       create: this.onCreate.bind(this),
       update: this.onUpdate.bind(this),
       delete: this.onDelete.bind(this),
-      actions: this.getActions.bind(this)
+      actions: this.getActions.bind(this),
     };
   }
 
@@ -438,7 +491,7 @@ export class CodePlugin implements BlockPlugin {
       version: this.version,
       type: this.type,
       description: this.description,
-      blockType: this.blockType
+      blockType: this.blockType,
     };
   }
 
@@ -448,16 +501,16 @@ export class CodePlugin implements BlockPlugin {
       event.preventDefault();
       const { selectionStart, selectionEnd } = event.target;
       const content = block.content;
-      const newContent = 
+      const newContent =
         content.substring(0, selectionStart) +
         '  ' + // 2 spaces
         content.substring(selectionEnd);
-      
+
       // Update content and cursor position
       this.updateBlockContent(block, newContent, selectionStart + 2);
       return true;
     }
-    
+
     return false;
   }
 
@@ -467,7 +520,7 @@ export class CodePlugin implements BlockPlugin {
       id: generateId(),
       type: 'paragraph',
       content: '',
-      meta: {}
+      meta: {},
     };
   }
 
@@ -482,25 +535,25 @@ export class CodePlugin implements BlockPlugin {
 
   protected onCreate(block: EditorBlock): EditorBlock {
     const newBlock = block;
-    
+
     // Parse markdown syntax if present
     const match = newBlock.content.match(/^```([a-zA-Z0-9]*)?\n([\s\S]*?)\n```$/);
     if (match) {
       newBlock.content = match[2] || '';
       newBlock.meta = {
         ...newBlock.meta,
-        language: match[1] || 'text'
+        language: match[1] || 'text',
       };
     }
-    
+
     // Ensure language is set
     if (!newBlock.meta?.language) {
       newBlock.meta = {
         ...newBlock.meta,
-        language: 'text'
+        language: 'text',
       };
     }
-    
+
     return newBlock;
   }
 
@@ -508,16 +561,16 @@ export class CodePlugin implements BlockPlugin {
     // Return only the default actions (duplicate and delete)
     // Note: CodePlugin doesn't extend BlockPlugin, so we need to provide default actions
     const actions: any[] = [];
-    
+
     actions.push({
       id: 'duplicate',
       label: 'Duplicate',
       icon: 'copy',
       handler: (block: EditorBlock, context: any) => {
         context.duplicateBlock();
-      }
+      },
     });
-    
+
     actions.push({
       id: 'delete',
       label: 'Delete',
@@ -525,9 +578,9 @@ export class CodePlugin implements BlockPlugin {
       style: 'destructive',
       handler: (block: EditorBlock, context: any) => {
         context.deleteBlock();
-      }
+      },
     });
-    
+
     return actions;
   }
 
@@ -550,8 +603,8 @@ export class CodePlugin implements BlockPlugin {
       meta: {
         language,
         showLineNumbers: true,
-        theme: 'default'
-      }
+        theme: 'default',
+      },
     };
   }
 
@@ -561,10 +614,10 @@ export class CodePlugin implements BlockPlugin {
   parseMarkdown(text: string): EditorBlock | null {
     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
-    
+
     const language = match[1] || 'text';
     const content = match[2] || '';
-    
+
     return this.createCodeBlock(content, language);
   }
 
@@ -574,7 +627,7 @@ export class CodePlugin implements BlockPlugin {
   toMarkdown(block: EditorBlock): string {
     const language = block.meta?.language || 'text';
     const content = block.content;
-    
+
     return `\`\`\`${language}\n${content}\n\`\`\``;
   }
 

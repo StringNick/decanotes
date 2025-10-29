@@ -1,19 +1,10 @@
 import { IconSymbol, IconSymbolName } from '@/components/ui/IconSymbol';
-import DesignSystem from '@/constants/DesignSystem';
-import { useTheme } from '@/contexts/ThemeContext';
+import { Colors, getThemeColors, Spacing, Typography } from '@/constants/DesignSystem';
 import { useStorage } from '@/contexts/StorageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface SettingItemProps {
@@ -23,40 +14,26 @@ interface SettingItemProps {
   onPress?: () => void;
   rightElement?: React.ReactNode;
   showChevron?: boolean;
-  colors: ReturnType<typeof DesignSystem.getThemeColors>;
+  colors: ReturnType<typeof getThemeColors>;
 }
 
-function SettingItem({
-  icon,
-  title,
-  subtitle,
-  onPress,
-  rightElement,
-  showChevron = true,
-  colors,
-}: SettingItemProps) {
+function SettingItem({ icon, title, subtitle, onPress, rightElement, showChevron = true, colors }: SettingItemProps) {
   const isDark = colors.background.primary === '#000000';
-  
+
   return (
     <TouchableOpacity
       style={[
         styles.settingItem,
         {
-          borderBottomColor: isDark 
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(0, 0, 0, 0.05)',
-        }
+          borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        },
       ]}
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.7}
     >
       <View style={styles.settingLeft}>
-        <IconSymbol
-          name={icon}
-          size={20}
-          color={colors.text.tertiary}
-        />
+        <IconSymbol name={icon} size={20} color={colors.text.tertiary} />
         <View style={styles.textContainer}>
           <Text style={[styles.settingTitle, { color: colors.text.primary }]}>{title}</Text>
           {subtitle && <Text style={[styles.settingSubtitle, { color: colors.text.tertiary }]}>{subtitle}</Text>}
@@ -64,13 +41,7 @@ function SettingItem({
       </View>
       <View style={styles.settingRight}>
         {rightElement}
-        {showChevron && onPress && (
-          <IconSymbol
-            name="chevron.right"
-            size={14}
-            color={colors.text.tertiary}
-          />
-        )}
+        {showChevron && onPress && <IconSymbol name="chevron.right" size={14} color={colors.text.tertiary} />}
       </View>
     </TouchableOpacity>
   );
@@ -80,41 +51,39 @@ export default function SettingsScreen() {
   const { theme, effectiveTheme, setTheme } = useTheme();
   const { authState, signOut, sync } = useStorage();
   const isDark = effectiveTheme === 'dark';
-  const colors = DesignSystem.getThemeColors(isDark);
+  const colors = getThemeColors(isDark);
 
-  const [syncEnabled, setSyncEnabled] = useState(true);
+  // Sync and notification state (reserved for future features)
+  // const [syncEnabled, setSyncEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleThemeChange = (value: boolean) => {
     setTheme(value ? 'dark' : 'light');
   };
-  
-  const handleSystemTheme = () => {
-    setTheme('system');
-  };
+
+  // System theme handler (reserved for future feature)
+  // const handleSystemTheme = () => {
+  //   setTheme('system');
+  // };
 
   const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-              router.replace('/auth');
-            } catch (error) {
-              console.error('Sign out failed:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut();
+            router.replace('/auth');
+          } catch (error) {
+            console.error('Sign out failed:', error);
+            Alert.alert('Error', 'Failed to sign out. Please try again.');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleSyncNow = async () => {
@@ -131,11 +100,7 @@ export default function SettingsScreen() {
   };
 
   const handleExportData = () => {
-    Alert.alert(
-      'Export Data',
-      'Export functionality will be available soon.',
-      [{ text: 'OK' }]
-    );
+    Alert.alert('Export Data', 'Export functionality will be available soon.', [{ text: 'OK' }]);
   };
 
   const getBackendDisplayName = () => {
@@ -153,21 +118,10 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top']}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent
-      />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <IconSymbol
-            name="chevron.left"
-            size={24}
-            color={colors.text.primary}
-          />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <IconSymbol name="chevron.left" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Settings</Text>
         <View style={styles.placeholder} />
@@ -178,20 +132,20 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>APPEARANCE</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="moon"
+              icon={'moon' as any}
               title="Dark Mode"
-              subtitle="Toggle dark theme"
+              subtitle={theme === 'system' ? 'Following system theme' : 'Toggle dark theme'}
               colors={colors}
               rightElement={
                 <Switch
-                  value={isDark}
+                  value={theme === 'dark' || (theme === 'system' && isDark)}
                   onValueChange={handleThemeChange}
                   trackColor={{
-                    false: isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300,
-                    true: DesignSystem.Colors.primary.purple,
+                    false: isDark ? Colors.neutral.gray700 : Colors.neutral.gray300,
+                    true: Colors.primary.purple,
                   }}
-                  thumbColor={isDark ? DesignSystem.Colors.neutral.white : DesignSystem.Colors.neutral.white}
-                  ios_backgroundColor={isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300}
+                  thumbColor={isDark ? Colors.neutral.white : Colors.neutral.white}
+                  ios_backgroundColor={isDark ? Colors.neutral.gray700 : Colors.neutral.gray300}
                 />
               }
               showChevron={false}
@@ -203,7 +157,7 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>STORAGE BACKEND</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="server.rack"
+              icon={'server.rack' as any}
               title="Current Backend"
               subtitle={getBackendDisplayName()}
               colors={colors}
@@ -216,14 +170,14 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>SYNC & STORAGE</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="arrow.clockwise"
+              icon={'arrow.clockwise' as any}
               title="Sync Now"
-              subtitle={isSyncing ? "Syncing..." : "Manually sync your notes"}
+              subtitle={isSyncing ? 'Syncing...' : 'Manually sync your notes'}
               colors={colors}
               onPress={isSyncing ? undefined : handleSyncNow}
             />
             <SettingItem
-              icon="square.and.arrow.up"
+              icon={'square.and.arrow.up' as any}
               title="Export Data"
               subtitle="Export all notes"
               colors={colors}
@@ -236,7 +190,7 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>NOTIFICATIONS</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="bell"
+              icon={'bell' as any}
               title="Push Notifications"
               subtitle="Get notified about sync status"
               colors={colors}
@@ -245,11 +199,11 @@ export default function SettingsScreen() {
                   value={notificationsEnabled}
                   onValueChange={setNotificationsEnabled}
                   trackColor={{
-                    false: isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300,
-                    true: DesignSystem.Colors.primary.blue,
+                    false: isDark ? Colors.neutral.gray700 : Colors.neutral.gray300,
+                    true: Colors.primary.blue,
                   }}
-                  thumbColor={isDark ? DesignSystem.Colors.neutral.white : DesignSystem.Colors.neutral.white}
-                  ios_backgroundColor={isDark ? DesignSystem.Colors.neutral.gray700 : DesignSystem.Colors.neutral.gray300}
+                  thumbColor={isDark ? Colors.neutral.white : Colors.neutral.white}
+                  ios_backgroundColor={isDark ? Colors.neutral.gray700 : Colors.neutral.gray300}
                 />
               }
               showChevron={false}
@@ -261,20 +215,20 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>ABOUT</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="info.circle"
+              icon={'info.circle' as any}
               title="App Version"
               subtitle="1.0.0"
               colors={colors}
               showChevron={false}
             />
             <SettingItem
-              icon="questionmark.circle"
+              icon={'questionmark.circle' as any}
               title="Help & Support"
               colors={colors}
               onPress={() => Alert.alert('Help', 'Visit our documentation for help.')}
             />
             <SettingItem
-              icon="doc.text"
+              icon={'doc.text' as any}
               title="Privacy Policy"
               colors={colors}
               onPress={() => Alert.alert('Privacy', 'Your data is stored locally and on IPFS.')}
@@ -284,12 +238,8 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionContent}>
-            <TouchableOpacity 
-              style={styles.signOutButton} 
-              onPress={handleSignOut}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.signOutText, { color: DesignSystem.Colors.semantic.error }]}>Sign Out</Text>
+            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.7}>
+              <Text style={[styles.signOutText, { color: Colors.semantic.error }]}>Sign Out</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -308,17 +258,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: DesignSystem.Spacing.xl,
-    paddingTop: DesignSystem.Spacing.lg,
-    paddingBottom: DesignSystem.Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
   backButton: {
-    padding: DesignSystem.Spacing.xs,
+    padding: Spacing.xs,
   },
   headerTitle: {
-    fontSize: DesignSystem.Typography.sizes['3xl'],
-    fontFamily: DesignSystem.Typography.fonts.bold,
-    lineHeight: DesignSystem.Typography.sizes['3xl'] * DesignSystem.Typography.lineHeights.tight,
+    fontSize: Typography.sizes['3xl'],
+    fontFamily: Typography.fonts.bold,
+    lineHeight: Typography.sizes['3xl'] * Typography.lineHeights.tight,
     letterSpacing: -0.5,
   },
   placeholder: {
@@ -328,61 +278,61 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginBottom: DesignSystem.Spacing['2xl'],
+    marginBottom: Spacing['2xl'],
   },
   sectionTitle: {
-    fontSize: DesignSystem.Typography.sizes.xs,
-    fontFamily: DesignSystem.Typography.fonts.semibold,
-    paddingHorizontal: DesignSystem.Spacing.xl,
-    marginBottom: DesignSystem.Spacing.md,
+    fontSize: Typography.sizes.xs,
+    fontFamily: Typography.fonts.semibold,
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   sectionContent: {
-    marginHorizontal: DesignSystem.Spacing.xl,
+    marginHorizontal: Spacing.xl,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: DesignSystem.Spacing.lg,
+    paddingVertical: Spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: DesignSystem.Spacing.base,
+    gap: Spacing.base,
   },
   textContainer: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: DesignSystem.Typography.sizes.base,
-    fontFamily: DesignSystem.Typography.fonts.medium,
-    lineHeight: DesignSystem.Typography.sizes.base * DesignSystem.Typography.lineHeights.tight,
+    fontSize: Typography.sizes.base,
+    fontFamily: Typography.fonts.medium,
+    lineHeight: Typography.sizes.base * Typography.lineHeights.tight,
     marginBottom: 2,
   },
   settingSubtitle: {
-    fontSize: DesignSystem.Typography.sizes.sm,
-    fontFamily: DesignSystem.Typography.fonts.primary,
-    lineHeight: DesignSystem.Typography.sizes.sm * DesignSystem.Typography.lineHeights.normal,
+    fontSize: Typography.sizes.sm,
+    fontFamily: Typography.fonts.primary,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.normal,
   },
   settingRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: DesignSystem.Spacing.md,
+    gap: Spacing.md,
   },
   signOutButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: DesignSystem.Spacing.base,
+    paddingVertical: Spacing.base,
   },
   signOutText: {
-    fontSize: DesignSystem.Typography.sizes.base,
-    fontFamily: DesignSystem.Typography.fonts.medium,
+    fontSize: Typography.sizes.base,
+    fontFamily: Typography.fonts.medium,
   },
   bottomSpacing: {
-    height: DesignSystem.Spacing['4xl'],
+    height: Spacing['4xl'],
   },
 });

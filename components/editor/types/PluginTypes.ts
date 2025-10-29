@@ -18,22 +18,22 @@ export interface BlockPlugin extends BasePlugin {
   markdownSyntax?: MarkdownSyntax;
   toolbar?: ToolbarConfig;
   settings?: BlockSettings;
-  
+
   // Optional icon for the block type
   icon?: ComponentType<any> | string;
-  
+
   // Plugin configuration
   config?: PluginConfig;
-  
+
   // Lifecycle hooks
   onInstall?: () => void;
   onUninstall?: () => void;
   onActivate?: () => void;
   onDeactivate?: () => void;
-  
+
   // Block validation
   validate?: (block: any) => ValidationResult;
-  
+
   // Block transformation
   transform?: {
     toMarkdown?: (block: any) => string;
@@ -41,16 +41,16 @@ export interface BlockPlugin extends BasePlugin {
     toHTML?: (block: any) => string;
     fromHTML?: (html: string) => any;
   };
-  
+
   // Plugin dependencies
   dependencies?: string[];
-  
+
   // Plugin metadata
   metadata?: Record<string, any>;
-  
+
   // Block actions
   getActions?: (block: any) => BlockAction[];
-  
+
   // Error handling
   hasError?: boolean;
   error?: {
@@ -80,6 +80,7 @@ export interface BlockComponentProps {
   onFocus: () => void;
   onBlur: () => void;
   onKeyPress?: (event: any) => void;
+  onFootnotePress?: (footnoteId: string) => void;
   theme?: any;
   config?: any;
   readOnly?: boolean;
@@ -89,7 +90,7 @@ export interface BlockComponentProps {
 // Enhanced result type for keyboard handlers that need to update multiple blocks
 export interface EnhancedKeyboardResult {
   newBlocks?: EditorBlock[];
-  updates?: Array<{ blockId: string; updates: Partial<EditorBlock> }>;
+  updates?: { blockId: string; updates: Partial<EditorBlock> }[];
   focusBlockId?: string;
 }
 
@@ -98,21 +99,25 @@ export interface BlockController {
   // Content validation and transformation
   validateContent?: (content: string) => boolean;
   transformContent?: (content: string) => string;
-  
+
   // Keyboard event handling
   handleKeyPress?: (event: any, block: EditorBlock) => boolean | void;
-  handleEnter?: (block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number) => EditorBlock | EditorBlock[] | EnhancedKeyboardResult | null;
+  handleEnter?: (
+    block: EditorBlock,
+    allBlocks?: EditorBlock[],
+    currentIndex?: number
+  ) => EditorBlock | EditorBlock[] | EnhancedKeyboardResult | null;
   handleBackspace?: (block: EditorBlock) => EditorBlock | null;
   handleTab?: (block: EditorBlock, event: any, actions: any) => boolean | void;
-  
+
   // Block lifecycle
   onCreate?: (block: EditorBlock) => EditorBlock;
   onUpdate?: (oldBlock: EditorBlock, newBlock: EditorBlock) => EditorBlock;
   onDelete?: (block: EditorBlock) => void;
-  
+
   // Custom actions
   getActions?: (block: EditorBlock) => BlockAction[];
-  
+
   // Drag and drop
   canDrag?: (block: EditorBlock) => boolean;
   canDrop?: (block: EditorBlock, targetIndex: number, blocks: EditorBlock[]) => boolean;
@@ -128,10 +133,10 @@ export interface MarkdownSyntax {
     start?: RegExp;
     end?: RegExp;
   };
-  
+
   // Priority for parsing order
   priority: number;
-  
+
   // Custom attributes
   attributes?: string[];
 }

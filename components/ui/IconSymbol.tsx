@@ -1,8 +1,7 @@
 // Fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
-import { ComponentProps } from 'react';
+import { SymbolWeight } from 'expo-symbols';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
 /**
@@ -20,7 +19,7 @@ const MAPPING = {
   'doc.text': 'description',
   'person.2.fill': 'people',
   'icloud.fill': 'cloud',
-  'textformat': 'text-format',
+  textformat: 'text-format',
   'lock.shield.fill': 'security',
   'laptopcomputer.and.iphone': 'devices',
   'star.fill': 'star',
@@ -31,21 +30,23 @@ const MAPPING = {
   'bell.fill': 'notifications',
   'info.circle.fill': 'info',
   'questionmark.circle.fill': 'help',
-  'power': 'power-settings-new',
-  'plus': 'add',
-  'minus': 'remove',
-  'xmark': 'close',
-  'checkmark': 'check',
-  'pencil': 'edit',
-  'trash': 'delete',
-  'gear': 'settings',
+  power: 'power-settings-new',
+  plus: 'add',
+  minus: 'remove',
+  xmark: 'close',
+  'xmark.circle.fill': 'cancel',
+  checkmark: 'check',
+  pencil: 'edit',
+  trash: 'delete',
+  gear: 'settings',
+  gearshape: 'settings',
   'gearshape.fill': 'settings',
-  'magnifyingglass': 'search',
-  'ellipsis': 'more-horiz',
+  magnifyingglass: 'search',
+  ellipsis: 'more-horiz',
   'paintbrush.pointed.fill': 'palette',
   'key.fill': 'vpn-key',
-  'globe': 'public',
-  'sparkles': 'auto-awesome',
+  globe: 'public',
+  sparkles: 'auto-awesome',
   'person.crop.circle.fill': 'account-circle',
   'person.crop.circle': 'account-circle',
 } as const;
