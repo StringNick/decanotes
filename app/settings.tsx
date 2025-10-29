@@ -2,6 +2,7 @@ import { IconSymbol, IconSymbolName } from '@/components/ui/IconSymbol';
 import { Colors, getThemeColors, Spacing, Typography } from '@/constants/DesignSystem';
 import { useStorage } from '@/contexts/StorageContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
@@ -113,6 +114,12 @@ export default function SettingsScreen() {
     }
   };
 
+  const getAppVersion = () => {
+    const version = Constants.expoConfig?.version || '1.0.0';
+    const buildNumber = Constants.expoConfig?.ios?.buildNumber || Constants.expoConfig?.android?.versionCode;
+    return buildNumber ? `${version} (${buildNumber})` : version;
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
@@ -189,7 +196,7 @@ export default function SettingsScreen() {
             <SettingItem
               icon={'info.circle' as any}
               title="App Version"
-              subtitle="1.0.0"
+              subtitle={getAppVersion()}
               colors={colors}
               showChevron={false}
             />
