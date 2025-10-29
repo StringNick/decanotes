@@ -152,7 +152,7 @@ export function BlockRenderer({
     <View ref={blockRef} style={[styles.blockContainer, blockProps?.style]} onLayout={handleLayout} {...blockProps}>
       {/* Block Content */}
       <View style={styles.blockContent}>
-        <BlockComponent {...blockComponentProps} ref={blockComponentRef} />
+        {React.createElement(BlockComponent as any, { ...blockComponentProps, ref: blockComponentRef })}
       </View>
 
       {/* Block Info */}

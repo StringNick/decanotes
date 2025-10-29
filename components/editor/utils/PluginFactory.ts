@@ -1,4 +1,4 @@
-// import { ComponentType } from 'react';
+import { ComponentType } from 'react';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { BlockPlugin } from '../plugins/BlockPlugin';
 // import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
@@ -21,9 +21,9 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
     markdownPattern,
     // parser,
     // serializer,
-    // controller = {},
-    // toolbar = {},
-    // settings = {}
+    controller = {},
+    toolbar = {},
+    settings = {}
   } = options;
 
   // Create a dynamic plugin class

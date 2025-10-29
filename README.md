@@ -42,10 +42,10 @@ Check TypeScript compilation:
 
 ```bash
 # Type check
-bun run tsc --noEmit
+bun run type-check
 
 # Watch mode
-bun run tsc --noEmit --watch
+bun run type-check:watch
 ```
 
 ### Testing

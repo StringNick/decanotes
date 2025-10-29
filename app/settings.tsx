@@ -132,7 +132,7 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>APPEARANCE</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="moon"
+              icon={"moon" as any}
               title="Dark Mode"
               subtitle={theme === 'system' ? 'Following system theme' : 'Toggle dark theme'}
               colors={colors}
@@ -157,7 +157,7 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>STORAGE BACKEND</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="server.rack"
+              icon={"server.rack" as any}
               title="Current Backend"
               subtitle={getBackendDisplayName()}
               colors={colors}
@@ -170,14 +170,14 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>SYNC & STORAGE</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="arrow.clockwise"
+              icon={"arrow.clockwise" as any}
               title="Sync Now"
               subtitle={isSyncing ? 'Syncing...' : 'Manually sync your notes'}
               colors={colors}
               onPress={isSyncing ? undefined : handleSyncNow}
             />
             <SettingItem
-              icon="square.and.arrow.up"
+              icon={"square.and.arrow.up" as any}
               title="Export Data"
               subtitle="Export all notes"
               colors={colors}
@@ -190,7 +190,7 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>NOTIFICATIONS</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon="bell"
+              icon={"bell" as any}
               title="Push Notifications"
               subtitle="Get notified about sync status"
               colors={colors}
@@ -214,15 +214,15 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>ABOUT</Text>
           <View style={styles.sectionContent}>
-            <SettingItem icon="info.circle" title="App Version" subtitle="1.0.0" colors={colors} showChevron={false} />
+            <SettingItem icon={"info.circle" as any} title="App Version" subtitle="1.0.0" colors={colors} showChevron={false} />
             <SettingItem
-              icon="questionmark.circle"
+              icon={"questionmark.circle" as any}
               title="Help & Support"
               colors={colors}
               onPress={() => Alert.alert('Help', 'Visit our documentation for help.')}
             />
             <SettingItem
-              icon="doc.text"
+              icon={"doc.text" as any}
               title="Privacy Policy"
               colors={colors}
               onPress={() => Alert.alert('Privacy', 'Your data is stored locally and on IPFS.')}

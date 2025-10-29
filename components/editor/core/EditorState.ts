@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { EditorBlock } from '../../../types/editor';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { EditorBlock, EditorBlockType } from '../../../types/editor';
 // import { EditorMode } from '../../../types/editor';
 import { EditorConfig, EditorState } from '../types/EditorTypes';
 // import { EditorAction } from '../types/EditorTypes';
@@ -483,7 +483,7 @@ export function useEditorState({ initialBlocks, onBlocksChange, config }: UseEdi
     blocks,
     focusedBlockId: editingBlockId,
     selectedBlocks: selectedBlockId ? [selectedBlockId] : [],
-    mode: 'edit' as EditorMode,
+    mode: 'edit' as 'edit' | 'preview',
     isDirty: false,
     isLoading: false,
     errors: [],

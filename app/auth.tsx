@@ -1,22 +1,22 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Spacing, BorderRadius, createTextStyle, Shadows, Typography, Components } from '@/constants/DesignSystem';
+import { BorderRadius, Components, createTextStyle, Shadows, Spacing, Typography } from '@/constants/DesignSystem';
+import { useStorage } from '@/contexts/StorageContext';
+import type { StorageBackendType } from '@/types/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { useStorage } from '@/contexts/StorageContext';
-import type { StorageBackendType } from '@/types/storage';
 
 type AuthMethod = StorageBackendType;
 
@@ -128,7 +128,7 @@ export default function AuthScreen() {
                 style={[styles.methodButton, activeMethod === 'local' && styles.activeMethodButton]}
                 onPress={() => setActiveMethod('local')}
               >
-                <IconSymbol name="folder.fill" size={18} color={activeMethod === 'local' ? '#FFFFFF' : '#6B7280'} />
+                <IconSymbol name={"folder.fill" as any} size={18} color={activeMethod === 'local' ? '#FFFFFF' : '#6B7280'} />
                 <Text style={[styles.methodText, activeMethod === 'local' && styles.activeMethodText]}>
                   Local{'\n'}Storage
                 </Text>
@@ -138,7 +138,7 @@ export default function AuthScreen() {
                 style={[styles.methodButton, activeMethod === 'renterd' && styles.activeMethodButton]}
                 onPress={() => setActiveMethod('renterd')}
               >
-                <IconSymbol name="network" size={18} color={activeMethod === 'renterd' ? '#FFFFFF' : '#6B7280'} />
+                <IconSymbol name={"network" as any} size={18} color={activeMethod === 'renterd' ? '#FFFFFF' : '#6B7280'} />
                 <Text style={[styles.methodText, activeMethod === 'renterd' && styles.activeMethodText]}>
                   Sia{'\n'}Renterd
                 </Text>

@@ -191,7 +191,7 @@ class MarkdownRegistry {
     // Callout (GitHub-style alerts)
     const calloutMatch = line.match(/^>\s+\[!(\w+)\]\s+(.*)$/);
     if (calloutMatch) {
-      const calloutType = calloutMatch[1].toLowerCase();
+      const calloutType = calloutMatch[1].toLowerCase() as any;
       const content = calloutMatch[2];
       const emojiMap: Record<string, string> = {
         note: '📝',
@@ -630,7 +630,7 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
   // Callout (GitHub-style alerts)
   const calloutMatch = line.match(/^>\s+\[!(\w+)\]\s+(.*)$/);
   if (calloutMatch) {
-    const calloutType = calloutMatch[1].toLowerCase();
+    const calloutType = calloutMatch[1].toLowerCase() as any;
     const content = calloutMatch[2];
     const emojiMap: Record<string, string> = {
       note: '📝',

@@ -279,8 +279,8 @@ export default function EditorProvider({ children, initialBlocks = [], plugins =
 
       let newBlock: ExtendedBlock;
 
-      if (plugin && typeof plugin.createBlock === 'function') {
-        const pluginBlock = plugin.createBlock(content, meta ?? {});
+      if (plugin && typeof (plugin as any).createBlock === 'function') {
+        const pluginBlock = (plugin as any).createBlock(content, meta ?? {});
         newBlock = {
           id: pluginBlock.id,
           type: (pluginBlock.type || type) as EditorBlockType,
