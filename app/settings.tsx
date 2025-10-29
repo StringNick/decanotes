@@ -53,9 +53,6 @@ export default function SettingsScreen() {
   const isDark = effectiveTheme === 'dark';
   const colors = getThemeColors(isDark);
 
-  // Sync and notification state (reserved for future features)
-  // const [syncEnabled, setSyncEnabled] = useState(true);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleThemeChange = (value: boolean) => {
@@ -187,31 +184,6 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>NOTIFICATIONS</Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              icon={'bell' as any}
-              title="Push Notifications"
-              subtitle="Get notified about sync status"
-              colors={colors}
-              rightElement={
-                <Switch
-                  value={notificationsEnabled}
-                  onValueChange={setNotificationsEnabled}
-                  trackColor={{
-                    false: isDark ? Colors.neutral.gray700 : Colors.neutral.gray300,
-                    true: Colors.primary.blue,
-                  }}
-                  thumbColor={isDark ? Colors.neutral.white : Colors.neutral.white}
-                  ios_backgroundColor={isDark ? Colors.neutral.gray700 : Colors.neutral.gray300}
-                />
-              }
-              showChevron={false}
-            />
-          </View>
-        </View>
-
-        <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>ABOUT</Text>
           <View style={styles.sectionContent}>
             <SettingItem
@@ -224,8 +196,17 @@ export default function SettingsScreen() {
             <SettingItem
               icon={'questionmark.circle' as any}
               title="Help & Support"
+              subtitle="Report issues on GitHub"
               colors={colors}
-              onPress={() => Alert.alert('Help', 'Visit our documentation for help.')}
+              onPress={() => {
+                // Open GitHub issues page
+                const githubIssuesUrl = 'https://github.com/StringNick/decanotes/issues';
+                import('expo-web-browser').then(({ openBrowserAsync }) => {
+                  openBrowserAsync(githubIssuesUrl);
+                }).catch(() => {
+                  Alert.alert('Help & Support', `Visit: ${githubIssuesUrl}`);
+                });
+              }}
             />
             <SettingItem
               icon={'doc.text' as any}
