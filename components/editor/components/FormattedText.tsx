@@ -6,7 +6,22 @@ import { processInlineFormatting } from '../../../utils/markdownParser';
 
 export interface FormattedTextSegment {
   text: string;
-  type: 'normal' | 'bold' | 'italic' | 'code' | 'bold-italic';
+  type:
+    | 'normal'
+    | 'bold'
+    | 'italic'
+    | 'code'
+    | 'bold-italic'
+    | 'strikethrough'
+    | 'highlight'
+    | 'subscript'
+    | 'superscript'
+    | 'footnote-ref'
+    | 'link';
+  meta?: {
+    footnoteId?: string;
+    url?: string;
+  };
 }
 
 interface FormattedTextProps {
@@ -56,6 +71,18 @@ const getSegmentStyle = (type: FormattedTextSegment['type'], styles: any) => {
       return styles.boldItalic;
     case 'code':
       return styles.code;
+    case 'strikethrough':
+      return styles.strikethrough;
+    case 'highlight':
+      return styles.highlight;
+    case 'subscript':
+      return styles.subscript;
+    case 'superscript':
+      return styles.superscript;
+    case 'footnote-ref':
+      return styles.footnoteRef;
+    case 'link':
+      return styles.link;
     default:
       return styles.normal;
   }
@@ -93,6 +120,35 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingVertical: 2,
       borderRadius: 3,
       fontSize: 14,
+      fontWeight: '400',
+    },
+    strikethrough: {
+      textDecorationLine: 'line-through',
+      fontWeight: '400',
+    },
+    highlight: {
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
+      fontWeight: '400',
+    },
+    subscript: {
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '400',
+    },
+    superscript: {
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '400',
+    },
+    footnoteRef: {
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '600',
+      color: colorScheme === 'dark' ? '#60A5FA' : '#2563EB', // blue
+    },
+    link: {
+      color: colorScheme === 'dark' ? '#60A5FA' : '#2563EB', // blue
+      textDecorationLine: 'underline',
       fontWeight: '400',
     },
   });

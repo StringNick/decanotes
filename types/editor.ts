@@ -13,7 +13,9 @@ export type EditorBlockType =
   | 'image'
   | 'video'
   | 'callout'
-  | 'table';
+  | 'table'
+  | 'footnote'
+  | 'definition-list';
 
 export interface EditorBlock {
   id: string;
@@ -22,6 +24,7 @@ export interface EditorBlock {
   meta?: {
     // Heading specific
     level?: number; // 1-6
+    headingId?: string; // custom ID for linking {#custom-id}
 
     // Code block specific
     language?: string;
@@ -56,6 +59,15 @@ export interface EditorBlock {
     rows?: string[][];
     alignments?: ('left' | 'center' | 'right')[];
 
+    // Footnote specific
+    footnoteId?: string; // e.g., "1", "note1"
+    footnoteLabel?: string; // display label like "[^1]"
+
+    // Definition list specific
+    term?: string; // for definition list term
+    definition?: string; // for definition list definition
+    definitions?: string[]; // multiple definitions for same term
+
     // General
     [key: string]: any; // Allow plugins to add custom meta
     quoteLineDepths?: number[];
@@ -64,7 +76,22 @@ export interface EditorBlock {
 
 export interface FormattedTextSegment {
   text: string;
-  type: 'normal' | 'bold' | 'italic' | 'code' | 'bold-italic';
+  type:
+    | 'normal'
+    | 'bold'
+    | 'italic'
+    | 'code'
+    | 'bold-italic'
+    | 'strikethrough'
+    | 'highlight'
+    | 'subscript'
+    | 'superscript'
+    | 'footnote-ref' // [^1] footnote references
+    | 'link'; // auto-linked URLs
+  meta?: {
+    footnoteId?: string; // for footnote references
+    url?: string; // for auto-linked URLs
+  };
 }
 
 // Theme definition used by blocks & editor UI components

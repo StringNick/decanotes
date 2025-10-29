@@ -1,4 +1,5 @@
 import { EditorBlock } from '../../../types/editor';
+import { replaceEmojiShortcodes } from '../../../utils/emojiMap';
 import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
 import { MarkdownParser, MarkdownSerializer, MarkdownSyntax } from '../types/PluginTypes';
 
@@ -116,6 +117,30 @@ class MarkdownRegistry {
       }
 
       if (!parsed) {
+        // Check for definition list (Term on current line, : Definition on next)
+        if (i + 1 < lines.length) {
+          const nextLine = lines[i + 1];
+          const defMatch = nextLine.match(/^:\s+(.+)$/);
+          if (defMatch && line.trim() && !line.match(/^[#>*\-+\d[\]!`]/)) {
+            // This is a definition list
+            if (currentBlock.trim()) {
+              blocks.push(this.parseTextBlock(currentBlock.trim()));
+              currentBlock = '';
+            }
+            blocks.push({
+              id: this.generateId(),
+              type: 'definition-list',
+              content: line.trim(),
+              meta: {
+                term: line.trim(),
+                definition: defMatch[1],
+              },
+            });
+            i++; // Skip the definition line
+            continue;
+          }
+        }
+
         // Check for built-in markdown patterns
         const block = this.parseBuiltInMarkdown(line);
         if (block) {
@@ -177,14 +202,19 @@ class MarkdownRegistry {
    * Parse built-in markdown patterns
    */
   private parseBuiltInMarkdown(line: string): EditorBlock | null {
-    // Headings
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    // Headings (with optional custom ID: ### Heading {#custom-id})
+    const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+\{#([a-z0-9-_]+)\})?$/i);
     if (headingMatch) {
+      const content = replaceEmojiShortcodes(headingMatch[2].trim());
+      const headingId = headingMatch[3]; // custom ID if provided
       return {
         id: this.generateId(),
         type: 'heading',
-        content: headingMatch[2],
-        meta: { level: headingMatch[1].length },
+        content,
+        meta: {
+          level: headingMatch[1].length,
+          ...(headingId && { headingId }),
+        },
       };
     }
 
@@ -234,6 +264,20 @@ class MarkdownRegistry {
         type: 'checklist',
         content: content,
         meta: { checked, level },
+      };
+    }
+
+    // Footnote definitions [^id]: text
+    const footnoteMatch = line.match(/^\[\^([^\]]+)\]:\s+(.+)$/);
+    if (footnoteMatch) {
+      return {
+        id: this.generateId(),
+        type: 'footnote',
+        content: footnoteMatch[2],
+        meta: {
+          footnoteId: footnoteMatch[1],
+          footnoteLabel: `[^${footnoteMatch[1]}]`,
+        },
       };
     }
 
@@ -309,9 +353,12 @@ class MarkdownRegistry {
    */
   private serializeBuiltInBlock(block: EditorBlock): string {
     switch (block.type) {
-      case 'heading':
+      case 'heading': {
         const level = block.meta?.level || 1;
-        return `${'#'.repeat(level)} ${block.content}`;
+        const headingText = `${'#'.repeat(level)} ${block.content}`;
+        const headingId = block.meta?.headingId ? ` {#${block.meta.headingId}}` : '';
+        return headingText + headingId;
+      }
 
       case 'quote':
         return `> ${block.content}`;
@@ -392,6 +439,14 @@ class MarkdownRegistry {
         });
 
         return lines.join('\n');
+      }
+
+      case 'footnote': {
+        return `[^${block.meta?.footnoteId}]: ${block.content}`;
+      }
+
+      case 'definition-list': {
+        return `${block.meta?.term || block.content}\n: ${block.meta?.definition || ''}`;
       }
 
       case 'paragraph':

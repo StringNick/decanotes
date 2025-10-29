@@ -2,10 +2,7 @@ import { ComponentType } from 'react';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { BlockPlugin } from '../plugins/BlockPlugin';
 // import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
-import {
-    BlockComponentProps,
-    CustomPluginOptions,
-} from '../types/PluginTypes';
+import { BlockComponentProps, CustomPluginOptions } from '../types/PluginTypes';
 
 /**
  * Factory function to create custom block plugins easily
@@ -20,7 +17,7 @@ export function createCustomPlugin(options: CustomPluginOptions): BlockPlugin {
     // serializer,
     controller = {},
     toolbar = {},
-    settings = {}
+    settings = {},
   } = options;
 
   // Create a dynamic plugin class

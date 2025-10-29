@@ -7,15 +7,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 type AuthMethod = StorageBackendType;
@@ -128,7 +128,11 @@ export default function AuthScreen() {
                 style={[styles.methodButton, activeMethod === 'local' && styles.activeMethodButton]}
                 onPress={() => setActiveMethod('local')}
               >
-                <IconSymbol name={"folder.fill" as any} size={18} color={activeMethod === 'local' ? '#FFFFFF' : '#6B7280'} />
+                <IconSymbol
+                  name={'folder.fill' as any}
+                  size={18}
+                  color={activeMethod === 'local' ? '#FFFFFF' : '#6B7280'}
+                />
                 <Text style={[styles.methodText, activeMethod === 'local' && styles.activeMethodText]}>
                   Local{'\n'}Storage
                 </Text>
@@ -138,7 +142,11 @@ export default function AuthScreen() {
                 style={[styles.methodButton, activeMethod === 'renterd' && styles.activeMethodButton]}
                 onPress={() => setActiveMethod('renterd')}
               >
-                <IconSymbol name={"network" as any} size={18} color={activeMethod === 'renterd' ? '#FFFFFF' : '#6B7280'} />
+                <IconSymbol
+                  name={'network' as any}
+                  size={18}
+                  color={activeMethod === 'renterd' ? '#FFFFFF' : '#6B7280'}
+                />
                 <Text style={[styles.methodText, activeMethod === 'renterd' && styles.activeMethodText]}>
                   Sia{'\n'}Renterd
                 </Text>

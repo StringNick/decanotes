@@ -2,10 +2,10 @@ import { StorageProvider } from '@/contexts/StorageContext';
 import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
-    AlbertSans_400Regular,
-    AlbertSans_500Medium,
-    AlbertSans_600SemiBold,
-    AlbertSans_700Bold,
+  AlbertSans_400Regular,
+  AlbertSans_500Medium,
+  AlbertSans_600SemiBold,
+  AlbertSans_700Bold,
 } from '@expo-google-fonts/albert-sans';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
