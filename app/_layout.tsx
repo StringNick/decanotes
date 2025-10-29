@@ -1,3 +1,4 @@
+import React from 'react';
 import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
 import { StorageProvider } from '@/contexts/StorageContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -12,6 +13,22 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NativeModules } from 'react-native';
+
+const hasKeyboardController = !!NativeModules.KeyboardControllerModule;
+
+let KeyboardProviderComponent: React.ComponentType<{ children: React.ReactNode }>;
+if (hasKeyboardController) {
+  try {
+    KeyboardProviderComponent = require('react-native-keyboard-controller').KeyboardProvider;
+  } catch (error) {
+    KeyboardProviderComponent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+  }
+} else {
+  KeyboardProviderComponent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+}
+
+const KeyboardProvider = KeyboardProviderComponent;
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -29,21 +46,23 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <StorageProvider>
-        <CustomThemeProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="editor" options={{ headerShown: false }} />
-              <Stack.Screen name="auth" options={{ headerShown: false }} />
-              <Stack.Screen name="settings" options={{ headerShown: false }} />
-              <Stack.Screen name="+not-found" />
-            </Stack>
-            <StatusBar style="auto" />
-          </ThemeProvider>
-        </CustomThemeProvider>
-      </StorageProvider>
-    </SafeAreaProvider>
+    <KeyboardProvider>
+      <SafeAreaProvider>
+        <StorageProvider>
+          <CustomThemeProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="editor" options={{ headerShown: false }} />
+                <Stack.Screen name="auth" options={{ headerShown: false }} />
+                <Stack.Screen name="settings" options={{ headerShown: false }} />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+              <StatusBar style="auto" />
+            </ThemeProvider>
+          </CustomThemeProvider>
+        </StorageProvider>
+      </SafeAreaProvider>
+    </KeyboardProvider>
   );
 }

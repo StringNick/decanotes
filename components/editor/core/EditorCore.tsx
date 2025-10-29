@@ -1,17 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { FlatList, InteractionManager, LayoutChangeEvent, ListRenderItemInfo, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, InteractionManager, LayoutChangeEvent, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
+import { EditorBottomBar } from '../components/EditorBottomBar';
 import { PluginRegistry } from '../plugins/PluginRegistry';
 import { EditorConfig, EditorError, ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
-import { EditorBottomBar } from '../components/EditorBottomBar';
+import { FocusManager } from '../utils/FocusManager';
 import { SafeBlockRenderer } from './BlockRenderer';
 import { useEditor } from './EditorContext';
 import { useEditorDragDrop } from './EditorDragDrop';
 import { useEditorKeyboard } from './EditorKeyboard';
-import { FocusManager } from '../utils/FocusManager';
 
 /**
  * Options for requestBlockFocus
@@ -21,12 +21,14 @@ type FocusOptions = {
   animated?: boolean; // Whether to animate scroll (default: true)
   viewPosition?: number; // Desired view position (0-1) when revealing (default: 0.5)
   viewOffset?: number;   // Additional offset in pixels when revealing (default: 0)
+  onRevealFailure?: (details: { blockId: string; extraOffset: number }) => void;
 };
 
 /**
  * Estimated block height for getItemLayout before actual measurement
  */
 const ESTIMATED_BLOCK_HEIGHT = 60;
+const MAX_REVEAL_ATTEMPTS = 3;
 
 /**
  * Legacy type for compatibility during migration
@@ -75,6 +77,9 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // Refs
     const flatListRef = useRef<FlatList<EditorBlock>>(null);
     const editorRef = useRef<View>(null);
+    const scrollOffsetRef = useRef(0);
+    const pendingRevealBlockId = useRef<string | null>(null);
+    const revealRetryCounts = useRef(new Map<string, number>()).current;
 
     // Legacy refs (kept for drag-drop compatibility during migration)
     const blockRefsMap = useRef<Map<string, BlockRefEntry>>(new Map());
@@ -90,6 +95,62 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     const handleBottomBarHeight = useCallback((height: number) => {
       setBottomBarHeight((prev) => (Math.abs(prev - height) > 1 ? height : prev));
     }, []);
+
+    useEffect(() => {
+      globalThis.__DECANOTES_SAFE_AREA_BOTTOM__ = insets.bottom;
+      return () => {
+        globalThis.__DECANOTES_SAFE_AREA_BOTTOM__ = 0;
+      };
+    }, [insets.bottom]);
+
+    useEffect(() => {
+      globalThis.__DECANOTES_BOTTOM_BAR_HEIGHT__ = bottomBarHeight;
+      return () => {
+        globalThis.__DECANOTES_BOTTOM_BAR_HEIGHT__ = 0;
+      };
+    }, [bottomBarHeight]);
+
+    useEffect(() => {
+      globalThis.__DECANOTES_KEYBOARD_HEIGHT__ = keyboardHeight;
+      return () => {
+        globalThis.__DECANOTES_KEYBOARD_HEIGHT__ = 0;
+      };
+    }, [keyboardHeight]);
+
+    const handleListScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+    }, []);
+
+    const handleScrollSettled = useCallback(() => {
+      if (!pendingRevealBlockId.current) {
+        return;
+      }
+
+      const blockId = pendingRevealBlockId.current;
+      pendingRevealBlockId.current = null;
+      revealRetryCounts.delete(blockId);
+      focusManager.notifyRevealComplete(blockId);
+    }, [focusManager, revealRetryCounts]);
+
+    const scheduleRevealCompletionCheck = useCallback((blockId: string) => {
+      InteractionManager.runAfterInteractions(() => {
+        if (pendingRevealBlockId.current !== blockId) {
+          return;
+        }
+
+        pendingRevealBlockId.current = null;
+        focusManager.notifyRevealComplete(blockId);
+      });
+
+      setTimeout(() => {
+        if (pendingRevealBlockId.current !== blockId) {
+          return;
+        }
+
+        pendingRevealBlockId.current = null;
+        focusManager.notifyRevealComplete(blockId);
+      }, 160);
+    }, [focusManager]);
 
     // ====================
     // NEW: FlatList + FocusManager Functions
@@ -256,8 +317,48 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         console.log('[EditorCore] requestBlockFocus', { blockId, reveal, animated, viewPosition, viewOffset });
       }
 
+      revealRetryCounts.set(blockId, 0);
+
+      const handleRevealFailure = ({ extraOffset }: { blockId: string; extraOffset: number }) => {
+        const attempts = (revealRetryCounts.get(blockId) ?? 0) + 1;
+        revealRetryCounts.set(blockId, attempts);
+
+        const safetyPadding = Math.max(bottomBarHeight, viewOffset) + 24;
+        const targetOffset = Math.max(0, scrollOffsetRef.current + extraOffset + safetyPadding);
+
+        if (attempts >= MAX_REVEAL_ATTEMPTS) {
+          pendingRevealBlockId.current = null;
+          revealRetryCounts.delete(blockId);
+          scrollOffsetRef.current = targetOffset;
+          flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: false });
+          focusManager.notifyRevealComplete(blockId);
+          focusManager.applyPendingFocus();
+          return;
+        }
+
+        pendingRevealBlockId.current = blockId;
+        try {
+          flatListRef.current?.scrollToOffset({
+            offset: targetOffset,
+            animated: true,
+          });
+          scheduleRevealCompletionCheck(blockId);
+        } catch (error) {
+          scrollOffsetRef.current = targetOffset;
+          flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: false });
+          focusManager.notifyRevealComplete(blockId);
+          focusManager.applyPendingFocus();
+        }
+
+        options.onRevealFailure?.({ blockId, extraOffset });
+      };
+
       // Register focus request with FocusManager
-      focusManager.requestFocus(blockId, { reveal, animated });
+      focusManager.requestFocus(blockId, {
+        reveal,
+        animated,
+        onRevealFailure: (details) => handleRevealFailure(details),
+      });
 
       // If no reveal needed, just focus immediately
       if (!reveal) {
@@ -282,16 +383,33 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           viewOffset
         });
 
-        // Apply focus after scroll animation completes
-        InteractionManager.runAfterInteractions(() => {
-          focusManager.applyPendingFocus();
-        });
+        if (animated) {
+          pendingRevealBlockId.current = blockId;
+          scheduleRevealCompletionCheck(blockId);
+        } else {
+          focusManager.notifyRevealComplete(blockId);
+        }
       } catch (error) {
         console.warn('[EditorCore] Failed to scroll to block:', error);
-        // Still try to apply focus even if scroll fails
-        focusManager.applyPendingFocus();
+        const { offset: estimatedOffset } = getItemLayout(blocks, blockIndex);
+        const fallbackOffset = Math.max(0, estimatedOffset - viewOffset);
+        try {
+          flatListRef.current?.scrollToOffset({
+            offset: fallbackOffset,
+            animated,
+          });
+          if (animated) {
+            pendingRevealBlockId.current = blockId;
+            scheduleRevealCompletionCheck(blockId);
+          } else {
+            focusManager.notifyRevealComplete(blockId);
+          }
+        } catch (fallbackError) {
+          focusManager.notifyRevealComplete(blockId);
+          focusManager.applyPendingFocus();
+        }
       }
-    }, [blocks, focusManager]);
+    }, [blocks, focusManager, getItemLayout, scheduleRevealCompletionCheck, bottomBarHeight, revealRetryCounts]);
 
     // Keyboard handling hook
     const {
@@ -969,10 +1087,12 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           console.log('[EditorCore] Pending block ready, applying focus', { blockId: pendingId });
         }
 
-        const viewPosition = keyboardHeight > 0 ? 0.1 : 0.4;
-        const viewOffset = keyboardHeight > 0
-          ? Math.max(bottomBarHeight - 16, 0)
-          : Math.max(bottomBarHeight - 32, 0);
+        const viewPosition = 0; // Position at top, let viewOffset control spacing
+        // Reserve space for keyboard even if not shown yet (it will appear when we focus)
+        // Typical iOS keyboard is ~290-336px, Android ~260-290px
+        const estimatedKeyboardHeight = keyboardHeight > 0 ? keyboardHeight : 290;
+        // Add extra padding: keyboard + bottomBar + dock + safe area + padding
+        const viewOffset = estimatedKeyboardHeight + bottomBarHeight + 100; // Extra 100px for dock and safe area
 
         requestBlockFocus(pendingId, {
           reveal: true,
@@ -982,6 +1102,84 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         });
       }
     }, [blocks, requestBlockFocus, keyboardHeight, bottomBarHeight]);
+
+    // Adjust scroll when keyboard appears to keep focused block visible
+    useEffect(() => {
+      if (keyboardHeight === 0 || !focusedBlockId) {
+        return;
+      }
+
+      // When keyboard appears, ensure focused block is still visible
+      const blockIndex = blocks.findIndex(b => b.id === focusedBlockId);
+      if (blockIndex === -1) {
+        return;
+      }
+
+      // Wait a bit for keyboard animation to settle
+      const timer = setTimeout(async () => {
+        if (!focusManager.isBlockRegistered(focusedBlockId)) {
+          return;
+        }
+
+        const blockIndex = blocks.findIndex(b => b.id === focusedBlockId);
+        if (blockIndex === -1) return;
+
+        const { height: windowHeight } = Dimensions.get('window');
+        const safeArea = globalThis.__DECANOTES_SAFE_AREA_BOTTOM__ ?? 0;
+        
+        // Measure actual block position on screen
+        const layout = await focusManager.measureBlock(focusedBlockId);
+        
+        if (!layout) {
+          // Fallback to estimated positioning if measurement fails
+          const targetY = windowHeight * 0.3;
+          const { offset: blockOffset } = getItemLayout(blocks, blockIndex);
+          const newOffset = blockOffset - targetY;
+
+          flatListRef.current?.scrollToOffset({
+            offset: Math.max(0, newOffset),
+            animated: true,
+          });
+          return;
+        }
+
+        // Calculate visible area (above keyboard and bottom bar)
+        const visibleBottom = windowHeight - keyboardHeight - bottomBarHeight - safeArea;
+        const blockBottom = layout.y + layout.height;
+        
+        // Check if block is hidden or too low
+        const padding = 48; // Keep some padding above keyboard
+        const targetBottom = visibleBottom - padding;
+
+        if (blockBottom > targetBottom) {
+          // Need to scroll up
+          const currentScroll = scrollOffsetRef.current;
+          const excessOverflow = blockBottom - targetBottom;
+          const newOffset = currentScroll + excessOverflow;
+
+          if (__DEV__) {
+            console.log('[EditorCore] Adjusting scroll for keyboard', {
+              focusedBlockId,
+              blockY: layout.y,
+              blockHeight: layout.height,
+              blockBottom,
+              visibleBottom,
+              targetBottom,
+              excessOverflow,
+              currentScroll,
+              newOffset,
+            });
+          }
+
+          flatListRef.current?.scrollToOffset({
+            offset: Math.max(0, newOffset),
+            animated: true,
+          });
+        }
+      }, 150); // Wait for keyboard animation
+
+      return () => clearTimeout(timer);
+    }, [keyboardHeight, focusedBlockId, blocks, bottomBarHeight, focusManager, getItemLayout]);
 
     // ========================================
     // OLD useEffects REMOVED
@@ -1007,6 +1205,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           getItemLayout={getItemLayout}
           onScrollToIndexFailed={handleScrollToIndexFailed}
           style={styles.content}
+          onScroll={handleListScroll}
           contentContainerStyle={[
             styles.contentContainer,
             {
@@ -1014,11 +1213,14 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               paddingBottom: contentPaddingBottom
             }
           ]}
+          scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={true} // Performance optimization
           maxToRenderPerBatch={10}
           updateCellsBatchingPeriod={50}
           windowSize={21}
+          onMomentumScrollEnd={handleScrollSettled}
+          onScrollEndDrag={handleScrollSettled}
           ListFooterComponent={renderFooter}
         />
         

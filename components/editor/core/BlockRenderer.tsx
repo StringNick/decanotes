@@ -71,6 +71,27 @@ export function BlockRenderer({
     };
   }, [onBlockRefReady]);
 
+  const measureBlock = useCallback(() => {
+    return new Promise<{ x: number; y: number; width: number; height: number }>((resolve, reject) => {
+      const node = blockRef.current;
+      if (!node) {
+        reject(new Error('Block view is not mounted'));
+        return;
+      }
+
+      node.measureInWindow((x, y, width, height) => {
+        if (__DEV__) {
+          console.log('[BlockRenderer] measureInWindow result', { blockId: block.id, x, y, width, height });
+        }
+        if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height)) {
+          resolve({ x, y, width, height });
+        } else {
+          reject(new Error('Invalid measurement result'));
+        }
+      });
+    });
+  }, [block.id]);
+
   // NEW: Register block with FocusManager
   useEffect(() => {
     if (!focusManager) return;
@@ -82,13 +103,14 @@ export function BlockRenderer({
           blockComponentRef.current.focus();
         }
       },
-      getHeight: () => blockHeight
+      getHeight: () => blockHeight,
+      measure: measureBlock
     });
 
     return () => {
       focusManager.unregisterBlock(block.id);
     };
-  }, [block.id, focusManager, blockHeight]);
+  }, [block.id, focusManager, measureBlock]);
 
   // NEW: Handle layout changes to track height
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
