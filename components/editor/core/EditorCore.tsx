@@ -1,11 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Dimensions, FlatList, InteractionManager, LayoutChangeEvent, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+    Dimensions,
+    FlatList,
+    InteractionManager,
+    LayoutChangeEvent,
+    ListRenderItemInfo,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { EditorBottomBar } from '../components/EditorBottomBar';
 import { PluginRegistry } from '../plugins/PluginRegistry';
-import { EditorConfig, EditorError, ExtendedMarkdownEditorProps, ExtendedMarkdownEditorRef } from '../types/EditorTypes';
+import {
+    EditorConfig,
+    EditorError,
+    ExtendedMarkdownEditorProps,
+    ExtendedMarkdownEditorRef,
+} from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
 import { FocusManager } from '../utils/FocusManager';
 import { SafeBlockRenderer } from './BlockRenderer';
@@ -17,10 +34,10 @@ import { useEditorKeyboard } from './EditorKeyboard';
  * Options for requestBlockFocus
  */
 type FocusOptions = {
-  reveal?: boolean;   // Whether to scroll to make block visible (default: true)
+  reveal?: boolean; // Whether to scroll to make block visible (default: true)
   animated?: boolean; // Whether to animate scroll (default: true)
   viewPosition?: number; // Desired view position (0-1) when revealing (default: 0.5)
-  viewOffset?: number;   // Additional offset in pixels when revealing (default: 0)
+  viewOffset?: number; // Additional offset in pixels when revealing (default: 0)
   onRevealFailure?: (details: { blockId: string; extraOffset: number }) => void;
 };
 
@@ -43,24 +60,27 @@ type BlockRefEntry = {
  * Core editor component that orchestrates all editor functionality
  */
 export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdownEditorProps>(
-  ({
-    blockPlugins = [],
-    markdownPlugins = [],
-    config = {},
-    readOnly = false,
-    theme,
-    onBlocksChange,
-    onSelectionChange,
-    onEditingChange,
-    onError,
-    style,
-    keyboardHeight = 0,
-    keyboardDockVisible = false,
-    keyboardDockBlockSection,
-    keyboardDockFormattingSection,
-    keyboardDockActionSection,
-    ...props
-  }, ref) => {
+  (
+    {
+      blockPlugins = [],
+      markdownPlugins = [],
+      config = {},
+      readOnly = false,
+      theme,
+      onBlocksChange,
+      onSelectionChange,
+      onEditingChange,
+      onError,
+      style,
+      keyboardHeight = 0,
+      keyboardDockVisible = false,
+      keyboardDockBlockSection,
+      keyboardDockFormattingSection,
+      keyboardDockActionSection,
+      ...props
+    },
+    ref
+  ) => {
     const insets = useSafeAreaInsets();
     // Plugin registry
     const [pluginRegistry] = useState(() => new PluginRegistry());
@@ -89,11 +109,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 
     const handleToolbarLayout = useCallback((event: LayoutChangeEvent) => {
       const height = event.nativeEvent.layout.height;
-      setToolbarHeight((prev) => (Math.abs(prev - height) > 1 ? height : prev));
+      setToolbarHeight(prev => (Math.abs(prev - height) > 1 ? height : prev));
     }, []);
 
     const handleBottomBarHeight = useCallback((height: number) => {
-      setBottomBarHeight((prev) => (Math.abs(prev - height) > 1 ? height : prev));
+      setBottomBarHeight(prev => (Math.abs(prev - height) > 1 ? height : prev));
     }, []);
 
     useEffect(() => {
@@ -132,25 +152,28 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       focusManager.notifyRevealComplete(blockId);
     }, [focusManager, revealRetryCounts]);
 
-    const scheduleRevealCompletionCheck = useCallback((blockId: string) => {
-      InteractionManager.runAfterInteractions(() => {
-        if (pendingRevealBlockId.current !== blockId) {
-          return;
-        }
+    const scheduleRevealCompletionCheck = useCallback(
+      (blockId: string) => {
+        InteractionManager.runAfterInteractions(() => {
+          if (pendingRevealBlockId.current !== blockId) {
+            return;
+          }
 
-        pendingRevealBlockId.current = null;
-        focusManager.notifyRevealComplete(blockId);
-      });
+          pendingRevealBlockId.current = null;
+          focusManager.notifyRevealComplete(blockId);
+        });
 
-      setTimeout(() => {
-        if (pendingRevealBlockId.current !== blockId) {
-          return;
-        }
+        setTimeout(() => {
+          if (pendingRevealBlockId.current !== blockId) {
+            return;
+          }
 
-        pendingRevealBlockId.current = null;
-        focusManager.notifyRevealComplete(blockId);
-      }, 160);
-    }, [focusManager]);
+          pendingRevealBlockId.current = null;
+          focusManager.notifyRevealComplete(blockId);
+        }, 160);
+      },
+      [focusManager]
+    );
 
     // ====================
     // NEW: FlatList + FocusManager Functions
@@ -159,58 +182,63 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     /**
      * Track block heights for getItemLayout optimization
      */
-    const handleBlockHeightChange = useCallback((blockId: string, height: number) => {
-      blockHeights.set(blockId, height);
-    }, [blockHeights]);
+    const handleBlockHeightChange = useCallback(
+      (blockId: string, height: number) => {
+        blockHeights.set(blockId, height);
+      },
+      [blockHeights]
+    );
 
     /**
      * Get item layout for FlatList performance optimization
      * This eliminates the need for FlatList to measure items
      */
-    const getItemLayout = useCallback((data: ArrayLike<EditorBlock> | null | undefined, index: number) => {
-      if (!data || index < 0 || index >= data.length) {
-        return { length: ESTIMATED_BLOCK_HEIGHT, offset: 0, index };
-      }
+    const getItemLayout = useCallback(
+      (data: ArrayLike<EditorBlock> | null | undefined, index: number) => {
+        if (!data || index < 0 || index >= data.length) {
+          return { length: ESTIMATED_BLOCK_HEIGHT, offset: 0, index };
+        }
 
-      const block = data[index];
-      const height = blockHeights.get(block.id) || ESTIMATED_BLOCK_HEIGHT;
+        const block = data[index];
+        const height = blockHeights.get(block.id) || ESTIMATED_BLOCK_HEIGHT;
 
-      // Calculate offset (sum of all previous block heights)
-      let offset = 0;
-      for (let i = 0; i < index; i++) {
-        offset += blockHeights.get(data[i].id) || ESTIMATED_BLOCK_HEIGHT;
-      }
+        // Calculate offset (sum of all previous block heights)
+        let offset = 0;
+        for (let i = 0; i < index; i++) {
+          offset += blockHeights.get(data[i].id) || ESTIMATED_BLOCK_HEIGHT;
+        }
 
-      return { length: height, offset, index };
-    }, [blockHeights]);
+        return { length: height, offset, index };
+      },
+      [blockHeights]
+    );
 
     /**
      * Handle FlatList scroll-to-index failures
      * This happens when trying to scroll to unmeasured items
      */
-    const handleScrollToIndexFailed = useCallback((info: {
-      index: number;
-      highestMeasuredFrameIndex: number;
-      averageItemLength: number;
-    }) => {
-      if (__DEV__) {
-        console.log('[EditorCore] scrollToIndex failed, retrying with offset', info);
-      }
+    const handleScrollToIndexFailed = useCallback(
+      (info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
+        if (__DEV__) {
+          console.log('[EditorCore] scrollToIndex failed, retrying with offset', info);
+        }
 
-      // FlatList provides average item length, use it to estimate offset
-      const offset = info.averageItemLength * info.index;
+        // FlatList provides average item length, use it to estimate offset
+        const offset = info.averageItemLength * info.index;
 
-      // Scroll to estimated offset
-      flatListRef.current?.scrollToOffset({
-        offset,
-        animated: true
-      });
+        // Scroll to estimated offset
+        flatListRef.current?.scrollToOffset({
+          offset,
+          animated: true,
+        });
 
-      // Apply focus after scroll completes
-      InteractionManager.runAfterInteractions(() => {
-        focusManager.applyPendingFocus();
-      });
-    }, [focusManager]);
+        // Apply focus after scroll completes
+        InteractionManager.runAfterInteractions(() => {
+          focusManager.applyPendingFocus();
+        });
+      },
+      [focusManager]
+    );
 
     // ====================
     // End of NEW Functions (Part 1)
@@ -226,46 +254,43 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           background: theme?.container?.backgroundColor || '#fff',
           text: theme?.input?.color || '#000',
           border: theme?.focusedBlock?.backgroundColor || '#E5E5E7',
-          ...config.theme?.colors
+          ...config.theme?.colors,
         },
         spacing: {
           small: 4,
           medium: 8,
           large: 16,
-          ...config.theme?.spacing
+          ...config.theme?.spacing,
         },
         typography: {
           fontSize: theme?.input?.fontSize || 16,
           lineHeight: theme?.input?.lineHeight || 24,
           fontFamily: 'System',
-          ...config.theme?.typography
-        }
+          ...config.theme?.typography,
+        },
       },
       toolbar: {
         enabled: true,
         position: 'top',
-        ...config.toolbar
+        ...config.toolbar,
       },
       dragAndDrop: {
         enabled: true,
-        ...config.dragAndDrop
+        ...config.dragAndDrop,
       },
       keyboard: {
         shortcuts: {},
-        ...config.keyboard
+        ...config.keyboard,
       },
       historyDebounceMs: 300,
       maxHistorySize: 50,
       debug: false,
-      ...config
+      ...config,
     };
 
     const toolbarEnabled = editorConfig.toolbar?.enabled !== false;
-    const focusOffsetTop = Math.max(48, (toolbarEnabled ? toolbarHeight : 0) + 16);
     const safeAreaPadding = Math.max(16, insets.bottom);
-    const baseContentPadding = bottomBarHeight > 0
-      ? bottomBarHeight + 40
-      : Math.max(180, 140 + safeAreaPadding);
+    const baseContentPadding = bottomBarHeight > 0 ? bottomBarHeight + 40 : Math.max(180, 140 + safeAreaPadding);
     const contentPaddingBottom = baseContentPadding + (keyboardHeight > 0 ? keyboardHeight : 0);
 
     // Use editor state from EditorProvider
@@ -307,116 +332,119 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
      * @param options.reveal - Whether to scroll to make block visible (default: true)
      * @param options.animated - Whether to animate scroll (default: true)
      */
-    const requestBlockFocus = useCallback((blockId: string, options: FocusOptions = {}) => {
-      const reveal = options.reveal ?? true;
-      const animated = options.animated ?? true;
-      const viewPosition = options.viewPosition ?? 0.5;
-      const viewOffset = options.viewOffset ?? 0;
+    const requestBlockFocus = useCallback(
+      (blockId: string, options: FocusOptions = {}) => {
+        const reveal = options.reveal ?? true;
+        const animated = options.animated ?? true;
+        const viewPosition = options.viewPosition ?? 0.5;
+        const viewOffset = options.viewOffset ?? 0;
 
-      if (__DEV__) {
-        console.log('[EditorCore] requestBlockFocus', { blockId, reveal, animated, viewPosition, viewOffset });
-      }
+        if (__DEV__) {
+          console.log('[EditorCore] requestBlockFocus', { blockId, reveal, animated, viewPosition, viewOffset });
+        }
 
-      revealRetryCounts.set(blockId, 0);
+        revealRetryCounts.set(blockId, 0);
 
-      const handleRevealFailure = ({ extraOffset }: { blockId: string; extraOffset: number }) => {
-        const attempts = (revealRetryCounts.get(blockId) ?? 0) + 1;
-        revealRetryCounts.set(blockId, attempts);
+        const handleRevealFailure = ({ extraOffset }: { blockId: string; extraOffset: number }) => {
+          const attempts = (revealRetryCounts.get(blockId) ?? 0) + 1;
+          revealRetryCounts.set(blockId, attempts);
 
-        const safetyPadding = Math.max(bottomBarHeight, viewOffset) + 24;
-        const targetOffset = Math.max(0, scrollOffsetRef.current + extraOffset + safetyPadding);
+          const safetyPadding = Math.max(bottomBarHeight, viewOffset) + 24;
+          const targetOffset = Math.max(0, scrollOffsetRef.current + extraOffset + safetyPadding);
 
-        if (attempts >= MAX_REVEAL_ATTEMPTS) {
-          pendingRevealBlockId.current = null;
-          revealRetryCounts.delete(blockId);
-          scrollOffsetRef.current = targetOffset;
-          flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: false });
-          focusManager.notifyRevealComplete(blockId);
+          if (attempts >= MAX_REVEAL_ATTEMPTS) {
+            pendingRevealBlockId.current = null;
+            revealRetryCounts.delete(blockId);
+            scrollOffsetRef.current = targetOffset;
+            flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: false });
+            focusManager.notifyRevealComplete(blockId);
+            focusManager.applyPendingFocus();
+            return;
+          }
+
+          pendingRevealBlockId.current = blockId;
+          try {
+            flatListRef.current?.scrollToOffset({
+              offset: targetOffset,
+              animated: true,
+            });
+            scheduleRevealCompletionCheck(blockId);
+          } catch {
+            scrollOffsetRef.current = targetOffset;
+            flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: false });
+            focusManager.notifyRevealComplete(blockId);
+            focusManager.applyPendingFocus();
+          }
+
+          options.onRevealFailure?.({ blockId, extraOffset });
+        };
+
+        // Register focus request with FocusManager
+        focusManager.requestFocus(blockId, {
+          reveal,
+          animated,
+          onRevealFailure: details => handleRevealFailure(details),
+        });
+
+        // If no reveal needed, just focus immediately
+        if (!reveal) {
           focusManager.applyPendingFocus();
           return;
         }
 
-        pendingRevealBlockId.current = blockId;
-        try {
-          flatListRef.current?.scrollToOffset({
-            offset: targetOffset,
-            animated: true,
-          });
-          scheduleRevealCompletionCheck(blockId);
-        } catch (error) {
-          scrollOffsetRef.current = targetOffset;
-          flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: false });
-          focusManager.notifyRevealComplete(blockId);
-          focusManager.applyPendingFocus();
+        // Find block index for scrolling
+        const blockIndex = blocks.findIndex(b => b.id === blockId);
+        if (blockIndex === -1) {
+          console.warn(`[EditorCore] Block not found for focus: ${blockId}`);
+          focusManager.clearDesiredFocus();
+          return;
         }
 
-        options.onRevealFailure?.({ blockId, extraOffset });
-      };
-
-      // Register focus request with FocusManager
-      focusManager.requestFocus(blockId, {
-        reveal,
-        animated,
-        onRevealFailure: (details) => handleRevealFailure(details),
-      });
-
-      // If no reveal needed, just focus immediately
-      if (!reveal) {
-        focusManager.applyPendingFocus();
-        return;
-      }
-
-      // Find block index for scrolling
-      const blockIndex = blocks.findIndex(b => b.id === blockId);
-      if (blockIndex === -1) {
-        console.warn(`[EditorCore] Block not found for focus: ${blockId}`);
-        focusManager.clearDesiredFocus();
-        return;
-      }
-
-      // Scroll to block using FlatList
-      try {
-        flatListRef.current?.scrollToIndex({
-          index: blockIndex,
-          animated,
-          viewPosition,
-          viewOffset
-        });
-
-        if (animated) {
-          pendingRevealBlockId.current = blockId;
-          scheduleRevealCompletionCheck(blockId);
-        } else {
-          focusManager.notifyRevealComplete(blockId);
-        }
-      } catch (error) {
-        console.warn('[EditorCore] Failed to scroll to block:', error);
-        const { offset: estimatedOffset } = getItemLayout(blocks, blockIndex);
-        const fallbackOffset = Math.max(0, estimatedOffset - viewOffset);
+        // Scroll to block using FlatList
         try {
-          flatListRef.current?.scrollToOffset({
-            offset: fallbackOffset,
+          flatListRef.current?.scrollToIndex({
+            index: blockIndex,
             animated,
+            viewPosition,
+            viewOffset,
           });
+
           if (animated) {
             pendingRevealBlockId.current = blockId;
             scheduleRevealCompletionCheck(blockId);
           } else {
             focusManager.notifyRevealComplete(blockId);
           }
-        } catch (fallbackError) {
-          focusManager.notifyRevealComplete(blockId);
-          focusManager.applyPendingFocus();
+        } catch (error) {
+          console.warn('[EditorCore] Failed to scroll to block:', error);
+          const { offset: estimatedOffset } = getItemLayout(blocks, blockIndex);
+          const fallbackOffset = Math.max(0, estimatedOffset - viewOffset);
+          try {
+            flatListRef.current?.scrollToOffset({
+              offset: fallbackOffset,
+              animated,
+            });
+            if (animated) {
+              pendingRevealBlockId.current = blockId;
+              scheduleRevealCompletionCheck(blockId);
+            } else {
+              focusManager.notifyRevealComplete(blockId);
+            }
+          } catch {
+            focusManager.notifyRevealComplete(blockId);
+            focusManager.applyPendingFocus();
+          }
         }
-      }
-    }, [blocks, focusManager, getItemLayout, scheduleRevealCompletionCheck, bottomBarHeight, revealRetryCounts]);
+      },
+      [blocks, focusManager, getItemLayout, scheduleRevealCompletionCheck, bottomBarHeight, revealRetryCounts]
+    );
 
     // Keyboard handling hook
     const {
       // keyboardRef,
       // shortcuts,
       // focusEditor,
-      blurEditor
+      blurEditor,
     } = useEditorKeyboard({
       blocks,
       selectedBlockId: focusedBlockId,
@@ -432,10 +460,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         stopEditing: () => selectBlock(''),
         undo,
         redo,
-        generateBlockId: () => `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      }
+        generateBlockId: () => `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      },
     });
-    
+
     // Drag and drop hook
     const {
       dragState,
@@ -443,7 +471,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       getDragOverlayProps,
       getDropIndicatorProps,
       getBlockProps,
-      getDropZoneProps
+      getDropZoneProps,
     } = useEditorDragDrop({
       blocks,
       blockPlugins,
@@ -451,8 +479,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       actions: {
         moveBlock,
         updateBlock,
-        selectBlock: (blockId: string | null) => selectBlock(blockId || '')
-      }
+        selectBlock: (blockId: string | null) => selectBlock(blockId || ''),
+      },
     });
 
     // Register plugins
@@ -462,21 +490,21 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         try {
           pluginRegistry.register(plugin);
         } catch (error: any) {
-            console.error(`Failed to register block plugin ${plugin.id}:`, error);
-            onError?.({ type: 'plugin-error', message: error.message, source: plugin.id, details: error } as EditorError);
+          console.error(`Failed to register block plugin ${plugin.id}:`, error);
+          onError?.({ type: 'plugin-error', message: error.message, source: plugin.id, details: error } as EditorError);
         }
       });
-      
+
       // Register markdown plugins
       markdownPlugins.forEach((plugin: MarkdownPlugin) => {
-          try {
-            pluginRegistry.register(plugin);
-          } catch (error: any) {
-            console.error(`Failed to register markdown plugin ${plugin.id}:`, error);
-            onError?.({ type: 'plugin-error', message: error.message, source: plugin.id, details: error } as EditorError);
-          }
-        });
-      
+        try {
+          pluginRegistry.register(plugin);
+        } catch (error: any) {
+          console.error(`Failed to register markdown plugin ${plugin.id}:`, error);
+          onError?.({ type: 'plugin-error', message: error.message, source: plugin.id, details: error } as EditorError);
+        }
+      });
+
       return () => {
         // Cleanup plugins on unmount
         blockPlugins.forEach((plugin: BlockPlugin) => {
@@ -521,23 +549,23 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         updateBlock(blockId, updates);
       }
     };
-    
+
     // Detect markdown patterns and transform block type
     const detectAndTransformMarkdown = (
-      updates: Partial<EditorBlock>, 
-      blockPlugins: BlockPlugin[], 
+      updates: Partial<EditorBlock>,
+      blockPlugins: BlockPlugin[],
       markdownPlugins: MarkdownPlugin[]
     ): Partial<EditorBlock> => {
       const content = updates.content || '';
-      
+
       // Skip transformation if content is empty
       if (!content.trim()) {
         return updates;
       }
-      
+
       // Allow multiline content for code blocks
       const isMultiline = content.includes('\n');
-      
+
       // Check for heading patterns (# ## ###) - single line only
       if (!isMultiline) {
         const headingMatch = content.match(/^(#{1,6})\s+(.+)$/);
@@ -548,11 +576,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             ...updates,
             type: 'heading',
             content: headingContent,
-            meta: { level }
+            meta: { level },
           };
         }
       }
-      
+
       // Check for quote pattern (> text) - single line only
       if (!isMultiline) {
         const quoteMatch = content.match(/^(>+)\s*(.*)$/);
@@ -563,11 +591,11 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             ...updates,
             type: 'quote',
             content: quoteContent,
-            meta: { depth }
+            meta: { depth },
           };
         }
       }
-      
+
       // Check for code block pattern (```) - can be multiline
       if (content.startsWith('```')) {
         const firstLine = content.split('\n')[0];
@@ -577,10 +605,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           ...updates,
           type: 'code',
           content: codeContent,
-          meta: { language }
+          meta: { language },
         };
       }
-      
+
       // Check for checklist patterns first (- [ ] item or - [x] item) - single line only
       if (!isMultiline) {
         const checklistMatch = content.match(/^(\s*)-\s+\[([ x])\]\s+(.+)$/);
@@ -590,16 +618,16 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           const checklistContent = checklistMatch[3];
           const level = Math.floor(indentation.length / 2);
           const checked = checkState === 'x';
-          
+
           return {
             ...updates,
             type: 'checklist',
             content: checklistContent,
-            meta: { checked, level }
+            meta: { checked, level },
           };
         }
       }
-       
+
       // Check for list patterns (- item or 1. item) - single line only
       if (!isMultiline) {
         const listMatch = content.match(/^(\s*)([-*+]|\d+\.)\s+(.+)$/);
@@ -609,44 +637,44 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           const listContent = listMatch[3];
           const level = Math.floor(indentation.length / 2);
           const listType = /\d+\./.test(marker) ? 'ordered' : 'unordered';
-          
+
           return {
             ...updates,
             type: 'list',
             content: listContent,
-            meta: { listType, level }
+            meta: { listType, level },
           };
         }
       }
-      
+
       // Check for divider patterns (--- or *** or ___) - single line only
       if (!isMultiline && content.match(/^(---|\*\*\*|___)\s*$/)) {
         return {
           ...updates,
           type: 'divider',
           content: '',
-          meta: { dividerStyle: 'solid' }
+          meta: { dividerStyle: 'solid' },
         };
       }
-      
+
       // Check for image patterns ![alt](url) - single line only
-        if (!isMultiline) {
-          const imageRegex = new RegExp('^!\\[([^\\]]*)\\]\\(([^\\s)]+)(?:\\s+"([^"]*)")?\\)$');
-          const imageMatch = content.match(imageRegex);
-          if (imageMatch) {
-            return {
-              ...updates,
-              type: 'image',
-              content: imageMatch[2], // URL
-              meta: { 
-                alt: imageMatch[1] || 'Image',
-                url: imageMatch[2],
-                caption: imageMatch[3] || ''
-              }
-            };
-          }
+      if (!isMultiline) {
+        const imageRegex = new RegExp('^!\\[([^\\]]*)\\]\\(([^\\s)]+)(?:\\s+"([^"]*)")?\\)$');
+        const imageMatch = content.match(imageRegex);
+        if (imageMatch) {
+          return {
+            ...updates,
+            type: 'image',
+            content: imageMatch[2], // URL
+            meta: {
+              alt: imageMatch[1] || 'Image',
+              url: imageMatch[2],
+              caption: imageMatch[3] || '',
+            },
+          };
         }
-      
+      }
+
       // Try plugin-based markdown parsing
       for (const plugin of markdownPlugins) {
         if (plugin.parser && plugin.parser.canParse(content)) {
@@ -656,61 +684,67 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               ...updates,
               type: block.type,
               content: block.content,
-              meta: block.meta
+              meta: block.meta,
             };
           }
         }
       }
-      
+
       // Try block plugin markdown parsing
-       for (const plugin of blockPlugins) {
-         if (plugin.markdownSyntax && plugin.markdownSyntax.patterns.block) {
-           const match = content.match(plugin.markdownSyntax.patterns.block);
-           if (match && plugin.controller && plugin.controller.onCreate) {
-             const tempBlock = {
-               id: 'temp',
-               type: plugin.blockType as any,
-               content: content,
-               meta: {}
-             };
-             const block = plugin.controller.onCreate(tempBlock);
-             if (block && block.type === plugin.blockType) {
-               return {
-                 ...updates,
-                 type: block.type,
-                 content: block.content,
-                 meta: block.meta
-               };
-             }
-           }
-         }
-       }
-      
+      for (const plugin of blockPlugins) {
+        if (plugin.markdownSyntax && plugin.markdownSyntax.patterns.block) {
+          const match = content.match(plugin.markdownSyntax.patterns.block);
+          if (match && plugin.controller && plugin.controller.onCreate) {
+            const tempBlock = {
+              id: 'temp',
+              type: plugin.blockType as any,
+              content: content,
+              meta: {},
+            };
+            const block = plugin.controller.onCreate(tempBlock);
+            if (block && block.type === plugin.blockType) {
+              return {
+                ...updates,
+                type: block.type,
+                content: block.content,
+                meta: block.meta,
+              };
+            }
+          }
+        }
+      }
+
       return updates;
     };
-    
-    const handleBlockSelect = useCallback((blockId: string) => {
-      selectBlock(blockId);
-      onSelectionChange?.(blockId);
-    }, [selectBlock, onSelectionChange]);
 
-    const handleBlockEdit = useCallback((blockId: string) => {
-      focusBlock(blockId);
-      onEditingChange?.(!!blockId);
-    }, [focusBlock, onEditingChange]);
-    
+    const handleBlockSelect = useCallback(
+      (blockId: string) => {
+        selectBlock(blockId);
+        onSelectionChange?.(blockId);
+      },
+      [selectBlock, onSelectionChange]
+    );
+
+    const handleBlockEdit = useCallback(
+      (blockId: string) => {
+        focusBlock(blockId);
+        onEditingChange?.(!!blockId);
+      },
+      [focusBlock, onEditingChange]
+    );
+
     const handleBlockDelete = (blockId: string) => {
       deleteBlock(blockId);
     };
-    
+
     const handleBlockDuplicate = (blockId: string) => {
       duplicateBlock(blockId);
     };
-    
+
     const handleBlockMove = (blockId: string, direction: 'up' | 'down') => {
       const currentIndex = blocks.findIndex(b => b.id === blockId);
       if (currentIndex === -1) return;
-      
+
       const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       if (newIndex >= 0 && newIndex < blocks.length) {
         moveBlock(blockId, newIndex);
@@ -718,26 +752,23 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     };
 
     // Toolbar actions
-    const handleToolbarAction = (actionId: string, blockType?: string, options?: { content?: string; meta?: Record<string, any> }) => {
+    const handleToolbarAction = (
+      actionId: string,
+      blockType?: string,
+      options?: { content?: string; meta?: Record<string, any> }
+    ) => {
       switch (actionId) {
         case 'add-block':
           if (blockType) {
-            const insertIndex = focusedBlockId
-              ? blocks.findIndex(b => b.id === focusedBlockId) + 1
-              : blocks.length;
+            const insertIndex = focusedBlockId ? blocks.findIndex(b => b.id === focusedBlockId) + 1 : blocks.length;
 
-            const newBlockId = createBlock(
-              blockType,
-              options?.content ?? '',
-              insertIndex,
-              options?.meta
-            );
+            const newBlockId = createBlock(blockType, options?.content ?? '', insertIndex, options?.meta);
             if (newBlockId) {
               if (__DEV__) {
                 console.log('[EditorCore] add-block created', {
                   newBlockId,
                   insertIndex,
-                  previousFocused: focusedBlockId
+                  previousFocused: focusedBlockId,
                 });
               }
               blockRefsMap.current.delete(newBlockId);
@@ -748,17 +779,17 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             }
           }
           break;
-          
+
         case 'undo':
           undo();
           break;
-          
+
         case 'redo':
           redo();
           break;
-          
+
         default:
-          // Unknown toolbar action
+        // Unknown toolbar action
       }
     };
 
@@ -768,211 +799,221 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // ========================================
 
     // Expose API through ref
-    useImperativeHandle(ref, () => ({
-      // Base MarkdownEditorRef methods
-      getMarkdown: () => getMarkdown(),
-      setMarkdown: (markdown: string) => setMarkdown(markdown),
-      getBlocks: () => blocks,
-      setBlocks: (newBlocks: EditorBlock[]) => {
-        // TODO: Implement setBlocks
-        // Not yet implemented
-      },
-      focus: () => {
-        // Focus the currently focused block, or focus the last block
-        if (focusedBlockId) {
-          requestBlockFocus(focusedBlockId);
-        } else if (blocks.length > 0) {
-          const lastBlockId = blocks[blocks.length - 1].id;
-          focusBlock(lastBlockId);
-          requestBlockFocus(lastBlockId);
-        }
-      },
-      insertBlock: (type: EditorBlockType, index?: number, options?: { meta?: Record<string, any>; content?: string }) => {
-        const newBlockId = createBlock(type, options?.content ?? '', index, options?.meta);
-        if (!newBlockId) {
-          return;
-        }
-
-        if (__DEV__) {
-          console.log('[EditorCore] insertBlock', {
-            newBlockId,
-            type,
-            index,
-            focusedBlockId
-          });
-        }
-
-        handleBlockSelect(newBlockId);
-        handleBlockEdit(newBlockId);
-        // Set pending focus - useEffect will apply when block is rendered
-        pendingFocusBlockId.current = newBlockId;
-        return newBlockId;
-      },
-      moveBlockUp: (id: string) => {
-        const blockIndex = blocks.findIndex(b => b.id === id);
-        if (blockIndex > 0) {
-          moveBlock(id, blockIndex - 1);
-          return true;
-        }
-        return false;
-      },
-      moveBlockDown: (id: string) => {
-        const blockIndex = blocks.findIndex(b => b.id === id);
-        if (blockIndex < blocks.length - 1) {
-          moveBlock(id, blockIndex + 1);
-          return true;
-        }
-        return false;
-      },
-      toggleMode: () => {
-        toggleMode();
-      },
-      getCurrentMode: () => mode,
-      
-      // Block operations
-      addBlock: (block: EditorBlock, index?: number) => createBlock(block.type, block.content, index, block.meta),
-      updateBlock: updateBlock,
-      deleteBlock: deleteBlock,
-      moveBlock: moveBlock,
-      duplicateBlock: duplicateBlock,
-      
-      // Selection operations
-      selectBlock: selectBlock,
-      clearSelection: clearSelection,
-      getSelectedBlock: () => blocks.find(b => b.id === focusedBlockId) || null,
-      
-      // Editing operations
-      startEditing: focusBlock,
-      stopEditing: () => selectBlock(''),
-      getEditingBlock: () => blocks.find(b => b.id === focusedBlockId) || null,
-      
-      // Plugin operations
-      registerBlockPlugin: (plugin: BlockPlugin) => pluginRegistry.register(plugin),
-      unregisterBlockPlugin: (pluginId: string) => pluginRegistry.unregister(pluginId),
-      registerMarkdownPlugin: (plugin: MarkdownPlugin) => pluginRegistry.register(plugin),
-      unregisterMarkdownPlugin: (pluginId: string) => pluginRegistry.unregister(pluginId),
-      getBlockPlugins: () => pluginRegistry.getAllBlockPlugins(),
-      getMarkdownPlugins: () => pluginRegistry.getMarkdownPlugins(),
-      
-      // Content operations (use context methods which now use MarkdownRegistry)
-      exportToMarkdown: () => getMarkdown(),
-      importFromMarkdown: (markdown: string) => setMarkdown(markdown),
-      exportToPlainText: () => blocks.map(b => b.content).join('\n'),
-      
-      // Editor state
-      getEditorState: () => state,
-      
-      // Focus operations
-      // focus is defined above in base methods
-      blur: blurEditor,
-
-      // Scroll and focus operations (NEW API)
-      requestBlockFocus,
-      
-      // History operations
-      undo: () => undo(),
-      redo: () => redo(),
-      canUndo: () => history.canUndo,
-      canRedo: () => history.canRedo,
-      
-      // Plugin methods
-      registerPlugin: (plugin: BlockPlugin | MarkdownPlugin) => pluginRegistry.register(plugin),
-      unregisterPlugin: (pluginId: string) => pluginRegistry.unregister(pluginId),
-      getRegisteredPlugins: () => pluginRegistry.getAllPlugins(),
-      
-      // Advanced operations
-      selectBlocks: (ids: string[]) => {
-        // TODO: Implement multi-block selection
-        // Not yet implemented
-      },
-      validateContent: () => errors,
-      
-      // Export/Import operations
-      exportToFormat: (format: 'markdown' | 'html' | 'json') => {
-        if (format === 'markdown') {
-          return getMarkdown();
-        }
-        // TODO: Implement HTML and JSON export
-        return '';
-      },
-      importFromFormat: (content: string, format: 'markdown' | 'html' | 'json') => {
-        if (format === 'markdown') {
-          setMarkdown(content);
-        } else {
-          // TODO: Implement HTML and JSON import
+    useImperativeHandle(
+      ref,
+      () => ({
+        // Base MarkdownEditorRef methods
+        getMarkdown: () => getMarkdown(),
+        setMarkdown: (markdown: string) => setMarkdown(markdown),
+        getBlocks: () => blocks,
+        setBlocks: (newBlocks: EditorBlock[]) => {
+          // TODO: Implement setBlocks
           // Not yet implemented
-        }
-      }
-    }), [
-      createBlock,
-      updateBlock,
-      deleteBlock,
-      moveBlock,
-      duplicateBlock,
-      selectBlock,
-      clearSelection,
-      focusBlock,
-      getMarkdown,
-      setMarkdown,
-      undo,
-      redo,
-      toggleMode,
-      blocks,
-      focusedBlockId,
-      state,
-      pluginRegistry,
-      blurEditor,
-      requestBlockFocus,
-      handleBlockSelect,
-      handleBlockEdit,
-      errors,
-      history.canRedo,
-      history.canUndo,
-      mode
-    ]);
+        },
+        focus: () => {
+          // Focus the currently focused block, or focus the last block
+          if (focusedBlockId) {
+            requestBlockFocus(focusedBlockId);
+          } else if (blocks.length > 0) {
+            const lastBlockId = blocks[blocks.length - 1].id;
+            focusBlock(lastBlockId);
+            requestBlockFocus(lastBlockId);
+          }
+        },
+        insertBlock: (
+          type: EditorBlockType,
+          index?: number,
+          options?: { meta?: Record<string, any>; content?: string }
+        ) => {
+          const newBlockId = createBlock(type, options?.content ?? '', index, options?.meta);
+          if (!newBlockId) {
+            return;
+          }
+
+          if (__DEV__) {
+            console.log('[EditorCore] insertBlock', {
+              newBlockId,
+              type,
+              index,
+              focusedBlockId,
+            });
+          }
+
+          handleBlockSelect(newBlockId);
+          handleBlockEdit(newBlockId);
+          // Set pending focus - useEffect will apply when block is rendered
+          pendingFocusBlockId.current = newBlockId;
+          return newBlockId;
+        },
+        moveBlockUp: (id: string) => {
+          const blockIndex = blocks.findIndex(b => b.id === id);
+          if (blockIndex > 0) {
+            moveBlock(id, blockIndex - 1);
+            return true;
+          }
+          return false;
+        },
+        moveBlockDown: (id: string) => {
+          const blockIndex = blocks.findIndex(b => b.id === id);
+          if (blockIndex < blocks.length - 1) {
+            moveBlock(id, blockIndex + 1);
+            return true;
+          }
+          return false;
+        },
+        toggleMode: () => {
+          toggleMode();
+        },
+        getCurrentMode: () => mode,
+
+        // Block operations
+        addBlock: (block: EditorBlock, index?: number) => createBlock(block.type, block.content, index, block.meta),
+        updateBlock: updateBlock,
+        deleteBlock: deleteBlock,
+        moveBlock: moveBlock,
+        duplicateBlock: duplicateBlock,
+
+        // Selection operations
+        selectBlock: selectBlock,
+        clearSelection: clearSelection,
+        getSelectedBlock: () => blocks.find(b => b.id === focusedBlockId) || null,
+
+        // Editing operations
+        startEditing: focusBlock,
+        stopEditing: () => selectBlock(''),
+        getEditingBlock: () => blocks.find(b => b.id === focusedBlockId) || null,
+
+        // Plugin operations
+        registerBlockPlugin: (plugin: BlockPlugin) => pluginRegistry.register(plugin),
+        unregisterBlockPlugin: (pluginId: string) => pluginRegistry.unregister(pluginId),
+        registerMarkdownPlugin: (plugin: MarkdownPlugin) => pluginRegistry.register(plugin),
+        unregisterMarkdownPlugin: (pluginId: string) => pluginRegistry.unregister(pluginId),
+        getBlockPlugins: () => pluginRegistry.getAllBlockPlugins(),
+        getMarkdownPlugins: () => pluginRegistry.getMarkdownPlugins(),
+
+        // Content operations (use context methods which now use MarkdownRegistry)
+        exportToMarkdown: () => getMarkdown(),
+        importFromMarkdown: (markdown: string) => setMarkdown(markdown),
+        exportToPlainText: () => blocks.map(b => b.content).join('\n'),
+
+        // Editor state
+        getEditorState: () => state,
+
+        // Focus operations
+        // focus is defined above in base methods
+        blur: blurEditor,
+
+        // Scroll and focus operations (NEW API)
+        requestBlockFocus,
+
+        // History operations
+        undo: () => undo(),
+        redo: () => redo(),
+        canUndo: () => history.canUndo,
+        canRedo: () => history.canRedo,
+
+        // Plugin methods
+        registerPlugin: (plugin: BlockPlugin | MarkdownPlugin) => pluginRegistry.register(plugin),
+        unregisterPlugin: (pluginId: string) => pluginRegistry.unregister(pluginId),
+        getRegisteredPlugins: () => pluginRegistry.getAllPlugins(),
+
+        // Advanced operations
+        selectBlocks: (ids: string[]) => {
+          // TODO: Implement multi-block selection
+          // Not yet implemented
+        },
+        validateContent: () => errors,
+
+        // Export/Import operations
+        exportToFormat: (format: 'markdown' | 'html' | 'json') => {
+          if (format === 'markdown') {
+            return getMarkdown();
+          }
+          // TODO: Implement HTML and JSON export
+          return '';
+        },
+        importFromFormat: (content: string, format: 'markdown' | 'html' | 'json') => {
+          if (format === 'markdown') {
+            setMarkdown(content);
+          } else {
+            // TODO: Implement HTML and JSON import
+            // Not yet implemented
+          }
+        },
+      }),
+      [
+        createBlock,
+        updateBlock,
+        deleteBlock,
+        moveBlock,
+        duplicateBlock,
+        selectBlock,
+        clearSelection,
+        focusBlock,
+        getMarkdown,
+        setMarkdown,
+        undo,
+        redo,
+        toggleMode,
+        blocks,
+        focusedBlockId,
+        state,
+        pluginRegistry,
+        blurEditor,
+        requestBlockFocus,
+        handleBlockSelect,
+        handleBlockEdit,
+        errors,
+        history.canRedo,
+        history.canUndo,
+        mode,
+      ]
+    );
 
     // Render toolbar
     const renderToolbar = () => {
       if (!toolbarEnabled) return null;
-      
+
       return (
         <View style={styles.toolbar} onLayout={handleToolbarLayout}>
-          <TouchableOpacity
-            style={styles.toolbarButton}
-            onPress={() => handleToolbarAction('add-block', 'paragraph')}
-          >
+          <TouchableOpacity style={styles.toolbarButton} onPress={() => handleToolbarAction('add-block', 'paragraph')}>
             <Ionicons name="add" size={20} color={editorConfig.theme?.colors?.primary || '#007AFF'} />
             <Text style={styles.toolbarButtonText}>Add Block</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.toolbarButton}
             onPress={() => handleToolbarAction('undo')}
             disabled={!history.canUndo}
           >
-            <Ionicons 
-              name="arrow-undo" 
-              size={20} 
-              color={history.canUndo ? (editorConfig.theme?.colors?.primary || '#007AFF') : (editorConfig.theme?.colors?.secondary || '#666')} 
+            <Ionicons
+              name="arrow-undo"
+              size={20}
+              color={
+                history.canUndo
+                  ? editorConfig.theme?.colors?.primary || '#007AFF'
+                  : editorConfig.theme?.colors?.secondary || '#666'
+              }
             />
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.toolbarButton}
             onPress={() => handleToolbarAction('redo')}
             disabled={!history.canRedo}
           >
-            <Ionicons 
-              name="arrow-redo" 
-              size={20} 
-              color={history.canRedo ? (editorConfig.theme?.colors?.primary || '#007AFF') : (editorConfig.theme?.colors?.secondary || '#666')} 
+            <Ionicons
+              name="arrow-redo"
+              size={20}
+              color={
+                history.canRedo
+                  ? editorConfig.theme?.colors?.primary || '#007AFF'
+                  : editorConfig.theme?.colors?.secondary || '#666'
+              }
             />
           </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.toolbarButton}
-            onPress={() => console.log('Export:', getMarkdown())}
-          >
+
+          <TouchableOpacity style={styles.toolbarButton} onPress={() => console.log('Export:', getMarkdown())}>
             <Ionicons name="download" size={20} color={editorConfig.theme?.colors?.primary || '#007AFF'} />
             <Text style={styles.toolbarButtonText}>Export</Text>
           </TouchableOpacity>
@@ -984,27 +1025,23 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     const renderBlock = (block: EditorBlock, index: number) => {
       const isSelected = selectedBlocks.includes(block.id);
       const isEditing = focusedBlockId === block.id;
-      
+
       // Find the appropriate plugin for this block type
       const plugin = getBlockPlugin(block.type);
-      
+
       if (!plugin) {
         return (
           <View key={block.id} style={styles.errorBlock}>
-            <Text style={styles.errorText}>
-              No plugin found for block type: {block.type}
-            </Text>
+            <Text style={styles.errorText}>No plugin found for block type: {block.type}</Text>
           </View>
         );
       }
-      
+
       return (
         <React.Fragment key={block.id}>
           {/* Drop indicator */}
-          {dragState.isDragging && (
-            <View {...getDropIndicatorProps(index)} />
-          )}
-          
+          {dragState.isDragging && <View {...getDropIndicatorProps(index)} />}
+
           {/* Drop zone */}
           <View {...getDropZoneProps(index)}>
             <SafeBlockRenderer
@@ -1024,7 +1061,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               blockProps={getBlockProps(block.id, index)}
               focusManager={focusManager}
               onBlockHeightChange={handleBlockHeightChange}
-              onBlockRefReady={(ref) => {
+              onBlockRefReady={ref => {
                 // Legacy ref tracking for drag-drop compatibility
                 if (ref) {
                   blockRefsMap.current.set(block.id, ref);
@@ -1034,7 +1071,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
               }}
             />
           </View>
-          
+
           {/* Final drop indicator */}
           {/* Disabled temporarily due to dragState not being used */}
           {/* {dragState.isDragging && index === blocks.length - 1 && (
@@ -1048,9 +1085,12 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
      * NEW: Render item for FlatList
      * Adapter between FlatList's renderItem and our renderBlock function
      */
-    const renderItem = useCallback(({ item, index }: ListRenderItemInfo<EditorBlock>) => {
-      return renderBlock(item, index);
-    }, [renderBlock]);
+    const renderItem = useCallback(
+      ({ item, index }: ListRenderItemInfo<EditorBlock>) => {
+        return renderBlock(item, index);
+      },
+      [renderBlock]
+    );
 
     /**
      * NEW: Render footer (empty space for creating new blocks)
@@ -1126,10 +1166,10 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
 
         const { height: windowHeight } = Dimensions.get('window');
         const safeArea = globalThis.__DECANOTES_SAFE_AREA_BOTTOM__ ?? 0;
-        
+
         // Measure actual block position on screen
         const layout = await focusManager.measureBlock(focusedBlockId);
-        
+
         if (!layout) {
           // Fallback to estimated positioning if measurement fails
           const targetY = windowHeight * 0.3;
@@ -1146,7 +1186,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
         // Calculate visible area (above keyboard and bottom bar)
         const visibleBottom = windowHeight - keyboardHeight - bottomBarHeight - safeArea;
         const blockBottom = layout.y + layout.height;
-        
+
         // Check if block is hidden or too low
         const padding = 48; // Keep some padding above keyboard
         const targetBottom = visibleBottom - padding;
@@ -1188,12 +1228,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
     // ========================================
 
     return (
-      <View 
-        style={[styles.container, style]} 
-        ref={editorRef}
-        testID="editor-core"
-        {...props}
-      >
+      <View style={[styles.container, style]} ref={editorRef} testID="editor-core" {...props}>
         {toolbarEnabled && renderToolbar()}
 
         {/* NEW: FlatList for virtualized rendering */}
@@ -1201,7 +1236,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           ref={flatListRef}
           data={blocks}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           getItemLayout={getItemLayout}
           onScrollToIndexFailed={handleScrollToIndexFailed}
           style={styles.content}
@@ -1210,8 +1245,8 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             styles.contentContainer,
             {
               // Dynamic padding to account for keyboard + bottom bar
-              paddingBottom: contentPaddingBottom
-            }
+              paddingBottom: contentPaddingBottom,
+            },
           ]}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
@@ -1223,14 +1258,14 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
           onScrollEndDrag={handleScrollSettled}
           ListFooterComponent={renderFooter}
         />
-        
+
         {/* Drag overlay */}
         {dragState.isDragging && dragState.draggedBlockId && (
           <View {...getDragOverlayProps()}>
             {(() => {
               const draggedBlock = blocks.find(b => b.id === dragState.draggedBlockId);
               const plugin = draggedBlock ? getBlockPlugin(draggedBlock.type) : null;
-              
+
               if (draggedBlock && plugin) {
                 const BlockComponent = plugin.component;
                 return (
@@ -1246,12 +1281,12 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
                   />
                 );
               }
-              
+
               return null;
-            })()} 
+            })()}
           </View>
         )}
-        
+
         {editorConfig.debug && (
           <View style={styles.debugPanel}>
             <Text style={styles.debugText}>
@@ -1260,9 +1295,7 @@ export const EditorCore = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
             <Text style={styles.debugText}>
               History: {history.past.length} past, {history.future.length} future
             </Text>
-            <Text style={styles.debugText}>
-              Dragging: {dragState.isDragging ? dragState.draggedBlockId : 'none'}
-            </Text>
+            <Text style={styles.debugText}>Dragging: {dragState.isDragging ? dragState.draggedBlockId : 'none'}</Text>
           </View>
         )}
 
@@ -1344,7 +1377,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   blockContainer: {
-    marginVertical: 4
+    marginVertical: 4,
   },
   errorBlock: {
     padding: 16,
@@ -1352,12 +1385,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FFB3B3',
-    marginVertical: 4
+    marginVertical: 4,
   },
   errorText: {
     color: '#D32F2F',
     fontSize: 14,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   debugPanel: {
     position: 'absolute',
@@ -1365,25 +1398,25 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    padding: 8
+    padding: 8,
   },
   debugText: {
     color: 'white',
     fontSize: 12,
     fontFamily: 'monospace',
-    marginVertical: 1
+    marginVertical: 1,
   },
   editorContent: {
     flex: 1,
-    minHeight: '100%'
+    minHeight: '100%',
   },
   blocksContainer: {
-    flex: 1
+    flex: 1,
   },
   footerContainer: {
     paddingVertical: 24,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   addBlockButton: {
     flexDirection: 'row',
@@ -1398,14 +1431,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2
+    elevation: 2,
   },
   addBlockText: {
     fontSize: 14,
     color: '#344054',
     fontWeight: '500',
-    marginLeft: 8
-  }
+    marginLeft: 8,
+  },
 });
 
 EditorCore.displayName = 'EditorCore';

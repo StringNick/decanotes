@@ -15,119 +15,107 @@ type FocusableHandle = { focus: () => void };
 /**
  * Paragraph block component with minimalist design
  */
-const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
-  block,
-  onUpdate,
-  onBlockChange,
-  onFocus,
-  onBlur,
-  isSelected,
-  isFocused,
-  isEditing,
-  style
-}, ref) => {
-  const inputRef = useRef<TextInput>(null);
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const animatedValue = useRef(new Animated.Value(0)).current;
+const ParagraphComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  ({ block, onUpdate, onBlockChange, onFocus, onBlur, isSelected, isFocused, isEditing, style }, ref) => {
+    const inputRef = useRef<TextInput>(null);
+    const [cursorPosition, setCursorPosition] = useState(0);
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const animatedValue = useRef(new Animated.Value(0)).current;
 
-  // Explicitly determine if we should show editor or formatted view
-  const shouldShowEditor = Boolean(isFocused || isEditing);
-  const styles = getStyles(colorScheme ?? 'light');
+    // Explicitly determine if we should show editor or formatted view
+    const shouldShowEditor = Boolean(isFocused || isEditing);
+    const styles = getStyles(colorScheme ?? 'light');
 
-  // Expose the TextInput methods through ref
-  useImperativeHandle(ref, () => ({
-    focus: () => {
-      inputRef.current?.focus();
-    }
-  }));
+    // Expose the TextInput methods through ref
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        inputRef.current?.focus();
+      },
+    }));
 
-  // Animate focus state changes
-  useEffect(() => {
-    Animated.timing(animatedValue, {
-      toValue: shouldShowEditor ? 1 : 0,
-      duration: ANIMATION_CONFIG.duration,
-      useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
-    }).start();
-  }, [shouldShowEditor, animatedValue]);
+    // Animate focus state changes
+    useEffect(() => {
+      Animated.timing(animatedValue, {
+        toValue: shouldShowEditor ? 1 : 0,
+        duration: ANIMATION_CONFIG.duration,
+        useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+      }).start();
+    }, [shouldShowEditor, animatedValue]);
 
-  // Get animated colors
-  const focusColors = getFocusColors(colorScheme ?? 'light', shouldShowEditor || false);
+    // Get animated colors
+    const focusColors = getFocusColors(colorScheme ?? 'light', shouldShowEditor || false);
 
-  // Get the plugin instance and controller
-  const pluginInstance = new ParagraphPlugin();
-  const controller = pluginInstance.controller;
+    // Get the plugin instance and controller
+    const pluginInstance = new ParagraphPlugin();
+    const controller = pluginInstance.controller;
 
-  const handleSelectionChange = (event: any) => {
-    const selection = event.nativeEvent.selection;
-    if (selection) {
-      setCursorPosition(selection.start);
-    }
-  };
+    const handleSelectionChange = (event: any) => {
+      const selection = event.nativeEvent.selection;
+      if (selection) {
+        setCursorPosition(selection.start);
+      }
+    };
 
-  const handleTextChange = (text: string) => {
-    if (onBlockChange) {
-      onBlockChange({ content: text });
-    } else if (onUpdate) {
-      onUpdate({
-        ...block,
-        content: text
-      });
-    }
-  };
+    const handleTextChange = (text: string) => {
+      if (onBlockChange) {
+        onBlockChange({ content: text });
+      } else if (onUpdate) {
+        onUpdate({
+          ...block,
+          content: text,
+        });
+      }
+    };
 
-  // Animated colors
-  const animatedBorderColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(0, 0, 0, 0)', focusColors.borderColor],
-  });
+    // Animated colors
+    const animatedBorderColor = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['rgba(0, 0, 0, 0)', focusColors.borderColor],
+    });
 
-  const animatedBackgroundColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
-  });
+    const animatedBackgroundColor = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
+    });
 
-  return (
-    <KeyboardHandler
-      block={block}
-      controller={controller}
-      cursorPosition={cursorPosition}
-    >
-      {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
-        <Animated.View
-          style={[
-            styles.container,
-            style,
-            {
-              borderLeftColor: animatedBorderColor,
-              backgroundColor: animatedBackgroundColor
-            }
-          ]}
-        >
-          <FormattedTextInput
-            ref={inputRef}
-            value={block.content}
-            onChangeText={handleTextChange}
-            onFocus={onFocus}
-            onBlur={onBlur}
-            onSelectionChange={handleSelectionChange}
-            onKeyPress={onKeyPress}
-            placeholder="Type something..."
-            placeholderTextColor={colors.textSecondary}
-            isSelected={isSelected}
-            isEditing={shouldShowEditor}
-            multiline
-            textAlignVertical="top"
-            scrollEnabled={false}
-            preventNewlines={preventNewlines}
-            style={styles.textInput}
-          />
-        </Animated.View>
-      )}
-    </KeyboardHandler>
-  );
-});
+    return (
+      <KeyboardHandler block={block} controller={controller} cursorPosition={cursorPosition}>
+        {({ onKeyPress, preventNewlines }: { onKeyPress: (event: any) => void; preventNewlines?: boolean }) => (
+          <Animated.View
+            style={[
+              styles.container,
+              style,
+              {
+                borderLeftColor: animatedBorderColor,
+                backgroundColor: animatedBackgroundColor,
+              },
+            ]}
+          >
+            <FormattedTextInput
+              ref={inputRef}
+              value={block.content}
+              onChangeText={handleTextChange}
+              onFocus={onFocus}
+              onBlur={onBlur}
+              onSelectionChange={handleSelectionChange}
+              onKeyPress={onKeyPress}
+              placeholder="Type something..."
+              placeholderTextColor={colors.textSecondary}
+              isSelected={isSelected}
+              isEditing={shouldShowEditor}
+              multiline
+              textAlignVertical="top"
+              scrollEnabled={false}
+              preventNewlines={preventNewlines}
+              style={styles.textInput}
+            />
+          </Animated.View>
+        )}
+      </KeyboardHandler>
+    );
+  }
+);
 
 ParagraphComponent.displayName = 'ParagraphComponent';
 
@@ -174,37 +162,41 @@ export class ParagraphPlugin extends BlockPlugin {
     transformContent: this.transformContent.bind(this),
     handleEnter: this.handleEnter.bind(this),
     handleBackspace: this.handleBackspace.bind(this),
-    getActions: this.getActions.bind(this)
+    getActions: this.getActions.bind(this),
   };
 
   readonly markdownSyntax = {
     patterns: {
       // Paragraphs are default - no specific pattern needed
     },
-    priority: 10 // Lowest priority - fallback
+    priority: 10, // Lowest priority - fallback
   };
 
   readonly toolbar = {
     icon: 'text',
     label: 'Paragraph',
     shortcut: 'Ctrl+Alt+0',
-    group: 'text'
+    group: 'text',
   };
 
   readonly settings = {
     allowedParents: ['root', 'quote', 'list', 'callout'] as EditorBlockType[],
     validation: {
-      maxLength: 10000
+      maxLength: 10000,
     },
     defaultMeta: {
-      textAlign: 'left'
-    }
+      textAlign: 'left',
+    },
   };
 
   /**
    * Handle Enter key press
    */
-  protected handleEnter(block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number): EditorBlock | EditorBlock[] | null {
+  protected handleEnter(
+    block: EditorBlock,
+    allBlocks?: EditorBlock[],
+    currentIndex?: number
+  ): EditorBlock | EditorBlock[] | null {
     // Create new paragraph on Enter
     if (block.content.trim() === '') {
       // If current paragraph is empty, don't create new one
@@ -214,7 +206,7 @@ export class ParagraphPlugin extends BlockPlugin {
       id: generateId(),
       type: 'paragraph',
       content: '',
-      meta: { textAlign: block.meta?.textAlign || 'left' }
+      meta: { textAlign: block.meta?.textAlign || 'left' },
     };
     // Return both blocks - the current one stays, and we add a new one after it
     return [block, newParagraph];

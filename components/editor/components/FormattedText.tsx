@@ -19,22 +19,14 @@ interface FormattedTextProps {
  * Component that renders text with inline markdown formatting
  * When editing, shows raw markdown. When not editing, shows formatted text.
  */
-export const FormattedText: React.FC<FormattedTextProps> = ({
-  text,
-  style,
-  isEditing = false
-}) => {
+export const FormattedText: React.FC<FormattedTextProps> = ({ text, style, isEditing = false }) => {
   const colorScheme = useColorScheme();
   // const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
-  
+
   // If editing, show raw text
   if (isEditing) {
-    return (
-      <Text style={[styles.text, style]}>
-        {text}
-      </Text>
-    );
+    return <Text style={[styles.text, style]}>{text}</Text>;
   }
 
   // If not editing, process and render formatted text

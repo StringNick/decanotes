@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { forwardRef, memo, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -11,196 +11,186 @@ type FocusableHandle = { focus: () => void };
 /**
  * Image block component with modern dark theme support
  */
-const RawImageComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
-  block,
-  onUpdate,
-  onFocus,
-  onBlur,
-  isSelected,
-  isEditing,
-  style
-}, ref) => {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  const [isUrlEditing, setIsUrlEditing] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  
-  const imageUrl = block.meta?.url || block.content;
-  const alt = block.meta?.alt || 'Image';
-  const caption = block.meta?.caption;
-  const width = block.meta?.width;
-  const height = block.meta?.height;
-  const urlInputRef = useRef<TextInput>(null);
+const RawImageComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  ({ block, onUpdate, onFocus, onBlur, isSelected, isEditing, style }, ref) => {
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const styles = getStyles(colorScheme ?? 'light');
+    const [isUrlEditing, setIsUrlEditing] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
-  useImperativeHandle(ref, () => ({
-    focus: () => {
-      if (!isUrlEditing) {
-        setIsUrlEditing(true);
+    const imageUrl = block.meta?.url || block.content;
+    const alt = block.meta?.alt || 'Image';
+    const caption = block.meta?.caption;
+    const width = block.meta?.width;
+    const height = block.meta?.height;
+    const urlInputRef = useRef<TextInput>(null);
+
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        if (!isUrlEditing) {
+          setIsUrlEditing(true);
+        }
+        setTimeout(() => {
+          urlInputRef.current?.focus();
+        }, 0);
+      },
+    }));
+
+    const handleUrlChange = (url: string) => {
+      setImageError(false);
+      onUpdate?.({
+        ...block,
+        content: url,
+        meta: {
+          ...block.meta,
+          url,
+        },
+      });
+    };
+
+    const handleAltChange = (newAlt: string) => {
+      onUpdate?.({
+        ...block,
+        meta: {
+          ...block.meta,
+          alt: newAlt,
+        },
+      });
+    };
+
+    const handleCaptionChange = (newCaption: string) => {
+      onUpdate?.({
+        ...block,
+        meta: {
+          ...block.meta,
+          caption: newCaption,
+        },
+      });
+    };
+
+    const validateUrl = (url: string): boolean => {
+      try {
+        new URL(url);
+        // More flexible validation - allow URLs that might have query parameters
+        return (
+          url.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i) !== null ||
+          url.includes('image') ||
+          url.includes('img') ||
+          url.startsWith('data:image/')
+        );
+      } catch {
+        return false;
       }
-      setTimeout(() => {
-        urlInputRef.current?.focus();
-      }, 0);
-    }
-  }));
+    };
 
-  const handleUrlChange = (url: string) => {
-    setImageError(false);
-    onUpdate?.({
-      ...block,
-      content: url,
-      meta: {
-        ...block.meta,
-        url
+    const handleUrlSubmit = () => {
+      if (imageUrl && !validateUrl(imageUrl)) {
+        Alert.alert('Invalid URL', 'Please enter a valid image URL');
+        return;
       }
-    });
-  };
+      setIsUrlEditing(false);
+      onBlur?.();
+    };
 
-  const handleAltChange = (newAlt: string) => {
-    onUpdate?.({
-      ...block,
-      meta: {
-        ...block.meta,
-        alt: newAlt
+    const handleImageError = () => {
+      setImageError(true);
+    };
+
+    const renderImagePreview = () => {
+      if (!imageUrl) {
+        return (
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderText}>🖼️</Text>
+            <Text style={styles.placeholderLabel}>Click to add image URL</Text>
+          </View>
+        );
       }
-    });
-  };
 
-  const handleCaptionChange = (newCaption: string) => {
-    onUpdate?.({
-      ...block,
-      meta: {
-        ...block.meta,
-        caption: newCaption
+      if (imageError) {
+        return (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorIcon}>❌</Text>
+            <Text style={styles.errorText}>Failed to load image</Text>
+            <Text style={styles.errorUrl} numberOfLines={1}>
+              {imageUrl}
+            </Text>
+          </View>
+        );
       }
-    });
-  };
 
-  const validateUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      // More flexible validation - allow URLs that might have query parameters
-      return url.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i) !== null || 
-             url.includes('image') || 
-             url.includes('img') ||
-             url.startsWith('data:image/');
-    } catch {
-      return false;
-    }
-  };
-
-  const handleUrlSubmit = () => {
-    if (imageUrl && !validateUrl(imageUrl)) {
-      Alert.alert('Invalid URL', 'Please enter a valid image URL');
-      return;
-    }
-    setIsUrlEditing(false);
-    onBlur?.();
-  };
-
-  const handleImageError = () => {
-    setImageError(true);
-  };
-
-  const renderImagePreview = () => {
-    if (!imageUrl) {
       return (
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>🖼️</Text>
-          <Text style={styles.placeholderLabel}>Click to add image URL</Text>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: imageUrl }}
+            style={[styles.image, width && { width }, height && { height }]}
+            resizeMode="contain"
+            onError={handleImageError}
+          />
+          {caption && <Text style={styles.imageCaption}>{caption}</Text>}
         </View>
       );
-    }
-
-    if (imageError) {
-      return (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorIcon}>❌</Text>
-          <Text style={styles.errorText}>Failed to load image</Text>
-          <Text style={styles.errorUrl} numberOfLines={1}>{imageUrl}</Text>
-        </View>
-      );
-    }
+    };
 
     return (
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: imageUrl }}
-          style={[
-            styles.image,
-            width && { width },
-            height && { height }
-          ]}
-          resizeMode="contain"
-          onError={handleImageError}
-        />
-        {caption && (
-          <Text style={styles.imageCaption}>{caption}</Text>
+      <View style={[styles.container, style]}>
+        <TouchableOpacity
+          style={[styles.imageWrapper, isSelected && styles.selected, isEditing && styles.editing]}
+          onPress={() => setIsUrlEditing(true)}
+          onFocus={onFocus}
+          onBlur={onBlur}
+        >
+          {renderImagePreview()}
+        </TouchableOpacity>
+
+        {isUrlEditing && (
+          <View style={styles.editContainer}>
+            <TextInput
+              style={styles.urlInput}
+              value={imageUrl}
+              onChangeText={handleUrlChange}
+              placeholder="Enter image URL (jpg, png, gif, webp, svg)"
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+              onSubmitEditing={handleUrlSubmit}
+              onBlur={handleUrlSubmit}
+              onFocus={() => onFocus?.()}
+              ref={urlInputRef}
+            />
+            <TextInput
+              style={styles.altInput}
+              value={alt}
+              onChangeText={handleAltChange}
+              placeholder="Alt text (for accessibility)"
+              placeholderTextColor={colors.textMuted}
+              onFocus={() => onFocus?.()}
+              onBlur={() => onBlur?.()}
+            />
+            <TextInput
+              style={styles.captionInput}
+              value={caption || ''}
+              onChangeText={handleCaptionChange}
+              placeholder="Caption (optional)"
+              placeholderTextColor={colors.textMuted}
+              onFocus={() => onFocus?.()}
+              onBlur={() => onBlur?.()}
+            />
+          </View>
+        )}
+
+        {imageUrl && !isUrlEditing && (
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>URL: {imageUrl}</Text>
+            {alt && <Text style={styles.infoText}>Alt: {alt}</Text>}
+            {caption && <Text style={styles.infoText}>Caption: {caption}</Text>}
+          </View>
         )}
       </View>
     );
-  };
+  }
+);
 
-  return (
-    <View style={[styles.container, style]}>
-      <TouchableOpacity
-        style={[
-          styles.imageWrapper,
-          isSelected && styles.selected,
-          isEditing && styles.editing
-        ]}
-        onPress={() => setIsUrlEditing(true)}
-        onFocus={onFocus}
-        onBlur={onBlur}
-      >
-        {renderImagePreview()}
-      </TouchableOpacity>
-
-      {isUrlEditing && (
-        <View style={styles.editContainer}>
-          <TextInput
-            style={styles.urlInput}
-            value={imageUrl}
-            onChangeText={handleUrlChange}
-            placeholder="Enter image URL (jpg, png, gif, webp, svg)"
-            placeholderTextColor={colors.textMuted}
-            autoFocus
-            onSubmitEditing={handleUrlSubmit}
-            onBlur={handleUrlSubmit}
-            onFocus={() => onFocus?.()}
-            ref={urlInputRef}
-          />
-          <TextInput
-            style={styles.altInput}
-            value={alt}
-            onChangeText={handleAltChange}
-            placeholder="Alt text (for accessibility)"
-            placeholderTextColor={colors.textMuted}
-            onFocus={() => onFocus?.()}
-            onBlur={() => onBlur?.()}
-          />
-          <TextInput
-            style={styles.captionInput}
-            value={caption || ''}
-            onChangeText={handleCaptionChange}
-            placeholder="Caption (optional)"
-            placeholderTextColor={colors.textMuted}
-            onFocus={() => onFocus?.()}
-            onBlur={() => onBlur?.()}
-          />
-        </View>
-      )}
-
-      {imageUrl && !isUrlEditing && (
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>URL: {imageUrl}</Text>
-          {alt && <Text style={styles.infoText}>Alt: {alt}</Text>}
-          {caption && <Text style={styles.infoText}>Caption: {caption}</Text>}
-        </View>
-      )}
-    </View>
-  );
-});
+RawImageComponent.displayName = 'RawImageComponent';
 
 const ImageComponent = memo(RawImageComponent, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
@@ -222,7 +212,7 @@ ImageComponent.displayName = 'ImageComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     container: {
       marginVertical: 12,
@@ -378,33 +368,33 @@ export class ImagePlugin implements BlockPlugin {
   readonly component = ImageComponent;
   readonly controller = {
     transformContent: this.transformContent.bind(this),
-    getActions: (block: EditorBlock) => this.getActions(block)
+    getActions: (block: EditorBlock) => this.getActions(block),
   };
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)$/
+      block: /^!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)$/,
     },
-    priority: 75
+    priority: 75,
   };
 
   readonly toolbar = {
     icon: 'image',
     label: 'Image',
     shortcut: 'Ctrl+Alt+I',
-    group: 'media'
+    group: 'media',
   };
 
   readonly settings = {
     allowedParents: ['root', 'quote', 'callout'] as EditorBlockType[],
     validation: {
       pattern: /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|svg)$/i,
-      required: []
+      required: [],
     },
     defaultMeta: {
       alt: 'Image',
-      loading: 'lazy'
-    }
+      loading: 'lazy',
+    },
   };
 
   protected transformContent(content: string): string {
@@ -417,8 +407,8 @@ export class ImagePlugin implements BlockPlugin {
   }
 
   protected onCreate(block: EditorBlock): EditorBlock {
-    console.log('onCreate', block)
-     return block;
+    console.log('onCreate', block);
+    return block;
   }
 
   protected handleEnter(block: EditorBlock): EditorBlock | EditorBlock[] | null {
@@ -427,23 +417,23 @@ export class ImagePlugin implements BlockPlugin {
       id: generateId(),
       type: 'paragraph',
       content: '',
-      meta: {}
+      meta: {},
     };
   }
 
   public getActions(block: EditorBlock) {
     // Return only the default actions (duplicate and delete)
     const actions: any[] = [];
-    
+
     actions.push({
       id: 'duplicate',
       label: 'Duplicate',
       icon: 'copy',
       handler: (block: EditorBlock, context: any) => {
         context.duplicateBlock();
-      }
+      },
     });
-    
+
     actions.push({
       id: 'delete',
       label: 'Delete',
@@ -451,23 +441,17 @@ export class ImagePlugin implements BlockPlugin {
       style: 'destructive',
       handler: (block: EditorBlock, context: any) => {
         context.deleteBlock();
-      }
+      },
     });
-    
+
     return actions;
   }
 
   /**
    * Create image block with URL and metadata
    */
-  createImageBlock(
-    url: string,
-    alt?: string,
-    caption?: string,
-    width?: number,
-    height?: number
-  ): EditorBlock {
-    console.log('create image block')
+  createImageBlock(url: string, alt?: string, caption?: string, width?: number, height?: number): EditorBlock {
+    console.log('create image block');
     return {
       id: generateId(),
       type: 'image',
@@ -478,8 +462,8 @@ export class ImagePlugin implements BlockPlugin {
         caption,
         width,
         height,
-        loading: 'lazy'
-      }
+        loading: 'lazy',
+      },
     };
   }
 
@@ -487,22 +471,22 @@ export class ImagePlugin implements BlockPlugin {
    * Parse markdown image syntax
    */
   parseMarkdown(text: string): EditorBlock | null {
-     const match = text.match(this.markdownSyntax!.patterns.block!);
+    const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
-    
+
     const alt = match[1] || 'Image';
     const url = match[2];
     const caption = match[3];
-    
+
     return {
       id: generateId(),
       type: 'image',
       content: url,
       meta: {
-         url,
-         alt: alt || 'Image',
-         caption: caption || ''
-       }
+        url,
+        alt: alt || 'Image',
+        caption: caption || '',
+      },
     };
   }
 
@@ -513,11 +497,11 @@ export class ImagePlugin implements BlockPlugin {
     const url = block.meta?.url || block.content;
     const alt = block.meta?.alt || 'Image';
     const caption = block.meta?.caption;
-    
+
     if (caption) {
-      return `![${alt}](${url} "${caption}")`;;
+      return `![${alt}](${url} "${caption}")`;
     }
-    
+
     return `![${alt}](${url})`;
   }
 }

@@ -26,21 +26,19 @@ export class PluginRegistry implements PluginRegistryInterface {
 
     if (plugin.type === 'block') {
       const blockPlugin = plugin as BlockPlugin;
-      
+
       // Check for block type conflicts
       if (this.blockPlugins.has(blockPlugin.blockType)) {
         console.warn(`Block type '${blockPlugin.blockType}' is already registered. Overriding.`);
       }
-      
+
       this.blockPlugins.set(blockPlugin.blockType, blockPlugin);
     } else if (plugin.type === 'markdown') {
       const markdownPlugin = plugin as MarkdownPlugin;
-      
+
       // Insert in priority order (higher priority first)
-      const insertIndex = this.markdownPlugins.findIndex(
-        p => p.syntax.priority < markdownPlugin.syntax.priority
-      );
-      
+      const insertIndex = this.markdownPlugins.findIndex(p => p.syntax.priority < markdownPlugin.syntax.priority);
+
       if (insertIndex === -1) {
         this.markdownPlugins.push(markdownPlugin);
       } else {
@@ -56,7 +54,7 @@ export class PluginRegistry implements PluginRegistryInterface {
    */
   unregister(pluginId: string): void {
     const plugin = this.plugins.get(pluginId);
-    
+
     if (!plugin) {
       console.warn(`Plugin '${pluginId}' not found`);
       return;
@@ -145,9 +143,8 @@ export class PluginRegistry implements PluginRegistryInterface {
    */
   searchPlugins(query: string): (BlockPlugin | MarkdownPlugin)[] {
     const lowerQuery = query.toLowerCase();
-    return this.getAllPlugins().filter(plugin => 
-      plugin.name.toLowerCase().includes(lowerQuery) ||
-      plugin.description?.toLowerCase().includes(lowerQuery)
+    return this.getAllPlugins().filter(
+      plugin => plugin.name.toLowerCase().includes(lowerQuery) || plugin.description?.toLowerCase().includes(lowerQuery)
     );
   }
 
@@ -163,8 +160,8 @@ export class PluginRegistry implements PluginRegistryInterface {
       byVersion: this.groupBy(allPlugins, 'version'),
       byType: {
         block: allPlugins.filter(p => p.type === 'block').length,
-        markdown: allPlugins.filter(p => p.type === 'markdown').length
-      }
+        markdown: allPlugins.filter(p => p.type === 'markdown').length,
+      },
     };
   }
 
@@ -200,7 +197,7 @@ export class PluginRegistry implements PluginRegistryInterface {
 
     if (plugin.type === 'block') {
       const blockPlugin = plugin as BlockPlugin;
-      
+
       if (!blockPlugin.blockType || typeof blockPlugin.blockType !== 'string') {
         throw new Error('Block plugin must have a valid blockType');
       }
@@ -214,7 +211,7 @@ export class PluginRegistry implements PluginRegistryInterface {
       }
     } else if (plugin.type === 'markdown') {
       const markdownPlugin = plugin as MarkdownPlugin;
-      
+
       if (!markdownPlugin.syntax || typeof markdownPlugin.syntax.priority !== 'number') {
         throw new Error('Markdown plugin must have syntax with priority');
       }
@@ -233,14 +230,17 @@ export class PluginRegistry implements PluginRegistryInterface {
    * Group array by property
    */
   private groupBy<T>(array: T[], property: keyof T): Record<string, T[]> {
-    return array.reduce((groups, item) => {
-      const key = String(item[property]);
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-      groups[key].push(item);
-      return groups;
-    }, {} as Record<string, T[]>);
+    return array.reduce(
+      (groups, item) => {
+        const key = String(item[property]);
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+        groups[key].push(item);
+        return groups;
+      },
+      {} as Record<string, T[]>
+    );
   }
 }
 

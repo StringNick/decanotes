@@ -17,20 +17,49 @@ export { PluginRegistry } from './plugins/PluginRegistry';
 
 // Export built-in plugins
 export {
-    CalloutPlugin, ChecklistPlugin, CodePlugin, DividerPlugin, HeadingPlugin, ImagePlugin, ListPlugin, ParagraphPlugin, QuotePlugin, VideoPlugin
+  CalloutPlugin,
+  ChecklistPlugin,
+  CodePlugin,
+  DividerPlugin,
+  HeadingPlugin,
+  ImagePlugin,
+  ListPlugin,
+  ParagraphPlugin,
+  QuotePlugin,
+  VideoPlugin,
 } from './plugins/built-in';
 
 // Export types
 export * from './types/EditorTypes';
 export type {
-    BasePlugin, BlockAction, BlockActionHandlerContext, BlockComponentProps, BlockController, BlockPlugin as BlockPluginDefinition, BlockSettings, CustomPluginOptions, EditorContext, EnhancedKeyboardResult, MarkdownParser, MarkdownPlugin as MarkdownPluginDefinition, MarkdownSerializer, MarkdownSyntax, PluginConfig, PluginRegistryInterface, ToolbarConfig,
-    ToolbarVariant, ValidationResult
+  BasePlugin,
+  BlockAction,
+  BlockActionHandlerContext,
+  BlockComponentProps,
+  BlockController,
+  BlockPlugin as BlockPluginDefinition,
+  BlockSettings,
+  CustomPluginOptions,
+  EditorContext,
+  EnhancedKeyboardResult,
+  MarkdownParser,
+  MarkdownPlugin as MarkdownPluginDefinition,
+  MarkdownSerializer,
+  MarkdownSyntax,
+  PluginConfig,
+  PluginRegistryInterface,
+  ToolbarConfig,
+  ToolbarVariant,
+  ValidationResult,
 } from './types/PluginTypes';
 
 // Export utilities
 export { createKeyboardShortcut, getShortcutDescription } from './EditorKeyboard';
 export {
-    createSimpleMarkdownPlugin, getMarkdownRegistry, parseMarkdownToBlocks, registerMarkdownSyntax, serializeBlocksToMarkdown
+  createSimpleMarkdownPlugin,
+  getMarkdownRegistry,
+  parseMarkdownToBlocks,
+  registerMarkdownSyntax,
+  serializeBlocksToMarkdown,
 } from './utils/MarkdownRegistry';
 export { createComponentPlugin, createCustomPlugin, createSimpleTextPlugin } from './utils/PluginFactory';
-

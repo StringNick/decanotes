@@ -2,7 +2,7 @@ import {
   MarkdownPlugin as IMarkdownPlugin,
   MarkdownSyntax,
   MarkdownParser,
-  MarkdownSerializer
+  MarkdownSerializer,
 } from '../types/PluginTypes';
 import { EditorBlock } from '../../../types/editor';
 
@@ -15,7 +15,7 @@ export abstract class MarkdownPlugin implements IMarkdownPlugin {
   abstract readonly name: string;
   abstract readonly version: string;
   abstract readonly syntax: MarkdownSyntax;
-  
+
   readonly type = 'markdown' as const;
   readonly description?: string;
   readonly parser: MarkdownParser;
@@ -24,7 +24,7 @@ export abstract class MarkdownPlugin implements IMarkdownPlugin {
   constructor(config: Partial<IMarkdownPlugin> = {}) {
     // Apply configuration
     Object.assign(this, config);
-    
+
     // Initialize parser and serializer
     this.parser = this.createParser();
     this.serializer = this.createSerializer();
@@ -37,7 +37,7 @@ export abstract class MarkdownPlugin implements IMarkdownPlugin {
     return {
       parseInline: this.parseInline.bind(this),
       parseBlock: this.parseBlock.bind(this),
-      canParse: this.canParse.bind(this)
+      canParse: this.canParse.bind(this),
     };
   }
 
@@ -48,12 +48,12 @@ export abstract class MarkdownPlugin implements IMarkdownPlugin {
     return {
       serializeInline: this.serializeInline.bind(this),
       serializeBlock: this.serializeBlock.bind(this),
-      canSerialize: this.canSerialize.bind(this)
+      canSerialize: this.canSerialize.bind(this),
     };
   }
 
   // Abstract methods that must be implemented
-  
+
   /**
    * Parse inline markdown syntax
    */
@@ -94,7 +94,7 @@ export abstract class MarkdownPlugin implements IMarkdownPlugin {
       version: this.version,
       description: this.description,
       syntax: this.syntax,
-      priority: this.syntax.priority
+      priority: this.syntax.priority,
     };
   }
 
@@ -104,9 +104,9 @@ export abstract class MarkdownPlugin implements IMarkdownPlugin {
   protected matchesPattern(text: string, type: 'inline' | 'block'): RegExpMatchArray | null {
     const patterns = this.syntax.patterns;
     const pattern = type === 'inline' ? patterns.inline : patterns.block;
-    
+
     if (!pattern) return null;
-    
+
     return text.match(pattern);
   }
 
@@ -134,22 +134,22 @@ export class VideoMarkdownPlugin extends MarkdownPlugin {
   readonly name = 'Video Markdown';
   readonly version = '1.0.0';
   readonly description = 'Support for video embeds in markdown';
-  
+
   readonly syntax: MarkdownSyntax = {
     patterns: {
       inline: /!\[video\]\(([^)]+)(?:\s+"([^"]+)")?\)/g,
-      block: /^!\[video\]\(([^)]+)(?:\s+"([^"]+)")?\)$/
+      block: /^!\[video\]\(([^)]+)(?:\s+"([^"]+)")?\)$/,
     },
-    priority: 60
+    priority: 60,
   };
 
   protected parseInline(text: string): string | null {
     const match = this.matchesPattern(text, 'inline');
     if (!match) return null;
-    
+
     const url = this.extractContent(match, 1);
     const title = this.extractContent(match, 2) || 'Video';
-    
+
     // Return HTML for inline video
     return `<video controls title="${title}"><source src="${url}" /></video>`;
   }
@@ -157,10 +157,10 @@ export class VideoMarkdownPlugin extends MarkdownPlugin {
   protected parseBlock(text: string): EditorBlock | null {
     const match = this.matchesPattern(text, 'block');
     if (!match) return null;
-    
+
     const url = this.extractContent(match, 1);
     const title = this.extractContent(match, 2) || 'Video';
-    
+
     return {
       id: this.generateId(),
       type: 'video',
@@ -168,8 +168,8 @@ export class VideoMarkdownPlugin extends MarkdownPlugin {
       meta: {
         title,
         url,
-        type: 'video'
-      }
+        type: 'video',
+      },
     };
   }
 
@@ -194,8 +194,7 @@ export class VideoMarkdownPlugin extends MarkdownPlugin {
   }
 
   protected canSerialize(content: any): boolean {
-    return (typeof content === 'object' && content.type === 'video') ||
-           (content.type === 'video' && content.meta?.url);
+    return (typeof content === 'object' && content.type === 'video') || (content.type === 'video' && content.meta?.url);
   }
 }
 
@@ -208,12 +207,12 @@ export class CalloutMarkdownPlugin extends MarkdownPlugin {
   readonly name = 'Callout Markdown';
   readonly version = '1.0.0';
   readonly description = 'Support for callout blocks in markdown';
-  
+
   readonly syntax: MarkdownSyntax = {
     patterns: {
-      block: /^>\s*\[!(NOTE|TIP|WARNING|DANGER|INFO)\]\s*(.*)$/m
+      block: /^>\s*\[!(NOTE|TIP|WARNING|DANGER|INFO)\]\s*(.*)$/m,
     },
-    priority: 70
+    priority: 70,
   };
 
   protected parseInline(text: string): string | null {
@@ -224,15 +223,15 @@ export class CalloutMarkdownPlugin extends MarkdownPlugin {
   protected parseBlock(text: string): EditorBlock | null {
     const match = this.matchesPattern(text, 'block');
     if (!match) return null;
-    
+
     const type = this.extractContent(match, 1).toLowerCase();
     const title = this.extractContent(match, 2) || type.toUpperCase();
-    
+
     // Extract content after the callout header
     const lines = text.split('\n');
     const contentLines = lines.slice(1).map(line => line.replace(/^>\s*/, ''));
     const content = contentLines.join('\n').trim();
-    
+
     return {
       id: this.generateId(),
       type: 'callout',
@@ -240,8 +239,8 @@ export class CalloutMarkdownPlugin extends MarkdownPlugin {
       meta: {
         calloutType: type.toLowerCase() as 'note' | 'tip' | 'warning' | 'danger' | 'info',
         title,
-        variant: type
-      }
+        variant: type,
+      },
     };
   }
 
@@ -257,8 +256,11 @@ export class CalloutMarkdownPlugin extends MarkdownPlugin {
     if (block.type === 'callout' && block.meta?.calloutType) {
       const type = block.meta.calloutType.toUpperCase();
       const title = block.meta.title || type;
-      const content = block.content.split('\n').map(line => `> ${line}`).join('\n');
-      
+      const content = block.content
+        .split('\n')
+        .map(line => `> ${line}`)
+        .join('\n');
+
       return `> [!${type}] ${title}\n${content}`;
     }
     return null;
@@ -290,13 +292,13 @@ export function createSimpleMarkdownPlugin(config: {
     readonly name = config.name;
     readonly version = config.version;
     readonly description = config.description;
-    
+
     readonly syntax: MarkdownSyntax = {
       patterns: {
         inline: config.inlinePattern,
-        block: config.blockPattern
+        block: config.blockPattern,
       },
-      priority: config.priority || 50
+      priority: config.priority || 50,
     };
 
     protected parseInline(text: string): string | null {
@@ -312,8 +314,7 @@ export function createSimpleMarkdownPlugin(config: {
     }
 
     protected canParse(text: string): boolean {
-      return this.matchesPattern(text, 'inline') !== null || 
-             this.matchesPattern(text, 'block') !== null;
+      return this.matchesPattern(text, 'inline') !== null || this.matchesPattern(text, 'block') !== null;
     }
 
     protected serializeInline(content: any): string | null {
@@ -325,8 +326,10 @@ export function createSimpleMarkdownPlugin(config: {
     }
 
     protected canSerialize(content: any): boolean {
-      return !!(config.serializeInline && config.serializeInline(content) !== null) ||
-             !!(config.serializeBlock && config.serializeBlock(content) !== null);
+      return (
+        !!(config.serializeInline && config.serializeInline(content) !== null) ||
+        !!(config.serializeBlock && config.serializeBlock(content) !== null)
+      );
     }
   })();
 }

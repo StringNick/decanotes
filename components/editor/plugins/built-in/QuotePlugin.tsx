@@ -1,5 +1,13 @@
 import React, { forwardRef, useImperativeHandle, useRef, useMemo, useState, useEffect, useCallback } from 'react';
-import { Animated, StyleSheet, Text, TextInput, View, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  NativeSyntheticEvent,
+  TextInputKeyPressEventData,
+} from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -48,9 +56,7 @@ const ensureLineDepths = (
 ): number[] => {
   const depths: number[] = [];
   for (let i = 0; i < lineCount; i += 1) {
-    const depth = storedDepths && storedDepths[i] !== undefined
-      ? storedDepths[i]
-      : fallbackDepth;
+    const depth = storedDepths && storedDepths[i] !== undefined ? storedDepths[i] : fallbackDepth;
     depths.push(clampDepth(depth));
   }
   return depths;
@@ -67,10 +73,7 @@ const buildDisplayValue = (lines: string[], depths: number[]): string => {
     .join('\n');
 };
 
-const parseQuoteInput = (
-  text: string,
-  previousDepths: number[]
-): { lines: string[]; depths: number[] } => {
+const parseQuoteInput = (text: string, previousDepths: number[]): { lines: string[]; depths: number[] } => {
   const normalizedText = text.replace(/\r/g, '');
   const rawLines = normalizedText.split('\n');
   const resultLines: string[] = [];
@@ -127,348 +130,352 @@ const getLineStartPosition = (text: string, lineIndex: number): number => {
 /**
  * Quote block component with multi-line and per-line depth support
  */
-const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(({
-  block,
-  onBlockChange,
-  onUpdate,
-  onFocus,
-  onBlur,
-  onKeyPress,
-  isSelected,
-  isFocused,
-  isEditing,
-  style
-}, ref) => {
-  const inputRef = useRef<TextInput>(null);
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const isDark = colorScheme === 'dark';
-  const [inputValue, setInputValue] = useState('');
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const [activeLineIndex, setActiveLineIndex] = useState(0);
-  const animatedValue = useRef(new Animated.Value(0)).current;
-  const latestValueRef = useRef('');
+const QuoteComponent = forwardRef<TextInput, BlockComponentProps>(
+  ({ block, onBlockChange, onUpdate, onFocus, onBlur, onKeyPress, isSelected, isFocused, isEditing, style }, ref) => {
+    const inputRef = useRef<TextInput>(null);
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const isDark = colorScheme === 'dark';
+    const [inputValue, setInputValue] = useState('');
+    const [cursorPosition, setCursorPosition] = useState(0);
+    const [activeLineIndex, setActiveLineIndex] = useState(0);
+    const animatedValue = useRef(new Animated.Value(0)).current;
+    const latestValueRef = useRef('');
 
-  useImperativeHandle(ref, () => inputRef.current as TextInput);
+    useImperativeHandle(ref, () => inputRef.current as TextInput);
 
-  const shouldFocus = isFocused || isEditing;
+    const shouldFocus = isFocused || isEditing;
 
-  const contentLines = useMemo(() => {
-    const raw = (block.content ?? '').replace(/\r/g, '');
-    return raw.length > 0 ? raw.split('\n') : [''];
-  }, [block.content]);
+    const contentLines = useMemo(() => {
+      const raw = (block.content ?? '').replace(/\r/g, '');
+      return raw.length > 0 ? raw.split('\n') : [''];
+    }, [block.content]);
 
-  const storedDepths = (block.meta?.quoteLineDepths as number[] | undefined)
-    || (block.meta?.depth !== undefined ? [block.meta.depth] : undefined);
+    const storedDepths =
+      (block.meta?.quoteLineDepths as number[] | undefined) ||
+      (block.meta?.depth !== undefined ? [block.meta.depth] : undefined);
 
-  const lineDepths = useMemo(
-    () => ensureLineDepths(contentLines.length, storedDepths, block.meta?.depth ?? DEFAULT_QUOTE_DEPTH),
-    [contentLines.length, storedDepths, block.meta?.depth]
-  );
-
-  const primaryDepth = lineDepths[0] ?? DEFAULT_QUOTE_DEPTH;
-
-  const displayValue = useMemo(
-    () => buildDisplayValue(contentLines, lineDepths),
-    [contentLines, lineDepths]
-  );
-
-  useEffect(() => {
-    if (inputValue !== displayValue) {
-      setInputValue(displayValue);
-      latestValueRef.current = displayValue;
-    }
-  }, [displayValue]);
-
-  useEffect(() => {
-    latestValueRef.current = inputValue;
-  }, [inputValue]);
-
-  useEffect(() => {
-    const persistedCursor = getQuoteCursorState(block.id);
-    if (persistedCursor) {
-      const lineIndex = Math.max(0, Math.min(persistedCursor.lineIndex, lineDepths.length - 1));
-      const position = Math.max(0, Math.min(persistedCursor.position, latestValueRef.current.length));
-      setActiveLineIndex(lineIndex);
-      setCursorPosition(position);
-    } else {
-      const defaultLineIndex = Math.max(lineDepths.length - 1, 0);
-      const position = latestValueRef.current.length;
-      setActiveLineIndex(defaultLineIndex);
-      setCursorPosition(position);
-    }
-  }, [block.id]);
-
-  useEffect(() => {
-    if (activeLineIndex >= lineDepths.length) {
-      setActiveLineIndex(Math.max(lineDepths.length - 1, 0));
-    }
-  }, [lineDepths.length, activeLineIndex]);
-
-  useEffect(() => {
-    return () => {
-      clearQuoteCursorState(block.id);
-    };
-  }, [block.id]);
-
-  useEffect(() => {
-    Animated.timing(animatedValue, {
-      toValue: shouldFocus ? 1 : 0,
-      duration: ANIMATION_CONFIG.duration,
-      useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
-    }).start();
-  }, [shouldFocus, animatedValue]);
-
-  const handleTextChange = (text: string) => {
-    setInputValue(text);
-    latestValueRef.current = text;
-
-    const { lines, depths } = parseQuoteInput(text, lineDepths);
-    const normalizedLines = lines.length > 0 ? lines : [''];
-    const normalizedDepths = ensureLineDepths(
-      normalizedLines.length,
-      depths,
-      depths[0] ?? lineDepths[0] ?? DEFAULT_QUOTE_DEPTH
+    const lineDepths = useMemo(
+      () => ensureLineDepths(contentLines.length, storedDepths, block.meta?.depth ?? DEFAULT_QUOTE_DEPTH),
+      [contentLines.length, storedDepths, block.meta?.depth]
     );
 
-    const previousLineCount = contentLines.length;
-    const newLineCount = normalizedLines.length;
-    if (newLineCount !== previousLineCount) {
-      let targetIndex = activeLineIndex;
-      const delta = newLineCount - previousLineCount;
-      if (delta > 0) {
-        targetIndex = Math.min(newLineCount - 1, activeLineIndex + delta);
-      } else if (targetIndex >= newLineCount) {
-        targetIndex = Math.max(newLineCount - 1, 0);
-      }
-      const newPosition = text.length;
-      setActiveLineIndex(targetIndex);
-      setCursorPosition(newPosition);
-      setQuoteCursorState(block.id, { position: newPosition, lineIndex: targetIndex });
-    }
+    const primaryDepth = lineDepths[0] ?? DEFAULT_QUOTE_DEPTH;
 
-    const updatedMeta = {
-      ...(block.meta ?? {}),
-      depth: normalizedDepths[0] ?? DEFAULT_QUOTE_DEPTH,
-      quoteLineDepths: normalizedDepths,
+    const displayValue = useMemo(() => buildDisplayValue(contentLines, lineDepths), [contentLines, lineDepths]);
+
+    useEffect(() => {
+      if (inputValue !== displayValue) {
+        setInputValue(displayValue);
+        latestValueRef.current = displayValue;
+      }
+    }, [displayValue]);
+
+    useEffect(() => {
+      latestValueRef.current = inputValue;
+    }, [inputValue]);
+
+    useEffect(() => {
+      const persistedCursor = getQuoteCursorState(block.id);
+      if (persistedCursor) {
+        const lineIndex = Math.max(0, Math.min(persistedCursor.lineIndex, lineDepths.length - 1));
+        const position = Math.max(0, Math.min(persistedCursor.position, latestValueRef.current.length));
+        setActiveLineIndex(lineIndex);
+        setCursorPosition(position);
+      } else {
+        const defaultLineIndex = Math.max(lineDepths.length - 1, 0);
+        const position = latestValueRef.current.length;
+        setActiveLineIndex(defaultLineIndex);
+        setCursorPosition(position);
+      }
+    }, [block.id]);
+
+    useEffect(() => {
+      if (activeLineIndex >= lineDepths.length) {
+        setActiveLineIndex(Math.max(lineDepths.length - 1, 0));
+      }
+    }, [lineDepths.length, activeLineIndex]);
+
+    useEffect(() => {
+      return () => {
+        clearQuoteCursorState(block.id);
+      };
+    }, [block.id]);
+
+    useEffect(() => {
+      Animated.timing(animatedValue, {
+        toValue: shouldFocus ? 1 : 0,
+        duration: ANIMATION_CONFIG.duration,
+        useNativeDriver: ANIMATION_CONFIG.useNativeDriver,
+      }).start();
+    }, [shouldFocus, animatedValue]);
+
+    const handleTextChange = (text: string) => {
+      setInputValue(text);
+      latestValueRef.current = text;
+
+      const { lines, depths } = parseQuoteInput(text, lineDepths);
+      const normalizedLines = lines.length > 0 ? lines : [''];
+      const normalizedDepths = ensureLineDepths(
+        normalizedLines.length,
+        depths,
+        depths[0] ?? lineDepths[0] ?? DEFAULT_QUOTE_DEPTH
+      );
+
+      const previousLineCount = contentLines.length;
+      const newLineCount = normalizedLines.length;
+      if (newLineCount !== previousLineCount) {
+        let targetIndex = activeLineIndex;
+        const delta = newLineCount - previousLineCount;
+        if (delta > 0) {
+          targetIndex = Math.min(newLineCount - 1, activeLineIndex + delta);
+        } else if (targetIndex >= newLineCount) {
+          targetIndex = Math.max(newLineCount - 1, 0);
+        }
+        const newPosition = text.length;
+        setActiveLineIndex(targetIndex);
+        setCursorPosition(newPosition);
+        setQuoteCursorState(block.id, { position: newPosition, lineIndex: targetIndex });
+      }
+
+      const updatedMeta = {
+        ...(block.meta ?? {}),
+        depth: normalizedDepths[0] ?? DEFAULT_QUOTE_DEPTH,
+        quoteLineDepths: normalizedDepths,
+      };
+
+      if (onBlockChange) {
+        onBlockChange({
+          content: normalizedLines.join('\n'),
+          meta: updatedMeta,
+        });
+      } else if (onUpdate) {
+        onUpdate({
+          ...block,
+          content: normalizedLines.join('\n'),
+          meta: updatedMeta,
+        });
+      }
     };
 
-    if (onBlockChange) {
-      onBlockChange({
-        content: normalizedLines.join('\n'),
-        meta: updatedMeta,
-      });
-    } else if (onUpdate) {
-      onUpdate({
-        ...block,
-        content: normalizedLines.join('\n'),
-        meta: updatedMeta,
-      });
-    }
-  };
-
-  const handleSelectionChange = (event: any) => {
-    const position = event.nativeEvent.selection.start;
-    setCursorPosition(position);
-
-    const currentValue = latestValueRef.current;
-    const lineIndex = getLineIndexFromPosition(currentValue, position);
-    setActiveLineIndex(lineIndex);
-
-    setQuoteCursorState(block.id, { position, lineIndex });
-  };
-
-  const handleKeyPress = (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    const key = event.nativeEvent.key;
-
-    if (key === 'Backspace') {
-      const lineStart = getLineStartPosition(inputValue, activeLineIndex);
-      const offsetInLine = cursorPosition - lineStart;
-      const currentDepth = lineDepths[activeLineIndex] ?? DEFAULT_QUOTE_DEPTH;
-      const indentBoundary = Math.max((currentDepth - 1) * SPACES_PER_DEPTH, 0);
-
-      if (offsetInLine <= indentBoundary && currentDepth > DEFAULT_QUOTE_DEPTH) {
-        event.preventDefault();
-        const nextDepths = [...lineDepths];
-        nextDepths[activeLineIndex] = clampDepth(currentDepth - 1);
-
-        const updatedMeta = {
-          ...(block.meta ?? {}),
-          depth: nextDepths[0] ?? DEFAULT_QUOTE_DEPTH,
-          quoteLineDepths: nextDepths,
-        };
-
-        if (onBlockChange) {
-          onBlockChange({ meta: updatedMeta });
-        } else if (onUpdate) {
-          onUpdate({
-            ...block,
-            meta: updatedMeta,
-          });
-        }
-        return;
-      }
-
-      const isSingleLine = contentLines.length <= 1;
-      const lineContent = contentLines[activeLineIndex] ?? '';
-
-      if (offsetInLine === 0 && currentDepth === DEFAULT_QUOTE_DEPTH && isSingleLine && lineContent.length > 0) {
-        const markdownPrefix = '>'.repeat(currentDepth);
-        const paragraphContent = `${markdownPrefix}${lineContent}`;
-
-        if (onBlockChange) {
-          onBlockChange({
-            type: 'paragraph' as EditorBlockType,
-            content: paragraphContent,
-            meta: {},
-          });
-        } else if (onUpdate) {
-          onUpdate({
-            ...block,
-            type: 'paragraph',
-            content: paragraphContent,
-            meta: {},
-          });
-        }
-
-        event.preventDefault();
-        return;
-      }
-    }
-
-    onKeyPress?.(event);
-  };
-
-  const handleBlur = () => {
-    clearQuoteCursorState(block.id);
-    onBlur?.();
-  };
-
-  const handleFocus = () => {
-    const persisted = getQuoteCursorState(block.id);
-    if (persisted) {
-      const lineIndex = Math.max(0, Math.min(persisted.lineIndex, lineDepths.length - 1));
-      const position = Math.max(0, Math.min(persisted.position, latestValueRef.current.length));
-      setActiveLineIndex(lineIndex);
+    const handleSelectionChange = (event: any) => {
+      const position = event.nativeEvent.selection.start;
       setCursorPosition(position);
+
+      const currentValue = latestValueRef.current;
+      const lineIndex = getLineIndexFromPosition(currentValue, position);
+      setActiveLineIndex(lineIndex);
+
       setQuoteCursorState(block.id, { position, lineIndex });
-    } else {
-      const defaultLineIndex = Math.max(lineDepths.length - 1, 0);
-      const position = latestValueRef.current.length;
-      setActiveLineIndex(defaultLineIndex);
-      setCursorPosition(position);
-      setQuoteCursorState(block.id, { position, lineIndex: defaultLineIndex });
-    }
-    onFocus?.();
-  };
+    };
 
-const styles = useMemo(() => getStyles(colorScheme ?? 'light', primaryDepth), [colorScheme, primaryDepth]);
-const focusColors = getQuoteFocusColors(colorScheme ?? 'light', shouldFocus || false);
-const activeRowColor = colorScheme === 'dark'
-  ? 'rgba(148, 193, 255, 0.12)'
-  : 'rgba(37, 99, 235, 0.08)';
-const getDepthColor = useCallback((level: number) => {
-  const baseColors = colorScheme === 'dark'
-    ? ['rgba(148, 193, 255, 0.35)', 'rgba(56, 189, 248, 0.4)', 'rgba(16, 185, 129, 0.35)', 'rgba(249, 115, 22, 0.35)', 'rgba(241, 171, 255, 0.4)']
-    : ['rgba(37, 99, 235, 0.25)', 'rgba(14, 165, 233, 0.25)', 'rgba(34, 197, 94, 0.25)', 'rgba(249, 115, 22, 0.2)', 'rgba(168, 85, 247, 0.2)'];
-  return baseColors[level % baseColors.length];
-}, [colorScheme]);
+    const handleKeyPress = (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+      const key = event.nativeEvent.key;
 
-  const depthOverlay = useMemo(() => {
-    return (
-      <View style={styles.depthOverlay} pointerEvents="none">
-        {lineDepths.map((depth, index) => {
-          const isActive = index === activeLineIndex;
-          return (
-            <View
-              key={`depth-row-${index}`}
-              style={[
-                styles.depthRow,
-                {
-                  top: index * LINE_HEIGHT,
-                  backgroundColor: isActive ? activeRowColor : 'transparent',
-                }
-              ]}
-            >
-              {Array.from({ length: depth }).map((_, depthIndex) => (
-                <View
-                  key={`depth-bar-${index}-${depthIndex}`}
-                  style={[
-                    styles.depthBar,
-                    {
-                      left: depthIndex * (DEPTH_BAR_WIDTH + DEPTH_BAR_GAP),
-                      backgroundColor: getDepthColor(depthIndex),
-                    }
-                  ]}
-                />
-              ))}
-            </View>
-          );
-        })}
-      </View>
+      if (key === 'Backspace') {
+        const lineStart = getLineStartPosition(inputValue, activeLineIndex);
+        const offsetInLine = cursorPosition - lineStart;
+        const currentDepth = lineDepths[activeLineIndex] ?? DEFAULT_QUOTE_DEPTH;
+        const indentBoundary = Math.max((currentDepth - 1) * SPACES_PER_DEPTH, 0);
+
+        if (offsetInLine <= indentBoundary && currentDepth > DEFAULT_QUOTE_DEPTH) {
+          event.preventDefault();
+          const nextDepths = [...lineDepths];
+          nextDepths[activeLineIndex] = clampDepth(currentDepth - 1);
+
+          const updatedMeta = {
+            ...(block.meta ?? {}),
+            depth: nextDepths[0] ?? DEFAULT_QUOTE_DEPTH,
+            quoteLineDepths: nextDepths,
+          };
+
+          if (onBlockChange) {
+            onBlockChange({ meta: updatedMeta });
+          } else if (onUpdate) {
+            onUpdate({
+              ...block,
+              meta: updatedMeta,
+            });
+          }
+          return;
+        }
+
+        const isSingleLine = contentLines.length <= 1;
+        const lineContent = contentLines[activeLineIndex] ?? '';
+
+        if (offsetInLine === 0 && currentDepth === DEFAULT_QUOTE_DEPTH && isSingleLine && lineContent.length > 0) {
+          const markdownPrefix = '>'.repeat(currentDepth);
+          const paragraphContent = `${markdownPrefix}${lineContent}`;
+
+          if (onBlockChange) {
+            onBlockChange({
+              type: 'paragraph' as EditorBlockType,
+              content: paragraphContent,
+              meta: {},
+            });
+          } else if (onUpdate) {
+            onUpdate({
+              ...block,
+              type: 'paragraph',
+              content: paragraphContent,
+              meta: {},
+            });
+          }
+
+          event.preventDefault();
+          return;
+        }
+      }
+
+      onKeyPress?.(event);
+    };
+
+    const handleBlur = () => {
+      clearQuoteCursorState(block.id);
+      onBlur?.();
+    };
+
+    const handleFocus = () => {
+      const persisted = getQuoteCursorState(block.id);
+      if (persisted) {
+        const lineIndex = Math.max(0, Math.min(persisted.lineIndex, lineDepths.length - 1));
+        const position = Math.max(0, Math.min(persisted.position, latestValueRef.current.length));
+        setActiveLineIndex(lineIndex);
+        setCursorPosition(position);
+        setQuoteCursorState(block.id, { position, lineIndex });
+      } else {
+        const defaultLineIndex = Math.max(lineDepths.length - 1, 0);
+        const position = latestValueRef.current.length;
+        setActiveLineIndex(defaultLineIndex);
+        setCursorPosition(position);
+        setQuoteCursorState(block.id, { position, lineIndex: defaultLineIndex });
+      }
+      onFocus?.();
+    };
+
+    const styles = useMemo(() => getStyles(colorScheme ?? 'light', primaryDepth), [colorScheme, primaryDepth]);
+    const focusColors = getQuoteFocusColors(colorScheme ?? 'light', shouldFocus || false);
+    const activeRowColor = colorScheme === 'dark' ? 'rgba(148, 193, 255, 0.12)' : 'rgba(37, 99, 235, 0.08)';
+    const getDepthColor = useCallback(
+      (level: number) => {
+        const baseColors =
+          colorScheme === 'dark'
+            ? [
+                'rgba(148, 193, 255, 0.35)',
+                'rgba(56, 189, 248, 0.4)',
+                'rgba(16, 185, 129, 0.35)',
+                'rgba(249, 115, 22, 0.35)',
+                'rgba(241, 171, 255, 0.4)',
+              ]
+            : [
+                'rgba(37, 99, 235, 0.25)',
+                'rgba(14, 165, 233, 0.25)',
+                'rgba(34, 197, 94, 0.25)',
+                'rgba(249, 115, 22, 0.2)',
+                'rgba(168, 85, 247, 0.2)',
+              ];
+        return baseColors[level % baseColors.length];
+      },
+      [colorScheme]
     );
-  }, [lineDepths, activeLineIndex, activeRowColor, getDepthColor, styles.depthOverlay, styles.depthRow, styles.depthBar]);
 
-  const animatedBarColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [
-      isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
-      focusColors.barColor,
-    ],
-  });
-
-  const animatedBackgroundColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
-  });
-
-  const author = block.meta?.author;
-  const source = block.meta?.source;
-
-  return (
-    <View style={[styles.container, style]}>
-      <Animated.View
-        style={[styles.quoteContainer, { backgroundColor: animatedBackgroundColor }]}
-      >
-        <View style={styles.quoteMarkMinimal}>
-          <Animated.View
-            style={[styles.quoteBarMinimal, { backgroundColor: animatedBarColor }]}
-          />
+    const depthOverlay = useMemo(() => {
+      return (
+        <View style={styles.depthOverlay} pointerEvents="none">
+          {lineDepths.map((depth, index) => {
+            const isActive = index === activeLineIndex;
+            return (
+              <View
+                key={`depth-row-${index}`}
+                style={[
+                  styles.depthRow,
+                  {
+                    top: index * LINE_HEIGHT,
+                    backgroundColor: isActive ? activeRowColor : 'transparent',
+                  },
+                ]}
+              >
+                {Array.from({ length: depth }).map((_, depthIndex) => (
+                  <View
+                    key={`depth-bar-${index}-${depthIndex}`}
+                    style={[
+                      styles.depthBar,
+                      {
+                        left: depthIndex * (DEPTH_BAR_WIDTH + DEPTH_BAR_GAP),
+                        backgroundColor: getDepthColor(depthIndex),
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            );
+          })}
         </View>
+      );
+    }, [
+      lineDepths,
+      activeLineIndex,
+      activeRowColor,
+      getDepthColor,
+      styles.depthOverlay,
+      styles.depthRow,
+      styles.depthBar,
+    ]);
 
-        <View style={styles.content}>
-          <View style={styles.inputWrapper}>
-            {depthOverlay}
-            <FormattedTextInput
-              ref={inputRef}
-              value={inputValue}
-              onChangeText={handleTextChange}
-              onSelectionChange={handleSelectionChange}
-              onKeyPress={handleKeyPress}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              placeholder="Quote..."
-              placeholderTextColor={colors.textSecondary}
-              isSelected={isSelected}
-              isEditing={isEditing}
-              multiline
-              textAlignVertical="top"
-              scrollEnabled={false}
-              style={styles.textInput}
-            />
+    const animatedBarColor = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)', focusColors.barColor],
+    });
+
+    const animatedBackgroundColor = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['rgba(0, 0, 0, 0)', focusColors.backgroundColor],
+    });
+
+    const author = block.meta?.author;
+    const source = block.meta?.source;
+
+    return (
+      <View style={[styles.container, style]}>
+        <Animated.View style={[styles.quoteContainer, { backgroundColor: animatedBackgroundColor }]}>
+          <View style={styles.quoteMarkMinimal}>
+            <Animated.View style={[styles.quoteBarMinimal, { backgroundColor: animatedBarColor }]} />
           </View>
 
-          {(author || source) && (
-            <View style={styles.attribution}>
-              {author && <Text style={styles.author}>— {author}</Text>}
-              {source && <Text style={styles.source}>{source}</Text>}
+          <View style={styles.content}>
+            <View style={styles.inputWrapper}>
+              {depthOverlay}
+              <FormattedTextInput
+                ref={inputRef}
+                value={inputValue}
+                onChangeText={handleTextChange}
+                onSelectionChange={handleSelectionChange}
+                onKeyPress={handleKeyPress}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                placeholder="Quote..."
+                placeholderTextColor={colors.textSecondary}
+                isSelected={isSelected}
+                isEditing={isEditing}
+                multiline
+                textAlignVertical="top"
+                scrollEnabled={false}
+                style={styles.textInput}
+              />
             </View>
-          )}
-        </View>
-      </Animated.View>
-    </View>
-  );
-});
+
+            {(author || source) && (
+              <View style={styles.attribution}>
+                {author && <Text style={styles.author}>— {author}</Text>}
+                {source && <Text style={styles.source}>{source}</Text>}
+              </View>
+            )}
+          </View>
+        </Animated.View>
+      </View>
+    );
+  }
+);
 
 QuoteComponent.displayName = 'QuoteComponent';
 
@@ -573,27 +580,27 @@ export class QuotePlugin extends BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^(>+)\s*(.*)$/  // Match one or more '>' followed by optional content
+      block: /^(>+)\s*(.*)$/, // Match one or more '>' followed by optional content
     },
-    priority: 75
+    priority: 75,
   };
 
   readonly toolbar = {
     icon: 'quote-left',
     label: 'Quote',
     shortcut: 'Ctrl+Shift+.',
-    group: 'text'
+    group: 'text',
   };
 
   readonly settings = {
     allowedParents: ['root', 'callout'] as EditorBlockType[],
     validation: {
-      maxLength: 10000
+      maxLength: 10000,
     },
     defaultMeta: {
       depth: DEFAULT_QUOTE_DEPTH,
-      quoteLineDepths: [DEFAULT_QUOTE_DEPTH]
-    }
+      quoteLineDepths: [DEFAULT_QUOTE_DEPTH],
+    },
   };
 
   // constructor() {
@@ -615,10 +622,10 @@ export class QuotePlugin extends BlockPlugin {
         id: generateId(),
         type: 'paragraph',
         content: '',
-        meta: {}
+        meta: {},
       };
     }
-    
+
     return [
       block,
       {
@@ -627,9 +634,9 @@ export class QuotePlugin extends BlockPlugin {
         content: '',
         meta: {
           depth: currentDepth,
-          quoteLineDepths: [currentDepth]
-        }
-      }
+          quoteLineDepths: [currentDepth],
+        },
+      },
     ];
   }
 
@@ -650,24 +657,24 @@ export class QuotePlugin extends BlockPlugin {
         ...block,
         type: 'paragraph',
         content: '',
-        meta: {}
+        meta: {},
       };
     }
-    
+
     return {
       ...block,
       meta: {
         ...(block.meta ?? {}),
         depth: lineDepths[0] ?? DEFAULT_QUOTE_DEPTH,
-        quoteLineDepths: lineDepths
-      }
+        quoteLineDepths: lineDepths,
+      },
     };
   }
 
   protected transformContent(content: string): string {
     const normalized = content.replace(/\r/g, '');
     const lines = normalized.split('\n');
-    const cleanLines = lines.map((line) => line.replace(/^>+\s*/, ''));
+    const cleanLines = lines.map(line => line.replace(/^>+\s*/, ''));
     return cleanLines.join('\n');
   }
 
@@ -688,24 +695,20 @@ export class QuotePlugin extends BlockPlugin {
   ): EditorBlock {
     const normalizedContent = content.replace(/\r/g, '');
     const lines = normalizedContent.length > 0 ? normalizedContent.split('\n') : [''];
-    const resolvedDepths = ensureLineDepths(
-      lines.length,
-      lineDepths,
-      depth
-    );
+    const resolvedDepths = ensureLineDepths(lines.length, lineDepths, depth);
 
     const meta: Record<string, any> = {
       depth: resolvedDepths[0] ?? DEFAULT_QUOTE_DEPTH,
-      quoteLineDepths: resolvedDepths
+      quoteLineDepths: resolvedDepths,
     };
     if (author) meta.author = author;
     if (source) meta.source = source;
-    
+
     return {
       id: generateId(),
       type: 'quote',
       content: normalizedContent,
-      meta
+      meta,
     };
   }
 
@@ -725,7 +728,7 @@ export class QuotePlugin extends BlockPlugin {
         ...(block.meta ?? {}),
         depth: lineDepths[0] ?? DEFAULT_QUOTE_DEPTH,
         quoteLineDepths: lineDepths,
-      }
+      },
     };
   }
 
@@ -745,7 +748,7 @@ export class QuotePlugin extends BlockPlugin {
         ...(newBlock.meta ?? {}),
         depth: lineDepths[0] ?? DEFAULT_QUOTE_DEPTH,
         quoteLineDepths: lineDepths,
-      }
+      },
     };
   }
 
@@ -755,7 +758,7 @@ export class QuotePlugin extends BlockPlugin {
    * > depth 1
    * >> depth 2
    * >>> depth 3
-   * 
+   *
    * Multi-line quotes with same depth are combined:
    * > line 1
    * > line 2
@@ -764,11 +767,11 @@ export class QuotePlugin extends BlockPlugin {
   parseMarkdown(text: string): EditorBlock | null {
     const match = text.match(this.markdownSyntax!.patterns.block!);
     if (!match) return null;
-    
+
     const quoteMarkers = match[1]; // The '>' characters
     const content = match[2]; // The actual content
     const depth = quoteMarkers.length; // Count the number of '>'
-    
+
     return this.createQuoteBlock(content, depth);
   }
 
@@ -814,8 +817,8 @@ export class QuotePlugin extends BlockPlugin {
       meta: {
         ...(block.meta ?? {}),
         depth: lineDepths[0] ?? DEFAULT_QUOTE_DEPTH,
-        quoteLineDepths: lineDepths
-      }
+        quoteLineDepths: lineDepths,
+      },
     };
   }
 
@@ -831,7 +834,7 @@ export class QuotePlugin extends BlockPlugin {
       block.meta?.depth ?? DEFAULT_QUOTE_DEPTH
     );
 
-    const updatedDepths = lineDepths.map((depth) => clampDepth(depth - 1));
+    const updatedDepths = lineDepths.map(depth => clampDepth(depth - 1));
     const allDepthOne = updatedDepths.every(depth => depth === DEFAULT_QUOTE_DEPTH);
 
     if (allDepthOne && normalizedContent.trim().length === 0) {
@@ -839,7 +842,7 @@ export class QuotePlugin extends BlockPlugin {
         ...block,
         type: 'paragraph',
         content: '',
-        meta: {}
+        meta: {},
       };
     }
 
@@ -848,8 +851,8 @@ export class QuotePlugin extends BlockPlugin {
       meta: {
         ...(block.meta ?? {}),
         depth: updatedDepths[0] ?? DEFAULT_QUOTE_DEPTH,
-        quoteLineDepths: updatedDepths
-      }
+        quoteLineDepths: updatedDepths,
+      },
     };
   }
 }

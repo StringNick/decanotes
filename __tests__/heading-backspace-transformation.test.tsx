@@ -11,15 +11,15 @@ const simulateBackspaceAtStart = (block: EditorBlock, cursorPosition: number) =>
   if (cursorPosition === 0) {
     const level = block.meta?.level || 1;
     const markdownPrefix = '#'.repeat(level);
-    
+
     return {
       ...block,
       type: 'paragraph',
       content: `${markdownPrefix}${block.content}`,
-      meta: {}
+      meta: {},
     };
   }
-  
+
   return null;
 };
 
@@ -33,7 +33,7 @@ describe('Heading Backspace Transformation', () => {
       id: 'test-heading-1',
       type: 'heading',
       content: 'Test Heading',
-      meta: { level: 1 }
+      meta: { level: 1 },
     };
 
     const result = simulateBackspaceAtStart(block, 0);
@@ -49,7 +49,7 @@ describe('Heading Backspace Transformation', () => {
       id: 'test-heading-2',
       type: 'heading',
       content: 'Secondary Heading',
-      meta: { level: 2 }
+      meta: { level: 2 },
     };
 
     const result = simulateBackspaceAtStart(block, 0);
@@ -65,7 +65,7 @@ describe('Heading Backspace Transformation', () => {
       id: 'test-heading-3',
       type: 'heading',
       content: 'Third Level',
-      meta: { level: 3 }
+      meta: { level: 3 },
     };
 
     const result = simulateBackspaceAtStart(block, 0);
@@ -81,7 +81,7 @@ describe('Heading Backspace Transformation', () => {
       id: 'test-heading-middle',
       type: 'heading',
       content: 'Test Heading',
-      meta: { level: 1 }
+      meta: { level: 1 },
     };
 
     const result = simulateBackspaceAtStart(block, 5);
@@ -94,7 +94,7 @@ describe('Heading Backspace Transformation', () => {
       id: 'test-heading-end',
       type: 'heading',
       content: 'Test Heading',
-      meta: { level: 2 }
+      meta: { level: 2 },
     };
 
     const result = simulateBackspaceAtStart(block, 12);
@@ -107,7 +107,7 @@ describe('Heading Backspace Transformation', () => {
       id: 'test-heading-no-cursor',
       type: 'heading',
       content: 'No Cursor Tracked',
-      meta: { level: 1 }
+      meta: { level: 1 },
     };
 
     const result = simulateBackspaceAtStart(block, 0);
@@ -123,7 +123,7 @@ describe('Heading Backspace Transformation', () => {
       id: 'test-heading-6',
       type: 'heading',
       content: 'Sixth Level',
-      meta: { level: 6 }
+      meta: { level: 6 },
     };
 
     const result = simulateBackspaceAtStart(block, 0);
@@ -139,7 +139,7 @@ describe('Heading Backspace Transformation', () => {
       id: 'test-heading-no-level',
       type: 'heading',
       content: 'No Level Meta',
-      meta: {}
+      meta: {},
     };
 
     const result = simulateBackspaceAtStart(block, 0);

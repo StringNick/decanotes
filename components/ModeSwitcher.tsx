@@ -42,16 +42,9 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ mode, onToggle }) => {
 
   return (
     <TouchableOpacity activeOpacity={0.8} onPress={handlePress} style={styles.wrapper}>
-      <Animated.View
-        style={[
-          styles.container,
-          { transform: [{ scale: scaleAnim }] },
-        ]}
-      >
+      <Animated.View style={[styles.container, { transform: [{ scale: scaleAnim }] }]}>
         <View style={styles.track}>
-          <Animated.View
-            style={[styles.thumb, { transform: [{ translateX }] }]}
-          />
+          <Animated.View style={[styles.thumb, { transform: [{ translateX }] }]} />
           <View style={styles.labels}>
             <Text style={[styles.label, mode === 'edit' && styles.labelActive]}>Edit</Text>
             <Text style={[styles.label, mode === 'raw' && styles.labelActive]}>Raw</Text>
@@ -116,4 +109,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ModeSwitcher; 
+export default ModeSwitcher;

@@ -1,6 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { EditorBlock, EditorBlockType } from '../../../../types/editor';
@@ -12,229 +12,207 @@ type FocusableHandle = { focus: () => void };
 /**
  * Table block component with support for headers, alignment, and cell editing
  */
-const TableComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
-  block,
-  onBlockChange,
-  onFocus,
-  onBlur,
-  isSelected,
-  isEditing,
-  style
-}, ref) => {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  const firstEditableRef = useRef<TextInput>(null);
+const TableComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  ({ block, onBlockChange, onFocus, onBlur, isSelected, isEditing, style }, ref) => {
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const styles = getStyles(colorScheme ?? 'light');
+    const firstEditableRef = useRef<TextInput>(null);
 
-  const headers = block.meta?.headers || [];
-  const rows = block.meta?.rows || [];
-  const alignments = block.meta?.alignments || [];
+    const headers = block.meta?.headers || [];
+    const rows = block.meta?.rows || [];
+    const alignments = block.meta?.alignments || [];
 
-  useImperativeHandle(ref, () => ({
-    focus: () => {
-      firstEditableRef.current?.focus();
-    }
-  }));
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        firstEditableRef.current?.focus();
+      },
+    }));
 
-  const handleHeaderChange = (index: number, value: string) => {
-    const newHeaders = [...headers];
-    newHeaders[index] = value;
-    onBlockChange({
-      meta: {
-        ...block.meta,
-        headers: newHeaders
+    const handleHeaderChange = (index: number, value: string) => {
+      const newHeaders = [...headers];
+      newHeaders[index] = value;
+      onBlockChange({
+        meta: {
+          ...block.meta,
+          headers: newHeaders,
+        },
+      });
+    };
+
+    const handleCellChange = (rowIndex: number, cellIndex: number, value: string) => {
+      const newRows = rows.map(row => (row ? [...row] : []));
+      if (!newRows[rowIndex]) {
+        newRows[rowIndex] = new Array(headers.length).fill('');
       }
-    });
-  };
+      const updatedRow = [...newRows[rowIndex]];
+      updatedRow[cellIndex] = value;
+      newRows[rowIndex] = updatedRow;
+      onBlockChange({
+        meta: {
+          ...block.meta,
+          rows: newRows,
+        },
+      });
+    };
 
-  const handleCellChange = (rowIndex: number, cellIndex: number, value: string) => {
-    const newRows = rows.map(row => (row ? [...row] : []));
-    if (!newRows[rowIndex]) {
-      newRows[rowIndex] = new Array(headers.length).fill('');
-    }
-    const updatedRow = [...newRows[rowIndex]];
-    updatedRow[cellIndex] = value;
-    newRows[rowIndex] = updatedRow;
-    onBlockChange({
-      meta: {
-        ...block.meta,
-        rows: newRows
+    const addRow = () => {
+      const newRow = new Array(headers.length).fill('');
+      onBlockChange({
+        meta: {
+          ...block.meta,
+          rows: [...rows, newRow],
+        },
+      });
+    };
+
+    const removeRow = (rowIndex: number) => {
+      const newRows = rows.filter((_, idx) => idx !== rowIndex);
+      onBlockChange({
+        meta: {
+          ...block.meta,
+          rows: newRows,
+        },
+      });
+    };
+
+    const addColumn = () => {
+      const newHeaders = [...headers, `Column ${headers.length + 1}`];
+      const newRows = rows.map(row => (row ? [...row, ''] : []));
+      const newAlignments = [...alignments, 'left' as const];
+
+      onBlockChange({
+        meta: {
+          ...block.meta,
+          headers: newHeaders,
+          rows: newRows,
+          alignments: newAlignments,
+        },
+      });
+    };
+
+    const removeColumn = (colIndex: number) => {
+      if (headers.length <= 1) return; // Keep at least one column
+
+      const newHeaders = headers.filter((_, idx) => idx !== colIndex);
+      const newRows = rows.map(row => (row ? row.filter((_, idx) => idx !== colIndex) : []));
+      const newAlignments = alignments.filter((_, idx) => idx !== colIndex);
+
+      onBlockChange({
+        meta: {
+          ...block.meta,
+          headers: newHeaders,
+          rows: newRows,
+          alignments: newAlignments,
+        },
+      });
+    };
+
+    const getAlignment = (index: number): 'left' | 'center' | 'right' => {
+      return alignments[index] || 'left';
+    };
+
+    const getAlignmentStyle = (alignment: 'left' | 'center' | 'right') => {
+      switch (alignment) {
+        case 'center':
+          return { textAlign: 'center' as const };
+        case 'right':
+          return { textAlign: 'right' as const };
+        default:
+          return { textAlign: 'left' as const };
       }
-    });
-  };
+    };
 
-  const addRow = () => {
-    const newRow = new Array(headers.length).fill('');
-    onBlockChange({
-      meta: {
-        ...block.meta,
-        rows: [...rows, newRow]
-      }
-    });
-  };
+    return (
+      <View style={[styles.container, style, isSelected && styles.selected, isEditing && styles.editing]}>
+        {/* Table Controls - always show to make table visible and interactive */}
+        <View style={styles.controls}>
+          <TouchableOpacity style={styles.controlButton} onPress={addRow}>
+            <Ionicons name="add" size={16} color={colors.text} />
+            <Text style={styles.controlButtonText}>Add Row</Text>
+          </TouchableOpacity>
 
-  const removeRow = (rowIndex: number) => {
-    const newRows = rows.filter((_, idx) => idx !== rowIndex);
-    onBlockChange({
-      meta: {
-        ...block.meta,
-        rows: newRows
-      }
-    });
-  };
+          <TouchableOpacity style={styles.controlButton} onPress={addColumn}>
+            <Ionicons name="add" size={16} color={colors.text} />
+            <Text style={styles.controlButtonText}>Add Column</Text>
+          </TouchableOpacity>
+        </View>
 
-  const addColumn = () => {
-    const newHeaders = [...headers, `Column ${headers.length + 1}`];
-    const newRows = rows.map(row => (row ? [...row, ''] : []));
-    const newAlignments = [...alignments, 'left' as const];
+        <TouchableOpacity activeOpacity={0.8} onPress={onFocus} style={styles.tableWrapper}>
+          <View style={styles.table}>
+            {/* Header Row */}
+            {headers.length > 0 && (
+              <View style={styles.row}>
+                {headers.map((header, index) => (
+                  <View key={`header-${index}`} style={styles.headerCell}>
+                    {isEditing ? (
+                      <TextInput
+                        value={header}
+                        onChangeText={value => handleHeaderChange(index, value)}
+                        onFocus={onFocus}
+                        onBlur={onBlur}
+                        placeholder={`Column ${index + 1}`}
+                        placeholderTextColor={colors.textSecondary}
+                        style={[styles.cellInput, styles.headerText, getAlignmentStyle(getAlignment(index))]}
+                        ref={index === 0 ? firstEditableRef : undefined}
+                      />
+                    ) : (
+                      <Text style={[styles.headerText, getAlignmentStyle(getAlignment(index))]}>{header}</Text>
+                    )}
 
-    onBlockChange({
-      meta: {
-        ...block.meta,
-        headers: newHeaders,
-        rows: newRows,
-        alignments: newAlignments
-      }
-    });
-  };
+                    {/* Column delete button - only show when editing and more than 1 column */}
+                    {isEditing && headers.length > 1 && (
+                      <TouchableOpacity style={styles.deleteColumnButton} onPress={() => removeColumn(index)}>
+                        <Ionicons name="close-circle" size={16} color={colors.error} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
 
-  const removeColumn = (colIndex: number) => {
-    if (headers.length <= 1) return; // Keep at least one column
+            {/* Data Rows */}
+            {rows.map((row, rowIndex) => (
+              <View key={`row-${rowIndex}`} style={styles.rowContainer}>
+                <View style={styles.row}>
+                  {headers.map((_, cellIndex) => (
+                    <View key={`cell-${rowIndex}-${cellIndex}`} style={styles.cell}>
+                      {isEditing ? (
+                        <TextInput
+                          value={row[cellIndex] || ''}
+                          onChangeText={value => handleCellChange(rowIndex, cellIndex, value)}
+                          onFocus={onFocus}
+                          onBlur={onBlur}
+                          placeholder=""
+                          placeholderTextColor={colors.textSecondary}
+                          style={[styles.cellInput, styles.cellText, getAlignmentStyle(getAlignment(cellIndex))]}
+                          ref={headers.length === 0 && rowIndex === 0 && cellIndex === 0 ? firstEditableRef : undefined}
+                        />
+                      ) : (
+                        <Text style={[styles.cellText, getAlignmentStyle(getAlignment(cellIndex))]}>
+                          {row[cellIndex] || ''}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
 
-    const newHeaders = headers.filter((_, idx) => idx !== colIndex);
-    const newRows = rows.map(row =>
-      row ? row.filter((_, idx) => idx !== colIndex) : []
-    );
-    const newAlignments = alignments.filter((_, idx) => idx !== colIndex);
-
-    onBlockChange({
-      meta: {
-        ...block.meta,
-        headers: newHeaders,
-        rows: newRows,
-        alignments: newAlignments
-      }
-    });
-  };
-
-  const getAlignment = (index: number): 'left' | 'center' | 'right' => {
-    return alignments[index] || 'left';
-  };
-
-  const getAlignmentStyle = (alignment: 'left' | 'center' | 'right') => {
-    switch (alignment) {
-      case 'center':
-        return { textAlign: 'center' as const };
-      case 'right':
-        return { textAlign: 'right' as const };
-      default:
-        return { textAlign: 'left' as const };
-    }
-  };
-
-  return (
-    <View style={[styles.container, style, isSelected && styles.selected, isEditing && styles.editing]}>
-      {/* Table Controls - always show to make table visible and interactive */}
-      <View style={styles.controls}>
-        <TouchableOpacity style={styles.controlButton} onPress={addRow}>
-          <Ionicons name="add" size={16} color={colors.text} />
-          <Text style={styles.controlButtonText}>Add Row</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.controlButton} onPress={addColumn}>
-          <Ionicons name="add" size={16} color={colors.text} />
-          <Text style={styles.controlButtonText}>Add Column</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={onFocus}
-        style={styles.tableWrapper}
-      >
-        <View style={styles.table}>
-        {/* Header Row */}
-        {headers.length > 0 && (
-          <View style={styles.row}>
-            {headers.map((header, index) => (
-              <View key={`header-${index}`} style={styles.headerCell}>
-                {isEditing ? (
-                  <TextInput
-                    value={header}
-                    onChangeText={(value) => handleHeaderChange(index, value)}
-                    onFocus={onFocus}
-                    onBlur={onBlur}
-                    placeholder={`Column ${index + 1}`}
-                    placeholderTextColor={colors.textSecondary}
-                    style={[styles.cellInput, styles.headerText, getAlignmentStyle(getAlignment(index))]}
-                    ref={index === 0 ? firstEditableRef : undefined}
-                  />
-                ) : (
-                  <Text style={[styles.headerText, getAlignmentStyle(getAlignment(index))]}>
-                    {header}
-                  </Text>
-                )}
-
-                {/* Column delete button - only show when editing and more than 1 column */}
-                {isEditing && headers.length > 1 && (
-                  <TouchableOpacity
-                    style={styles.deleteColumnButton}
-                    onPress={() => removeColumn(index)}
-                  >
-                    <Ionicons name="close-circle" size={16} color={colors.error} />
+                {/* Row delete button - only show when editing */}
+                {isEditing && (
+                  <TouchableOpacity style={styles.deleteRowButton} onPress={() => removeRow(rowIndex)}>
+                    <Ionicons name="trash-outline" size={16} color={colors.error} />
                   </TouchableOpacity>
                 )}
               </View>
             ))}
           </View>
-        )}
+        </TouchableOpacity>
+      </View>
+    );
+  }
+);
 
-        {/* Data Rows */}
-        {rows.map((row, rowIndex) => (
-          <View key={`row-${rowIndex}`} style={styles.rowContainer}>
-            <View style={styles.row}>
-              {headers.map((_, cellIndex) => (
-                <View key={`cell-${rowIndex}-${cellIndex}`} style={styles.cell}>
-                  {isEditing ? (
-                    <TextInput
-                      value={row[cellIndex] || ''}
-                      onChangeText={(value) => handleCellChange(rowIndex, cellIndex, value)}
-                      onFocus={onFocus}
-                      onBlur={onBlur}
-                      placeholder=""
-                      placeholderTextColor={colors.textSecondary}
-                      style={[styles.cellInput, styles.cellText, getAlignmentStyle(getAlignment(cellIndex))]}
-                      ref={
-                        headers.length === 0 && rowIndex === 0 && cellIndex === 0
-                          ? firstEditableRef
-                          : undefined
-                      }
-                    />
-                  ) : (
-                    <Text style={[styles.cellText, getAlignmentStyle(getAlignment(cellIndex))]}>
-                      {row[cellIndex] || ''}
-                    </Text>
-                  )}
-                </View>
-              ))}
-            </View>
-
-            {/* Row delete button - only show when editing */}
-            {isEditing && (
-              <TouchableOpacity
-                style={styles.deleteRowButton}
-                onPress={() => removeRow(rowIndex)}
-              >
-                <Ionicons name="trash-outline" size={16} color={colors.error} />
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-        </View>
-      </TouchableOpacity>
-    </View>
-  );
-});
+TableComponent.displayName = 'TableComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
@@ -361,21 +339,21 @@ export class TablePlugin implements BlockPlugin {
     transformContent: this.transformContent.bind(this),
     handleEnter: this.handleEnter.bind(this),
     onCreate: this.onCreate.bind(this),
-    getActions: this.getActions.bind(this)
+    getActions: this.getActions.bind(this),
   };
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^\|(.+)\|$/
+      block: /^\|(.+)\|$/,
     },
-    priority: 85
+    priority: 85,
   };
 
   readonly toolbar = {
     icon: 'table',
     label: 'Table',
     shortcut: 'Ctrl+Shift+T',
-    group: 'text'
+    group: 'text',
   };
 
   readonly settings = {
@@ -384,8 +362,8 @@ export class TablePlugin implements BlockPlugin {
     defaultMeta: {
       headers: ['Column 1', 'Column 2'],
       rows: [['', '']],
-      alignments: ['left' as const, 'left' as const]
-    }
+      alignments: ['left' as const, 'left' as const],
+    },
   };
 
   /**
@@ -400,8 +378,8 @@ export class TablePlugin implements BlockPlugin {
         headers: meta.headers || this.settings.defaultMeta.headers,
         rows: meta.rows || this.settings.defaultMeta.rows,
         alignments: meta.alignments || this.settings.defaultMeta.alignments,
-        ...meta
-      }
+        ...meta,
+      },
     };
   }
 
@@ -416,8 +394,8 @@ export class TablePlugin implements BlockPlugin {
       {
         id: generateId(),
         type: 'paragraph',
-        content: ''
-      }
+        content: '',
+      },
     ];
   }
 
@@ -432,7 +410,7 @@ export class TablePlugin implements BlockPlugin {
       const parseTableRow = (line: string): string[] => {
         return line
           .split('|')
-          .slice(1, -1)  // Remove first and last empty elements
+          .slice(1, -1) // Remove first and last empty elements
           .map(cell => cell.trim());
       };
 
@@ -448,7 +426,7 @@ export class TablePlugin implements BlockPlugin {
         if (startsWithColon && endsWithColon) return 'center';
         if (endsWithColon) return 'right';
         if (startsWithColon) return 'left';
-        return 'left';  // default
+        return 'left'; // default
       }) as ('left' | 'center' | 'right')[];
 
       // Parse data rows
@@ -459,13 +437,13 @@ export class TablePlugin implements BlockPlugin {
         ...newBlock.meta,
         headers,
         rows,
-        alignments
+        alignments,
       };
     } else if (!newBlock.meta?.headers) {
       // Set default values if not already set
       newBlock.meta = {
         ...newBlock.meta,
-        ...this.settings.defaultMeta
+        ...this.settings.defaultMeta,
       };
     }
 
@@ -474,7 +452,7 @@ export class TablePlugin implements BlockPlugin {
 
   public getActions(block: EditorBlock) {
     const actions: any[] = [];
-    
+
     actions.push({
       id: 'add-row',
       label: 'Add Row',
@@ -486,10 +464,10 @@ export class TablePlugin implements BlockPlugin {
         context.updateBlock({
           meta: {
             ...block.meta,
-            rows: [...rows, newRow]
-          }
+            rows: [...rows, newRow],
+          },
         });
-      }
+      },
     });
 
     actions.push({
@@ -500,27 +478,27 @@ export class TablePlugin implements BlockPlugin {
         const headers = block.meta?.headers || [];
         const rows = block.meta?.rows || [];
         const alignments = block.meta?.alignments || [];
-        
+
         context.updateBlock({
           meta: {
             ...block.meta,
             headers: [...headers, `Column ${headers.length + 1}`],
             rows: rows.map(row => [...row, '']),
-            alignments: [...alignments, 'left']
-          }
+            alignments: [...alignments, 'left'],
+          },
         });
-      }
+      },
     });
-    
+
     actions.push({
       id: 'duplicate',
       label: 'Duplicate',
       icon: 'copy',
       handler: (block: EditorBlock, context: any) => {
         context.duplicateBlock();
-      }
+      },
     });
-    
+
     actions.push({
       id: 'delete',
       label: 'Delete',
@@ -528,9 +506,9 @@ export class TablePlugin implements BlockPlugin {
       style: 'destructive',
       handler: (block: EditorBlock, context: any) => {
         context.deleteBlock();
-      }
+      },
     });
-    
+
     return actions;
   }
 
@@ -546,7 +524,7 @@ export class TablePlugin implements BlockPlugin {
     const parseTableRow = (line: string): string[] => {
       return line
         .split('|')
-        .slice(1, -1)  // Remove first and last empty elements
+        .slice(1, -1) // Remove first and last empty elements
         .map(cell => cell.trim());
     };
 
@@ -557,9 +535,7 @@ export class TablePlugin implements BlockPlugin {
     const alignmentCells = parseTableRow(lines[1]);
 
     // Validate that second row is an alignment row
-    const isValidAlignmentRow = alignmentCells.every(cell =>
-      /^:?-+:?$/.test(cell)
-    );
+    const isValidAlignmentRow = alignmentCells.every(cell => /^:?-+:?$/.test(cell));
 
     if (!isValidAlignmentRow || headers.length === 0) return null;
 
@@ -570,7 +546,7 @@ export class TablePlugin implements BlockPlugin {
       if (startsWithColon && endsWithColon) return 'center';
       if (endsWithColon) return 'right';
       if (startsWithColon) return 'left';
-      return 'left';  // default
+      return 'left'; // default
     }) as ('left' | 'center' | 'right')[];
 
     // Parse data rows
@@ -583,8 +559,8 @@ export class TablePlugin implements BlockPlugin {
       meta: {
         headers,
         rows,
-        alignments
-      }
+        alignments,
+      },
     };
   }
 

@@ -5,29 +5,65 @@ A decentralized markdown editor with block-based architecture supporting multipl
 ## Build & Run
 
 1. Install dependencies
+
    ```bash
-   npm install
+   bun install
    ```
 
-2. Start development server
+2. Start development server (uses Expo Go by default)
    ```bash
-   npx expo start
+   bun run start
+   ```
+3. Run on devices
+
+   ```bash
+   # iOS (development build)
+   bun run ios
+
+   # Android (development build)
+   bun run android
    ```
 
-3. Build for iOS/Android
+4. Build locally for production
+
    ```bash
-   npx prebuild --platform ios
-   npx prebuild --platform android
+   # iOS production build
+   eas build --platform ios --profile production --local
+
+   # Android production build
+   eas build --platform android --profile production --local
    ```
 
-4. Run on devices
-   ```bash
-   # iOS
-   npx expo run:ios
-   
-   # Android
-   npx expo run:android
-   ```
+## Development
+
+### Type checking
+
+Check TypeScript compilation:
+
+```bash
+# Type check
+bun run tsc --noEmit
+
+# Watch mode
+bun run tsc --noEmit --watch
+```
+
+### Testing
+
+```bash
+# Run tests
+bun run test
+```
+
+### Linting
+
+```bash
+# Check for issues
+bun run lint
+
+# Auto-fix issues
+bun run format
+```
 
 ## Features
 

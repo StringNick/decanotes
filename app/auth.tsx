@@ -5,15 +5,15 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useStorage } from '@/contexts/StorageContext';
 import type { StorageBackendType } from '@/types/storage';
@@ -23,15 +23,15 @@ type AuthMethod = StorageBackendType;
 export default function AuthScreen() {
   const { signIn, savedBackendType, needsCredentials } = useStorage();
   const [activeMethod, setActiveMethod] = useState<AuthMethod>('local');
-  
+
   // Renterd fields
   const [renterdHost, setRenterdHost] = useState('');
   const [renterdPassword, setRenterdPassword] = useState('');
-  
+
   // IPFS fields (for future) - commented out until implemented
   // const [ipfsNode, setIpfsNode] = useState('');
   // const [ipfsApiKey, setIpfsApiKey] = useState('');
-  
+
   const [isLoading, setIsLoading] = useState(false);
 
   // Set active method based on saved backend type
@@ -82,10 +82,10 @@ export default function AuthScreen() {
 
     setIsLoading(true);
     try {
-      await signIn('renterd', { 
-        type: 'renterd', 
-        host: renterdHost, 
-        password: renterdPassword 
+      await signIn('renterd', {
+        type: 'renterd',
+        host: renterdHost,
+        password: renterdPassword,
       });
       router.replace('/');
     } catch (error) {
@@ -102,10 +102,7 @@ export default function AuthScreen() {
   // };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <LinearGradient
         colors={['#8B5FBF', '#4FC3E7']}
         style={styles.background}
@@ -120,9 +117,7 @@ export default function AuthScreen() {
             </Text>
             {needsCredentials && savedBackendType && (
               <View style={styles.infoBox}>
-                <Text style={styles.infoText}>
-                  Using {savedBackendType === 'renterd' ? 'Sia Renterd' : 'IPFS'}
-                </Text>
+                <Text style={styles.infoText}>Using {savedBackendType === 'renterd' ? 'Sia Renterd' : 'IPFS'}</Text>
               </View>
             )}
           </View>
@@ -130,54 +125,22 @@ export default function AuthScreen() {
           <View style={styles.authContainer}>
             <View style={styles.methodSelector}>
               <TouchableOpacity
-                style={[
-                  styles.methodButton,
-                  activeMethod === 'local' && styles.activeMethodButton,
-                ]}
+                style={[styles.methodButton, activeMethod === 'local' && styles.activeMethodButton]}
                 onPress={() => setActiveMethod('local')}
               >
-                <IconSymbol
-                  name="folder.fill"
-                  size={18}
-                  color={
-                    activeMethod === 'local'
-                      ? '#FFFFFF'
-                      : '#6B7280'
-                  }
-                />
-                <Text
-                  style={[
-                    styles.methodText,
-                    activeMethod === 'local' && styles.activeMethodText,
-                  ]}
-                >
-                  Local{"\n"}Storage
+                <IconSymbol name="folder.fill" size={18} color={activeMethod === 'local' ? '#FFFFFF' : '#6B7280'} />
+                <Text style={[styles.methodText, activeMethod === 'local' && styles.activeMethodText]}>
+                  Local{'\n'}Storage
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.methodButton,
-                  activeMethod === 'renterd' && styles.activeMethodButton,
-                ]}
+                style={[styles.methodButton, activeMethod === 'renterd' && styles.activeMethodButton]}
                 onPress={() => setActiveMethod('renterd')}
               >
-                <IconSymbol
-                  name="network"
-                  size={18}
-                  color={
-                    activeMethod === 'renterd'
-                      ? '#FFFFFF'
-                      : '#6B7280'
-                  }
-                />
-                <Text
-                  style={[
-                    styles.methodText,
-                    activeMethod === 'renterd' && styles.activeMethodText,
-                  ]}
-                >
-                  Sia{"\n"}Renterd
+                <IconSymbol name="network" size={18} color={activeMethod === 'renterd' ? '#FFFFFF' : '#6B7280'} />
+                <Text style={[styles.methodText, activeMethod === 'renterd' && styles.activeMethodText]}>
+                  Sia{'\n'}Renterd
                 </Text>
               </TouchableOpacity>
 
@@ -190,23 +153,8 @@ export default function AuthScreen() {
                 onPress={() => setActiveMethod('ipfs')}
               >
                 <View style={styles.methodButtonContent}>
-                  <IconSymbol
-                    name="globe"
-                    size={18}
-                    color={
-                      activeMethod === 'ipfs'
-                        ? '#FFFFFF'
-                        : '#6B7280'
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.methodText,
-                      activeMethod === 'ipfs' && styles.activeMethodText,
-                    ]}
-                  >
-                    IPFS
-                  </Text>
+                  <IconSymbol name="globe" size={18} color={activeMethod === 'ipfs' ? '#FFFFFF' : '#6B7280'} />
+                  <Text style={[styles.methodText, activeMethod === 'ipfs' && styles.activeMethodText]}>IPFS</Text>
                 </View>
                 <View style={styles.soonBadge}>
                   <Text style={styles.soonText}>Soon</Text>
@@ -218,21 +166,15 @@ export default function AuthScreen() {
               {activeMethod === 'local' ? (
                 <>
                   <Text style={styles.helperText}>
-                    Store your notes locally on this device. Your notes will be
-                    saved securely on your device only.
+                    Store your notes locally on this device. Your notes will be saved securely on your device only.
                   </Text>
 
                   <TouchableOpacity
-                    style={[
-                      styles.authButton,
-                      isLoading && styles.disabledButton,
-                    ]}
+                    style={[styles.authButton, isLoading && styles.disabledButton]}
                     onPress={handleLocalStorageAuth}
                     disabled={isLoading}
                   >
-                    <Text style={styles.authButtonText}>
-                      {isLoading ? 'Initializing...' : 'Use Local Storage'}
-                    </Text>
+                    <Text style={styles.authButtonText}>{isLoading ? 'Initializing...' : 'Use Local Storage'}</Text>
                   </TouchableOpacity>
                 </>
               ) : activeMethod === 'renterd' ? (
@@ -266,41 +208,28 @@ export default function AuthScreen() {
                   </View>
 
                   <Text style={styles.helperText}>
-                    Connect to your Sia Renterd instance to store notes
-                    on the decentralized Sia network.
+                    Connect to your Sia Renterd instance to store notes on the decentralized Sia network.
                   </Text>
 
                   <TouchableOpacity
                     style={[
                       styles.authButton,
-                      (!renterdHost.trim() || !renterdPassword.trim() || isLoading) &&
-                        styles.disabledButton,
+                      (!renterdHost.trim() || !renterdPassword.trim() || isLoading) && styles.disabledButton,
                     ]}
                     onPress={handleRenterdAuth}
                     disabled={!renterdHost.trim() || !renterdPassword.trim() || isLoading}
                   >
-                    <Text style={styles.authButtonText}>
-                      {isLoading ? 'Connecting...' : 'Connect to Renterd'}
-                    </Text>
+                    <Text style={styles.authButtonText}>{isLoading ? 'Connecting...' : 'Connect to Renterd'}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
                   <Text style={styles.helperText}>
-                    IPFS backend will be available soon! Connect to IPFS
-                    for decentralized storage.
+                    IPFS backend will be available soon! Connect to IPFS for decentralized storage.
                   </Text>
 
-                  <TouchableOpacity
-                    style={[
-                      styles.authButton,
-                      styles.disabledButton,
-                    ]}
-                    disabled
-                  >
-                    <Text style={styles.authButtonText}>
-                      Coming Soon
-                    </Text>
+                  <TouchableOpacity style={[styles.authButton, styles.disabledButton]} disabled>
+                    <Text style={styles.authButtonText}>Coming Soon</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -308,9 +237,7 @@ export default function AuthScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Your keys, your notes. Fully decentralized.
-            </Text>
+            <Text style={styles.footerText}>Your keys, your notes. Fully decentralized.</Text>
           </View>
         </ScrollView>
       </LinearGradient>

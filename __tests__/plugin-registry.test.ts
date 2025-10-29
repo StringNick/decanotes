@@ -14,13 +14,13 @@ const mockBlockPlugin: BlockPlugin = {
   component: ({ block }) => React.createElement(Text, {}, block.content),
   controller: {
     handleEnter: () => null,
-    handleBackspace: () => null
+    handleBackspace: () => null,
   },
   toolbar: {
     icon: 'text',
     label: 'Paragraph',
-    group: 'basic'
-  }
+    group: 'basic',
+  },
 };
 
 // Mock markdown plugin for testing
@@ -32,20 +32,20 @@ const mockMarkdownPlugin: MarkdownPlugin = {
   description: 'A test bold markdown plugin',
   syntax: {
     patterns: {
-      inline: /\*\*(.*?)\*\*/g
+      inline: /\*\*(.*?)\*\*/g,
     },
-    priority: 100
+    priority: 100,
   },
   parser: {
     parseInline: (text: string) => text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
     parseBlock: () => null,
-    canParse: (text: string) => /\*\*(.*?)\*\*/g.test(text)
+    canParse: (text: string) => /\*\*(.*?)\*\*/g.test(text),
   },
   serializer: {
     serializeInline: (content: any) => `**${content}**`,
     serializeBlock: () => null,
-    canSerialize: () => true
-  }
+    canSerialize: () => true,
+  },
 };
 
 // High priority markdown plugin for testing
@@ -57,20 +57,20 @@ const highPriorityMarkdownPlugin: MarkdownPlugin = {
   description: 'A test italic markdown plugin',
   syntax: {
     patterns: {
-      inline: /\*(.*?)\*/g
+      inline: /\*(.*?)\*/g,
     },
-    priority: 200 // Higher priority
+    priority: 200, // Higher priority
   },
   parser: {
     parseInline: (text: string) => text.replace(/\*(.*?)\*/g, '<em>$1</em>'),
     parseBlock: () => null,
-    canParse: (text: string) => /\*(.*?)\*/g.test(text)
+    canParse: (text: string) => /\*(.*?)\*/g.test(text),
   },
   serializer: {
     serializeInline: (content: any) => `*${content}*`,
     serializeBlock: () => null,
-    canSerialize: () => true
-  }
+    canSerialize: () => true,
+  },
 };
 
 describe('PluginRegistry', () => {
@@ -102,24 +102,20 @@ describe('PluginRegistry', () => {
 
     it('should throw error when registering plugin with duplicate ID', () => {
       registry.register(mockBlockPlugin);
-      expect(() => registry.register(mockBlockPlugin)).toThrow(
-        "Plugin with id 'test-paragraph' is already registered"
-      );
+      expect(() => registry.register(mockBlockPlugin)).toThrow("Plugin with id 'test-paragraph' is already registered");
     });
 
     it('should warn when registering duplicate block type', () => {
       const duplicateBlockPlugin: BlockPlugin = {
         ...mockBlockPlugin,
         id: 'different-id',
-        name: 'Different Name'
+        name: 'Different Name',
       };
 
       registry.register(mockBlockPlugin);
       registry.register(duplicateBlockPlugin);
 
-      expect(console.warn).toHaveBeenCalledWith(
-        "Block type 'paragraph' is already registered. Overriding."
-      );
+      expect(console.warn).toHaveBeenCalledWith("Block type 'paragraph' is already registered. Overriding.");
       expect(registry.getBlockPlugin('paragraph')).toBe(duplicateBlockPlugin);
     });
 
@@ -136,23 +132,17 @@ describe('PluginRegistry', () => {
   describe('Plugin Validation', () => {
     it('should throw error for plugin without ID', () => {
       const invalidPlugin = { ...mockBlockPlugin, id: '' };
-      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow(
-        'Plugin must have a valid string id'
-      );
+      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow('Plugin must have a valid string id');
     });
 
     it('should throw error for plugin without name', () => {
       const invalidPlugin = { ...mockBlockPlugin, name: '' };
-      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow(
-        'Plugin must have a valid string name'
-      );
+      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow('Plugin must have a valid string name');
     });
 
     it('should throw error for plugin without version', () => {
       const invalidPlugin = { ...mockBlockPlugin, version: '' };
-      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow(
-        'Plugin must have a valid string version'
-      );
+      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow('Plugin must have a valid string version');
     });
 
     it('should throw error for plugin with invalid type', () => {
@@ -165,17 +155,13 @@ describe('PluginRegistry', () => {
     it('should throw error for block plugin without blockType', () => {
       const invalidPlugin = { ...mockBlockPlugin };
       delete (invalidPlugin as any).blockType;
-      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow(
-        'Block plugin must have a valid blockType'
-      );
+      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow('Block plugin must have a valid blockType');
     });
 
     it('should throw error for block plugin without component', () => {
       const invalidPlugin = { ...mockBlockPlugin };
       delete (invalidPlugin as any).component;
-      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow(
-        'Block plugin must have a component'
-      );
+      expect(() => registry.register(invalidPlugin as BlockPlugin)).toThrow('Block plugin must have a component');
     });
 
     it('should throw error for markdown plugin without syntax', () => {
@@ -334,13 +320,13 @@ describe('PluginRegistry', () => {
         name: 'Test Heading',
         controller: {
           handleEnter: () => null,
-          handleBackspace: () => null
-        }
+          handleBackspace: () => null,
+        },
       };
-      
+
       registry.register(anotherBlockPlugin);
       expect(registry.getAllPlugins()).toHaveLength(3);
-      
+
       // Unregister some
       registry.unregister('test-paragraph');
       registry.unregister('test-bold');

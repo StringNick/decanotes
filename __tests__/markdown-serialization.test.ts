@@ -42,10 +42,7 @@ jest.mock('../constants/Colors', () => ({
 }));
 
 import { EditorBlock } from '../types/editor';
-import {
-  parseMarkdownToBlocks,
-  serializeBlocksToMarkdown,
-} from '../components/editor/utils/MarkdownRegistry';
+import { parseMarkdownToBlocks, serializeBlocksToMarkdown } from '../components/editor/utils/MarkdownRegistry';
 import { ListPlugin } from '../components/editor/plugins/built-in/ListPlugin';
 import { ChecklistPlugin } from '../components/editor/plugins/built-in/ChecklistPlugin';
 import { CalloutPlugin } from '../components/editor/plugins/built-in/CalloutPlugin';
@@ -67,11 +64,10 @@ const stripIds = (blocks: EditorBlock[]) =>
     meta: meta ?? undefined,
   }));
 
-const normalizeMarkdown = (markdown: string): string =>
-  markdown.replace(/\r\n/g, '\n').trim();
+const normalizeMarkdown = (markdown: string): string => markdown.replace(/\r\n/g, '\n').trim();
 
 describe('Markdown serialization round-trips', () => {
-const cases: Array<{
+  const cases: Array<{
     name: string;
     markdown: string;
     expected: Array<Partial<EditorBlock>>;
@@ -117,9 +113,7 @@ const cases: Array<{
     {
       name: 'code block',
       markdown: '```ts\nconst a = 1;\n```',
-      expected: [
-        { type: 'code', content: 'const a = 1;', meta: { language: 'ts' } },
-      ],
+      expected: [{ type: 'code', content: 'const a = 1;', meta: { language: 'ts' } }],
     },
     {
       name: 'divider',
@@ -157,8 +151,7 @@ const cases: Array<{
     },
   ];
 
-  const canonicalizeLine = (line: string): string =>
-    line.replace(/^(\s*)\d+\.(\s+)/, '$11.$2');
+  const canonicalizeLine = (line: string): string => line.replace(/^(\s*)\d+\.(\s+)/, '$11.$2');
 
   const splitMeaningfulLines = (markdown: string): string[] =>
     markdown
@@ -326,12 +319,7 @@ describe('Plugin markdown helpers', () => {
 
   it('TablePlugin parses and serializes tables', () => {
     const plugin = new TablePlugin();
-    const markdown = [
-      '| Name | Role |',
-      '| --- | --- |',
-      '| Alice | Engineer |',
-      '| Bob | Designer |',
-    ].join('\n');
+    const markdown = ['| Name | Role |', '| --- | --- |', '| Alice | Engineer |', '| Bob | Designer |'].join('\n');
 
     const block = plugin.parseMarkdown(markdown);
     expect(block).toMatchObject({
@@ -349,12 +337,7 @@ describe('Plugin markdown helpers', () => {
 
   it('TablePlugin markdown reflects cell edits', () => {
     const plugin = new TablePlugin();
-    const markdown = [
-      '| Name | Score |',
-      '| --- | --- |',
-      '| Alice | 10 |',
-      '| Bob | 8 |',
-    ].join('\n');
+    const markdown = ['| Name | Score |', '| --- | --- |', '| Alice | 10 |', '| Bob | 8 |'].join('\n');
 
     const block = plugin.parseMarkdown(markdown);
     expect(block).toBeTruthy();

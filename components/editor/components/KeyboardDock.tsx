@@ -31,13 +31,9 @@ export const KeyboardDock: React.FC<KeyboardDockProps> = ({
 
   const styles = useMemo(() => getStyles(colorScheme ?? 'light', colors), [colorScheme, colors]);
 
-  const translateY = visible
-    ? 0
-    : 120;
+  const translateY = visible ? 0 : 120;
 
-  const basePadding = Platform.OS === 'ios'
-    ? insets.bottom
-    : insets.bottom + 6;
+  const basePadding = Platform.OS === 'ios' ? insets.bottom : insets.bottom + 6;
 
   return (
     <Animated.View
@@ -52,28 +48,16 @@ export const KeyboardDock: React.FC<KeyboardDockProps> = ({
       ]}
     >
       <View style={styles.surface}>
-        {blockSection && (
-          <View style={styles.blockRow}>
-            {blockSection}
-          </View>
-        )}
+        {blockSection && <View style={styles.blockRow}>{blockSection}</View>}
 
-        {formattingSection && (
-          <View style={styles.divider} />
-        )}
+        {formattingSection && <View style={styles.divider} />}
 
-        {formattingSection && (
-          <View style={styles.formattingRow}>
-            {formattingSection}
-          </View>
-        )}
+        {formattingSection && <View style={styles.formattingRow}>{formattingSection}</View>}
 
         {actionSection && (
           <>
             <View style={styles.divider} />
-            <View style={styles.actionRow}>
-              {actionSection}
-            </View>
+            <View style={styles.actionRow}>{actionSection}</View>
           </>
         )}
       </View>
@@ -94,7 +78,7 @@ const getStyles = (theme: 'light' | 'dark', colors: typeof Colors.light) => {
     surface: {
       backgroundColor: isDark ? 'rgba(30, 30, 30, 0.98)' : 'rgba(209, 213, 219, 0.95)',
       borderRadius: 0,
-      paddingTop: 0,  // No top padding - seamless with toolbar
+      paddingTop: 0, // No top padding - seamless with toolbar
       paddingBottom: 8,
       paddingHorizontal: 8,
       // Subtle shadow like native keyboard
@@ -103,15 +87,15 @@ const getStyles = (theme: 'light' | 'dark', colors: typeof Colors.light) => {
       shadowOpacity: isDark ? 0.3 : 0.15,
       shadowRadius: 4,
       elevation: 8,
-      borderTopWidth: 0,  // No top border - toolbar has it
+      borderTopWidth: 0, // No top border - toolbar has it
       borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
       // gap removed - using paddingTop/Bottom on sections instead
     },
     blockRow: {
       width: '100%',
       paddingHorizontal: 4,
-      paddingTop: 0,  // No padding - seamless with toolbar
-      paddingBottom: 4,  // Small bottom padding for separation from next section
+      paddingTop: 0, // No padding - seamless with toolbar
+      paddingBottom: 4, // Small bottom padding for separation from next section
     },
     formattingRow: {
       flexDirection: 'row',

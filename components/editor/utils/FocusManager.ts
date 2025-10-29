@@ -94,7 +94,10 @@ export class FocusManager {
    * @param options.reveal - Whether to scroll to make block visible (default: true)
    * @param options.animated - Whether to animate scroll (default: true)
    */
-  requestFocus(blockId: string, options: { reveal?: boolean; animated?: boolean; onRevealFailure?: DesiredFocus['onRevealFailure'] } = {}): void {
+  requestFocus(
+    blockId: string,
+    options: { reveal?: boolean; animated?: boolean; onRevealFailure?: DesiredFocus['onRevealFailure'] } = {}
+  ): void {
     if (__DEV__) {
       console.log('[FocusManager] requestFocus', { blockId, options });
     }
@@ -154,7 +157,6 @@ export class FocusManager {
     // Use InteractionManager to ensure scroll animations complete
     const sequenceId = ++this.focusSequence;
     let applied = false;
-    const visibilityCheckDone = { done: false }; // Use object to share state across async calls
 
     const applyFocus = async () => {
       if (applied) {

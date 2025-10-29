@@ -22,20 +22,20 @@ export interface ExtendedMarkdownEditorProps {
   onKeyDown?: (event: KeyboardEvent) => void;
   style?: any;
   autoFocus?: boolean;
-  
+
   // Plugin system props
   plugins?: (BlockPlugin | MarkdownPlugin)[];
   customBlocks?: Record<string, ComponentType<any>>; // Legacy support
-  
+
   // Advanced configuration
   config?: EditorConfig;
-  
+
   // Event handlers
   onPluginEvent?: (event: PluginEvent) => void;
   onError?: (error: EditorError) => void;
   onBlocksChange?: (blocks: EditorBlock[]) => void;
   onEditingChange?: (isEditing: boolean) => void;
-  
+
   // Plugin arrays
   blockPlugins?: BlockPlugin[];
   markdownPlugins?: MarkdownPlugin[];
@@ -58,21 +58,21 @@ export interface EditorConfig {
     autoSave?: boolean;
     collaboration?: boolean;
   };
-  
+
   // Toolbar configuration
   toolbar?: {
     enabled?: boolean;
     position?: 'top' | 'bottom';
     items?: string[];
   };
-  
+
   // Drag and drop settings
   dragAndDrop?: {
     enabled?: boolean;
     allowFileUpload?: boolean;
     allowBlockReordering?: boolean;
   };
-  
+
   // Behavior settings
   behavior?: {
     autoFocus?: boolean;
@@ -81,7 +81,7 @@ export interface EditorConfig {
     createBlockOnEnter?: boolean;
     mergeBlocksOnBackspace?: boolean;
   };
-  
+
   // UI settings
   ui?: {
     showLineNumbers?: boolean;
@@ -89,21 +89,21 @@ export interface EditorConfig {
     compactMode?: boolean;
     animationsEnabled?: boolean;
   };
-  
+
   // Performance settings
   performance?: {
     virtualScrolling?: boolean;
     debounceMs?: number;
     maxBlocks?: number;
   };
-  
+
   // History settings
   historyDebounceMs?: number;
   maxHistorySize?: number;
-  
+
   // Debug settings
   debug?: boolean;
-  
+
   // Theme settings
   theme?: {
     colors?: {
@@ -125,7 +125,7 @@ export interface EditorConfig {
       fontFamily?: string;
     };
   };
-  
+
   // Keyboard settings
   keyboard?: {
     enabled?: boolean;
@@ -179,7 +179,7 @@ export interface EditorState {
 }
 
 // Editor actions
-export type EditorAction = 
+export type EditorAction =
   | { type: 'SET_BLOCKS'; blocks: ExtendedBlock[] }
   | { type: 'ADD_BLOCK'; block: ExtendedBlock; index?: number }
   | { type: 'UPDATE_BLOCK'; id: string; changes: Partial<ExtendedBlock> }
@@ -260,16 +260,16 @@ export interface ExtendedMarkdownEditorRef extends MarkdownEditorRef {
   registerPlugin: (plugin: BlockPlugin | MarkdownPlugin) => void;
   unregisterPlugin: (pluginId: string) => void;
   getRegisteredPlugins: () => (BlockPlugin | MarkdownPlugin)[];
-  
+
   // Advanced operations
   selectBlocks: (ids: string[]) => void;
   duplicateBlock: (id: string) => void;
   validateContent: () => EditorError[];
-  
+
   // History operations
   undo: () => void;
   redo: () => void;
-  
+
   // Export/Import
   exportToFormat: (format: 'markdown' | 'html' | 'json') => string;
   importFromFormat: (content: string, format: 'markdown' | 'html' | 'json') => void;

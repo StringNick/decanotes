@@ -48,7 +48,7 @@ export function BlockRenderer({
   blockProps,
   onBlockRefReady,
   focusManager,
-  onBlockHeightChange
+  onBlockHeightChange,
 }: BlockRendererProps) {
   const blockRef = useRef<View>(null);
   const blockComponentRef = useRef<any>(null);
@@ -63,7 +63,7 @@ export function BlockRenderer({
     if (onBlockRefReady) {
       onBlockRefReady({
         container: blockRef.current,
-        focusable: blockComponentRef.current
+        focusable: blockComponentRef.current,
       });
     }
     return () => {
@@ -104,7 +104,7 @@ export function BlockRenderer({
         }
       },
       getHeight: () => blockHeight,
-      measure: measureBlock
+      measure: measureBlock,
     });
 
     return () => {
@@ -113,51 +113,46 @@ export function BlockRenderer({
   }, [block.id, focusManager, measureBlock]);
 
   // NEW: Handle layout changes to track height
-  const handleLayout = useCallback((event: LayoutChangeEvent) => {
-    const { height } = event.nativeEvent.layout;
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const { height } = event.nativeEvent.layout;
 
-    if (Math.abs(height - blockHeight) > 1) {
-      setBlockHeight(height);
-      onBlockHeightChange?.(block.id, height);
-    }
-  }, [block.id, blockHeight, onBlockHeightChange]);
+      if (Math.abs(height - blockHeight) > 1) {
+        setBlockHeight(height);
+        onBlockHeightChange?.(block.id, height);
+      }
+    },
+    [block.id, blockHeight, onBlockHeightChange]
+  );
 
   // Get block component props (memoized to prevent unnecessary re-renders)
-  const blockComponentProps: BlockComponentProps = useMemo(() => ({
-    block,
-    isSelected,
-    isEditing,
-    isFocused: isEditing,
-    onBlockChange: (updates) => onBlockChange(block.id, updates),
-    onAction: () => {},
-    config,
-    onFocus: () => {
-      // Call both select and edit to synchronize the focus systems
-      onBlockSelect(block.id);
-      onBlockEdit(block.id);
-    },
-    onBlur: () => {},
-  }), [block, isSelected, isEditing, config, onBlockChange, onBlockSelect, onBlockEdit]);
+  const blockComponentProps: BlockComponentProps = useMemo(
+    () => ({
+      block,
+      isSelected,
+      isEditing,
+      isFocused: isEditing,
+      onBlockChange: updates => onBlockChange(block.id, updates),
+      onAction: () => {},
+      config,
+      onFocus: () => {
+        // Call both select and edit to synchronize the focus systems
+        onBlockSelect(block.id);
+        onBlockEdit(block.id);
+      },
+      onBlur: () => {},
+    }),
+    [block, isSelected, isEditing, config, onBlockChange, onBlockSelect, onBlockEdit]
+  );
 
   // Render the block component
   const BlockComponent = blockPlugin.component;
-  
+
   return (
-    <View
-      ref={blockRef}
-      style={[
-        styles.blockContainer,
-        blockProps?.style
-      ]}
-      onLayout={handleLayout}
-      {...blockProps}
-    >
+    <View ref={blockRef} style={[styles.blockContainer, blockProps?.style]} onLayout={handleLayout} {...blockProps}>
       {/* Block Content */}
       <View style={styles.blockContent}>
-        <BlockComponent
-          {...blockComponentProps}
-          ref={blockComponentRef}
-        />
+        <BlockComponent {...blockComponentProps} ref={blockComponentRef} />
       </View>
 
       {/* Block Info */}
@@ -167,9 +162,7 @@ export function BlockRenderer({
             Type: {block.type} | ID: {block.id.slice(-8)}
           </Text>
           {block.meta && Object.keys(block.meta).length > 0 && (
-            <Text style={styles.debugText}>
-              Meta: {JSON.stringify(block.meta, null, 2)}
-            </Text>
+            <Text style={styles.debugText}>Meta: {JSON.stringify(block.meta, null, 2)}</Text>
           )}
         </View>
       )}
@@ -178,9 +171,7 @@ export function BlockRenderer({
       {blockPlugin.hasError && (
         <View style={styles.errorContainer}>
           <Ionicons name="warning" size={16} color="#FF3B30" />
-          <Text style={styles.errorText}>
-            Error rendering block: {blockPlugin.error?.message || 'Unknown error'}
-          </Text>
+          <Text style={styles.errorText}>Error rendering block: {blockPlugin.error?.message || 'Unknown error'}</Text>
         </View>
       )}
     </View>
@@ -201,29 +192,26 @@ interface BlockErrorBoundaryState {
   error?: Error;
 }
 
-export class BlockErrorBoundary extends React.Component<
-  BlockErrorBoundaryProps,
-  BlockErrorBoundaryState
-> {
+export class BlockErrorBoundary extends React.Component<BlockErrorBoundaryProps, BlockErrorBoundaryState> {
   constructor(props: BlockErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
-  
+
   static getDerivedStateFromError(error: Error): BlockErrorBoundaryState {
     return { hasError: true, error };
   }
-  
+
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Block rendering error:', error, errorInfo);
     this.props.onError?.(error, this.props.block);
   }
-  
+
   render() {
     if (this.state.hasError) {
       // Use light theme as fallback for error boundary
       const styles = getStyles('light');
-      
+
       return (
         <View style={styles.errorBoundary}>
           <Ionicons name="warning" size={24} color="#FF3B30" />
@@ -231,9 +219,7 @@ export class BlockErrorBoundary extends React.Component<
           <Text style={styles.errorBoundaryMessage}>
             {this.state.error?.message || 'An error occurred while rendering this block'}
           </Text>
-          <Text style={styles.errorBoundaryDetails}>
-            Block Type: {this.props.block.type}
-          </Text>
+          <Text style={styles.errorBoundaryDetails}>Block Type: {this.props.block.type}</Text>
           <TouchableOpacity
             style={styles.errorBoundaryButton}
             onPress={() => this.setState({ hasError: false, error: undefined })}
@@ -243,7 +229,7 @@ export class BlockErrorBoundary extends React.Component<
         </View>
       );
     }
-    
+
     return this.props.children;
   }
 }
@@ -255,7 +241,7 @@ export function SafeBlockRenderer(props: BlockRendererProps) {
   return (
     <BlockErrorBoundary
       block={props.block}
-      onError={(error) => {
+      onError={error => {
         console.error(`Error in block ${props.block.id}:`, error);
       }}
     >
@@ -285,13 +271,13 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
       padding: 8,
       borderRadius: 4,
-      zIndex: 15
+      zIndex: 15,
     },
 
     debugText: {
       fontSize: 10,
       color: colorScheme === 'dark' ? colors.text : 'white',
-      fontFamily: 'monospace'
+      fontFamily: 'monospace',
     },
 
     errorContainer: {
@@ -300,14 +286,14 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       padding: 8,
       backgroundColor: colors.error + '10',
       borderRadius: 4,
-      margin: 4
+      margin: 4,
     },
 
     errorText: {
       fontSize: 12,
       color: colors.error,
       marginLeft: 8,
-      flex: 1
+      flex: 1,
     },
 
     errorBoundary: {
@@ -315,28 +301,28 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: colors.error + '10',
       borderRadius: 8,
       alignItems: 'center',
-      margin: 8
+      margin: 8,
     },
 
     errorBoundaryTitle: {
       fontSize: 16,
       fontWeight: 'bold',
       color: colors.error,
-      marginTop: 8
+      marginTop: 8,
     },
 
     errorBoundaryMessage: {
       fontSize: 14,
       color: colors.textSecondary,
       textAlign: 'center',
-      marginTop: 4
+      marginTop: 4,
     },
 
     errorBoundaryDetails: {
       fontSize: 12,
       color: colors.textSecondary,
       marginTop: 8,
-      fontFamily: 'monospace'
+      fontFamily: 'monospace',
     },
 
     errorBoundaryButton: {
@@ -344,13 +330,13 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: 16,
       paddingVertical: 8,
       borderRadius: 6,
-      marginTop: 12
+      marginTop: 12,
     },
 
     errorBoundaryButtonText: {
       color: 'white',
       fontSize: 14,
-      fontWeight: '600'
-    }
+      fontWeight: '600',
+    },
   });
 };

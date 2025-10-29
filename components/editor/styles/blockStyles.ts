@@ -51,11 +51,11 @@ import { Colors } from '../../../constants/Colors';
  * NEVER modify these per-block unless you have a very good reason
  */
 export const BLOCK_SPACING = {
-  marginVertical: 6,     // Space between blocks
-  paddingLeft: 8,        // Left padding (accounts for border)
-  paddingRight: 4,       // Right padding
-  paddingVertical: 2,    // Top/bottom padding within block
-  borderWidth: 2,        // Left border width (for focus indicator)
+  marginVertical: 6, // Space between blocks
+  paddingLeft: 8, // Left padding (accounts for border)
+  paddingRight: 4, // Right padding
+  paddingVertical: 2, // Top/bottom padding within block
+  borderWidth: 2, // Left border width (for focus indicator)
 } as const;
 
 /**
@@ -70,10 +70,7 @@ export const ANIMATION_CONFIG = {
  * Get animated focus styles for a block
  * These styles change opacity/color but NEVER change layout (size, padding, margins)
  */
-export const getAnimatedFocusStyles = (
-  colorScheme: 'light' | 'dark',
-  animatedValue: Animated.Value
-) => {
+export const getAnimatedFocusStyles = (colorScheme: 'light' | 'dark', animatedValue: Animated.Value) => {
   const isDark = colorScheme === 'dark';
 
   // Border color interpolation (transparent -> subtle color)
@@ -103,34 +100,19 @@ export const getAnimatedFocusStyles = (
 /**
  * Get static focus colors (for non-animated components)
  */
-export const getFocusColors = (
-  colorScheme: 'light' | 'dark',
-  isFocused: boolean
-) => {
+export const getFocusColors = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
   const isDark = colorScheme === 'dark';
 
   return {
-    borderColor: isFocused
-      ? isDark
-        ? 'rgba(100, 181, 246, 0.3)'
-        : 'rgba(33, 150, 243, 0.3)'
-      : 'rgba(0, 0, 0, 0)',
-    backgroundColor: isFocused
-      ? isDark
-        ? 'rgba(255, 255, 255, 0.02)'
-        : 'rgba(0, 0, 0, 0.01)'
-      : 'rgba(0, 0, 0, 0)',
+    borderColor: isFocused ? (isDark ? 'rgba(100, 181, 246, 0.3)' : 'rgba(33, 150, 243, 0.3)') : 'rgba(0, 0, 0, 0)',
+    backgroundColor: isFocused ? (isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)') : 'rgba(0, 0, 0, 0)',
   };
 };
 
 /**
  * Get heading-specific focus colors with more emphasis
  */
-export const getHeadingFocusColors = (
-  colorScheme: 'light' | 'dark',
-  level: number,
-  isFocused: boolean
-) => {
+export const getHeadingFocusColors = (colorScheme: 'light' | 'dark', level: number, isFocused: boolean) => {
   const isDark = colorScheme === 'dark';
 
   // Heading levels 1-2 get more emphasis
@@ -138,19 +120,14 @@ export const getHeadingFocusColors = (
   const opacity = isFocused ? (isEmphasis ? 0.4 : 0.3) : 0;
 
   return {
-    borderColor: isDark
-      ? `rgba(100, 181, 246, ${opacity})`
-      : `rgba(33, 150, 243, ${opacity})`,
+    borderColor: isDark ? `rgba(100, 181, 246, ${opacity})` : `rgba(33, 150, 243, ${opacity})`,
   };
 };
 
 /**
  * Get code block focus colors
  */
-export const getCodeFocusColors = (
-  colorScheme: 'light' | 'dark',
-  isFocused: boolean
-) => {
+export const getCodeFocusColors = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
   const isDark = colorScheme === 'dark';
 
   return {
@@ -159,32 +136,23 @@ export const getCodeFocusColors = (
         ? 'rgba(255, 255, 255, 0.08)'
         : 'rgba(0, 0, 0, 0.05)'
       : isDark
-      ? 'rgba(255, 255, 255, 0.05)'
-      : 'rgba(0, 0, 0, 0.03)',
+        ? 'rgba(255, 255, 255, 0.05)'
+        : 'rgba(0, 0, 0, 0.03)',
   };
 };
 
 /**
  * Get quote block focus colors
  */
-export const getQuoteFocusColors = (
-  colorScheme: 'light' | 'dark',
-  isFocused: boolean
-) => {
+export const getQuoteFocusColors = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
   const isDark = colorScheme === 'dark';
 
   // Quote bar gets more visible when focused
   const barOpacity = isFocused ? 0.25 : 0.15;
 
   return {
-    barColor: isDark
-      ? `rgba(255, 255, 255, ${barOpacity})`
-      : `rgba(0, 0, 0, ${barOpacity})`,
-    backgroundColor: isFocused
-      ? isDark
-        ? 'rgba(255, 255, 255, 0.02)'
-        : 'rgba(0, 0, 0, 0.01)'
-      : 'rgba(0, 0, 0, 0)',
+    barColor: isDark ? `rgba(255, 255, 255, ${barOpacity})` : `rgba(0, 0, 0, ${barOpacity})`,
+    backgroundColor: isFocused ? (isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)') : 'rgba(0, 0, 0, 0)',
   };
 };
 
@@ -274,8 +242,8 @@ export const getBlockInputStyle = (colorScheme: 'light' | 'dark') => {
   return {
     width: '100%',
     backgroundColor: 'transparent',
-    paddingHorizontal: 0,  // NO padding - container handles this
-    paddingVertical: 0,    // NO padding - container handles this
+    paddingHorizontal: 0, // NO padding - container handles this
+    paddingVertical: 0, // NO padding - container handles this
     color: colors.text,
   };
 };

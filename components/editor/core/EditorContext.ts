@@ -8,11 +8,11 @@ import { EditorContextInterface } from '../types/EditorTypes';
  */
 export function useEditor(): EditorContextInterface {
   const context = useContext(EditorContext);
-  
+
   if (!context) {
     throw new Error('useEditor must be used within an EditorProvider');
   }
-  
+
   return context;
 }
 
@@ -47,9 +47,9 @@ export function useEditorActions() {
     getMarkdown,
     setMarkdown,
     validate,
-    reset
+    reset,
   } = useEditor();
-  
+
   return {
     createBlock,
     updateBlock,
@@ -69,7 +69,7 @@ export function useEditorActions() {
     getMarkdown,
     setMarkdown,
     validate,
-    reset
+    reset,
   };
 }
 
@@ -78,9 +78,9 @@ export function useEditorActions() {
  */
 export function useEditorPlugins() {
   const { getPlugin, executePluginAction } = useEditor();
-  
+
   return {
     getPlugin,
-    executePluginAction
+    executePluginAction,
   };
 }

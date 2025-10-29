@@ -2,9 +2,9 @@ import { Note, StorageBackend, StorageConfig, IPFSStorageConfig } from '@/types/
 
 /**
  * IPFS storage backend (placeholder for future implementation)
- * 
+ *
  * This will integrate with IPFS for decentralized storage.
- * 
+ *
  * Implementation notes:
  * - Connect to IPFS node (local or remote)
  * - Store notes as IPFS objects
@@ -21,15 +21,15 @@ export class IPFSBackend implements StorageBackend {
     if (config.type !== 'ipfs') {
       throw new Error('Invalid config type for IPFSBackend');
     }
-    
+
     this.config = config;
-    
+
     // TODO: Implement IPFS connection
     // - Connect to IPFS node
     // - Verify node is accessible
     // - Load notes index from IPNS
     // - Initialize local cache
-    
+
     throw new Error('IPFS backend not yet implemented');
   }
 
@@ -37,11 +37,11 @@ export class IPFSBackend implements StorageBackend {
     if (!this.config) {
       return false;
     }
-    
+
     // TODO: Implement connection test
     // - Ping IPFS API
     // - Test basic operations (add/cat)
-    
+
     return false;
   }
 

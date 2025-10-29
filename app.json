@@ -26,9 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.decanotesexpo",
-      "permissions": [
-        "INTERNET"
-      ],
+      "permissions": ["INTERNET"],
       "newArchEnabled": true
     },
     "web": {

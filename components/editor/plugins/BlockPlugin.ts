@@ -1,13 +1,13 @@
 import { ComponentType } from 'react';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import {
-    BlockAction,
-    BlockComponentProps,
-    BlockController,
-    BlockSettings,
-    BlockPlugin as IBlockPlugin,
-    MarkdownSyntax,
-    ToolbarConfig
+  BlockAction,
+  BlockComponentProps,
+  BlockController,
+  BlockSettings,
+  BlockPlugin as IBlockPlugin,
+  MarkdownSyntax,
+  ToolbarConfig,
 } from '../types/PluginTypes';
 
 /**
@@ -20,7 +20,7 @@ export abstract class BlockPlugin implements IBlockPlugin {
   abstract readonly version: string;
   abstract readonly blockType: EditorBlockType | string;
   abstract readonly component: ComponentType<BlockComponentProps>;
-  
+
   readonly type = 'block' as const;
   readonly description?: string;
   readonly controller: BlockController;
@@ -31,15 +31,15 @@ export abstract class BlockPlugin implements IBlockPlugin {
   constructor(config: Partial<IBlockPlugin> = {}) {
     // Apply configuration
     Object.assign(this, config);
-    
+
     // Initialize controller with defaults
     this.controller = this.createController();
-    
+
     // Set up markdown syntax if provided
     if (this.markdownSyntax) {
       this.markdownSyntax = {
         ...this.markdownSyntax,
-        priority: this.markdownSyntax.priority ?? 50 // Default priority if not set
+        priority: this.markdownSyntax.priority ?? 50, // Default priority if not set
       };
     }
   }
@@ -52,53 +52,53 @@ export abstract class BlockPlugin implements IBlockPlugin {
       // Content validation
       validateContent: this.validateContent.bind(this),
       transformContent: this.transformContent.bind(this),
-      
+
       // Keyboard handling
       handleKeyPress: this.handleKeyPress.bind(this),
       handleEnter: this.handleEnter.bind(this),
       handleBackspace: this.handleBackspace.bind(this),
-      
+
       // Lifecycle
       onCreate: this.onCreate.bind(this),
       onUpdate: this.onUpdate.bind(this),
       onDelete: this.onDelete.bind(this),
-      
+
       // Actions
       getActions: this.getActions.bind(this),
-      
+
       // Drag and drop
       canDrag: this.canDrag.bind(this),
       canDrop: this.canDrop.bind(this),
-      onDrop: this.onDrop.bind(this)
+      onDrop: this.onDrop.bind(this),
     };
   }
 
   // Default implementations (can be overridden)
-  
+
   /**
    * Validate block content
    */
   protected validateContent(content: string): boolean {
     if (this.settings?.validation) {
       const { required, pattern, minLength, maxLength } = this.settings.validation;
-      
+
       if (required && required.length > 0 && !content.trim()) {
         return false;
       }
-      
+
       if (pattern && !pattern.test(content)) {
         return false;
       }
-      
+
       if (minLength && content.length < minLength) {
         return false;
       }
-      
+
       if (maxLength && content.length > maxLength) {
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -120,7 +120,11 @@ export abstract class BlockPlugin implements IBlockPlugin {
   /**
    * Handle Enter key press
    */
-  protected handleEnter(block: EditorBlock, allBlocks?: EditorBlock[], currentIndex?: number): EditorBlock | EditorBlock[] | null {
+  protected handleEnter(
+    block: EditorBlock,
+    allBlocks?: EditorBlock[],
+    currentIndex?: number
+  ): EditorBlock | EditorBlock[] | null {
     // Default behavior: create new paragraph
     return null;
   }
@@ -143,11 +147,11 @@ export abstract class BlockPlugin implements IBlockPlugin {
         ...block,
         meta: {
           ...this.settings.defaultMeta,
-          ...block.meta
-        }
+          ...block.meta,
+        },
       };
     }
-    
+
     return block;
   }
 
@@ -170,7 +174,7 @@ export abstract class BlockPlugin implements IBlockPlugin {
    */
   public getActions(block: EditorBlock): BlockAction[] {
     const actions: BlockAction[] = [];
-    
+
     // Add default actions
     actions.push({
       id: 'duplicate',
@@ -178,9 +182,9 @@ export abstract class BlockPlugin implements IBlockPlugin {
       icon: 'copy',
       handler: (block, context) => {
         context.duplicateBlock();
-      }
+      },
     });
-    
+
     actions.push({
       id: 'delete',
       label: 'Delete',
@@ -188,9 +192,9 @@ export abstract class BlockPlugin implements IBlockPlugin {
       style: 'destructive',
       handler: (block, context) => {
         context.deleteBlock();
-      }
+      },
     });
-    
+
     return actions;
   }
 
@@ -210,7 +214,7 @@ export abstract class BlockPlugin implements IBlockPlugin {
       const targetBlock = blocks[targetIndex];
       return this.settings.allowedParents.includes(targetBlock.type as EditorBlockType);
     }
-    
+
     return true;
   }
 
@@ -231,10 +235,10 @@ export abstract class BlockPlugin implements IBlockPlugin {
       content,
       meta: {
         ...this.settings?.defaultMeta,
-        ...meta
-      }
+        ...meta,
+      },
     };
-    
+
     return this.onCreate(block);
   }
 
@@ -264,7 +268,7 @@ export abstract class BlockPlugin implements IBlockPlugin {
       blockType: this.blockType,
       hasMarkdownSyntax: !!this.markdownSyntax,
       hasToolbar: !!this.toolbar,
-      settings: this.settings
+      settings: this.settings,
     };
   }
 }
@@ -292,9 +296,11 @@ export function createSimpleBlockPlugin(config: {
     readonly description = config.description;
     readonly toolbar = config.toolbar;
     readonly settings = config.settings;
-    readonly markdownSyntax = config.markdownPattern ? {
-      patterns: { block: config.markdownPattern },
-      priority: 50
-    } : undefined;
+    readonly markdownSyntax = config.markdownPattern
+      ? {
+          patterns: { block: config.markdownPattern },
+          priority: 50,
+        }
+      : undefined;
   })();
 }

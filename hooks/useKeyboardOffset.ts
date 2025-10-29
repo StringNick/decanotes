@@ -36,11 +36,16 @@ export const useKeyboardOffset = (): number => {
     const controllerSubscriptions: { remove: () => void }[] = [];
 
     if (KeyboardEventsModuleRef?.addListener) {
-      const controllerShowEvents = ['keyboardWillShow', 'keyboardDidShow', 'keyboardWillChangeFrame', 'keyboardDidChangeFrame'];
+      const controllerShowEvents = [
+        'keyboardWillShow',
+        'keyboardDidShow',
+        'keyboardWillChangeFrame',
+        'keyboardDidChangeFrame',
+      ];
       const controllerHideEvents = ['keyboardWillHide', 'keyboardDidHide'];
 
-      controllerShowEvents.forEach((eventName) => {
-        const sub = KeyboardEventsModuleRef?.addListener?.(eventName, (event) => {
+      controllerShowEvents.forEach(eventName => {
+        const sub = KeyboardEventsModuleRef?.addListener?.(eventName, event => {
           setKeyboardHeight(Math.max(0, event.height ?? 0));
         });
         if (sub) {
@@ -48,8 +53,8 @@ export const useKeyboardOffset = (): number => {
         }
       });
 
-      controllerHideEvents.forEach((eventName) => {
-        const sub = KeyboardEventsModuleRef?.addListener?.(eventName, (event) => {
+      controllerHideEvents.forEach(eventName => {
+        const sub = KeyboardEventsModuleRef?.addListener?.(eventName, event => {
           const height = Math.max(0, event.height ?? 0);
           setKeyboardHeight(height);
           if (height === 0) {

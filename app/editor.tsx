@@ -6,9 +6,40 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { CheckSquare, Code, Copy, Heading1, Heading2, Heading3, Lightbulb, List, ListOrdered, Minus, Plus, Quote, Redo2, Save, Table, Type, Undo2, X } from 'lucide-react-native';
+import {
+  CheckSquare,
+  Code,
+  Copy,
+  Heading1,
+  Heading2,
+  Heading3,
+  Lightbulb,
+  List,
+  ListOrdered,
+  Minus,
+  Plus,
+  Quote,
+  Redo2,
+  Save,
+  Table,
+  Type,
+  Undo2,
+  X,
+} from 'lucide-react-native';
 import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
@@ -17,7 +48,6 @@ import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorType
 import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
-
 
 // Demo markdown text (not used - we use initialBlocks from loaded notes instead)
 /* const initialMarkdown = `# Welcome to DecanNotes Editor
@@ -190,7 +220,7 @@ function convertTableMarkdownToBlocks(blocks: EditorBlock[]): EditorBlock[] {
       const parseTableRow = (line: string): string[] => {
         return line
           .split('|')
-          .slice(1, -1)  // Remove first and last empty elements
+          .slice(1, -1) // Remove first and last empty elements
           .map(cell => cell.trim());
       };
 
@@ -202,9 +232,7 @@ function convertTableMarkdownToBlocks(blocks: EditorBlock[]): EditorBlock[] {
         const alignmentCells = parseTableRow(lines[1]);
 
         // Validate that second row is an alignment row
-        const isValidAlignmentRow = alignmentCells.every(cell =>
-          /^:?-+:?$/.test(cell)
-        );
+        const isValidAlignmentRow = alignmentCells.every(cell => /^:?-+:?$/.test(cell));
 
         if (isValidAlignmentRow && headers.length > 0) {
           const alignments = alignmentCells.map(cell => {
@@ -214,7 +242,7 @@ function convertTableMarkdownToBlocks(blocks: EditorBlock[]): EditorBlock[] {
             if (startsWithColon && endsWithColon) return 'center';
             if (endsWithColon) return 'right';
             if (startsWithColon) return 'left';
-            return 'left';  // default
+            return 'left'; // default
           }) as ('left' | 'center' | 'right')[];
 
           // Parse data rows
@@ -228,8 +256,8 @@ function convertTableMarkdownToBlocks(blocks: EditorBlock[]): EditorBlock[] {
             meta: {
               headers,
               rows,
-              alignments
-            }
+              alignments,
+            },
           };
         }
       }
@@ -245,7 +273,8 @@ export default function EditorScreen() {
   const params = useLocalSearchParams<{ noteId?: string }>();
   const { effectiveTheme } = useTheme();
   const colorScheme = effectiveTheme; // Use app theme setting instead of system theme
-  const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges } = useStorage();
+  const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges } =
+    useStorage();
 
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
@@ -316,8 +345,6 @@ export default function EditorScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-
   // Show block components with animation
   const showBlockComponentsWithAnimation = useCallback(() => {
     Keyboard.dismiss();
@@ -329,41 +356,47 @@ export default function EditorScreen() {
   }, []);
 
   // Handle adding blocks
-  const handleAddBlock = useCallback((blockType: EditorBlockType, meta?: Record<string, any>) => {
-    Keyboard.dismiss();
-    if (editorRef.current) {
-      if (__DEV__) {
-        console.log('[EditorScreen] handleAddBlock start', { blockType, meta });
-      }
+  const handleAddBlock = useCallback(
+    (blockType: EditorBlockType, meta?: Record<string, any>) => {
+      Keyboard.dismiss();
+      if (editorRef.current) {
+        if (__DEV__) {
+          console.log('[EditorScreen] handleAddBlock start', { blockType, meta });
+        }
 
-      // Insert the new block
-      editorRef.current.insertBlock(blockType, undefined, { meta });
+        // Insert the new block
+        editorRef.current.insertBlock(blockType, undefined, { meta });
 
-      if (__DEV__) {
-        console.log('[EditorScreen] handleAddBlock insertBlock dispatched', { blockType, meta });
+        if (__DEV__) {
+          console.log('[EditorScreen] handleAddBlock insertBlock dispatched', { blockType, meta });
+        }
       }
-    }
-    hideBlockComponents();
-  }, [hideBlockComponents]);
+      hideBlockComponents();
+    },
+    [hideBlockComponents]
+  );
 
   // Handle block changes
-  const handleBlockChange = useCallback((blocks: EditorBlock[]) => {
-    setBlocks(blocks);
+  const handleBlockChange = useCallback(
+    (blocks: EditorBlock[]) => {
+      setBlocks(blocks);
 
-    // Don't mark as changed during initial load
-    if (isInitialLoad.current) {
-      return;
-    }
+      // Don't mark as changed during initial load
+      if (isInitialLoad.current) {
+        return;
+      }
 
-    // Check if blocks actually changed by comparing with initial blocks
-    const hasActualChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocksRef.current);
+      // Check if blocks actually changed by comparing with initial blocks
+      const hasActualChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocksRef.current);
 
-    if (hasActualChanges) {
-      markAsChanged();
-    } else if (hasUnsavedChanges) {
-      clearUnsavedChanges();
-    }
-  }, [markAsChanged, clearUnsavedChanges, hasUnsavedChanges]);
+      if (hasActualChanges) {
+        markAsChanged();
+      } else if (hasUnsavedChanges) {
+        clearUnsavedChanges();
+      }
+    },
+    [markAsChanged, clearUnsavedChanges, hasUnsavedChanges]
+  );
 
   // Save note handler
   const handleSaveNote = useCallback(async () => {
@@ -515,7 +548,12 @@ export default function EditorScreen() {
   }, [rawMarkdown]);
 
   // Block types for the menu - Notion-style
-  const blockTypes: { type: EditorBlockType; icon: React.ComponentType<any>; label: string; meta?: Record<string, any> }[] = [
+  const blockTypes: {
+    type: EditorBlockType;
+    icon: React.ComponentType<any>;
+    label: string;
+    meta?: Record<string, any>;
+  }[] = [
     { type: 'paragraph', icon: Type, label: 'Text' },
     { type: 'heading', icon: Heading1, label: 'Heading 1', meta: { level: 1 } },
     { type: 'heading', icon: Heading2, label: 'Heading 2', meta: { level: 2 } },
@@ -531,11 +569,7 @@ export default function EditorScreen() {
   ];
 
   const blockDockSection = showBlockComponents ? (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.blockQuickContent}
-    >
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.blockQuickContent}>
       {blockTypes.map((item, index) => {
         const IconComponent = item.icon;
         return (
@@ -572,18 +606,10 @@ export default function EditorScreen() {
   const actionDockSection = (
     <>
       <View style={styles.dockHistoryGroup}>
-        <TouchableOpacity
-          style={styles.dockButtonSurface}
-          onPress={handleUndo}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.dockButtonSurface} onPress={handleUndo} activeOpacity={0.7}>
           <Undo2 size={18} color={colors.text} strokeWidth={2} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.dockButtonSurface}
-          onPress={handleRedo}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.dockButtonSurface} onPress={handleRedo} activeOpacity={0.7}>
           <Redo2 size={18} color={colors.text} strokeWidth={2} />
         </TouchableOpacity>
       </View>
@@ -625,21 +651,17 @@ export default function EditorScreen() {
             style={styles.backButton}
             onPress={() => {
               if (hasUnsavedChanges) {
-                Alert.alert(
-                  'Unsaved Changes',
-                  'You have unsaved changes. Do you want to save before leaving?',
-                  [
-                    { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Save',
-                      onPress: async () => {
-                        await handleSaveNote();
-                        router.back();
-                      }
+                Alert.alert('Unsaved Changes', 'You have unsaved changes. Do you want to save before leaving?', [
+                  { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Save',
+                    onPress: async () => {
+                      await handleSaveNote();
+                      router.back();
                     },
-                  ]
-                );
+                  },
+                ]);
               } else {
                 router.back();
               }
@@ -671,16 +693,10 @@ export default function EditorScreen() {
                 )}
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleRename}
-            >
+            <TouchableOpacity style={styles.actionButton} onPress={handleRename}>
               <Ionicons name="pencil" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleGetRawMarkdown}
-            >
+            <TouchableOpacity style={styles.actionButton} onPress={handleGetRawMarkdown}>
               <Code size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -710,9 +726,9 @@ export default function EditorScreen() {
                     text: colors.text,
                     border: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
                     primary: colors.tint,
-                    secondary: colors.icon
-                  }
-                }
+                    secondary: colors.icon,
+                  },
+                },
               }}
               keyboardHeight={keyboardOffset}
               keyboardDockVisible={dockVisible}
@@ -735,11 +751,14 @@ export default function EditorScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Rename Note</Text>
             <TextInput
-              style={[styles.modalInput, {
-                color: colors.text,
-                borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
-                backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-              }]}
+              style={[
+                styles.modalInput,
+                {
+                  color: colors.text,
+                  borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                  backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                },
+              ]}
               value={tempTitle}
               onChangeText={setTempTitle}
               placeholder="Enter note title"
@@ -753,10 +772,7 @@ export default function EditorScreen() {
               >
                 <Text style={styles.modalButtonTextCancel}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm]}
-                onPress={handleConfirmRename}
-              >
+              <TouchableOpacity style={[styles.modalButton, styles.modalButtonConfirm]} onPress={handleConfirmRename}>
                 <Text style={styles.modalButtonTextConfirm}>Rename</Text>
               </TouchableOpacity>
             </View>
@@ -783,24 +799,29 @@ export default function EditorScreen() {
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {isEditingMarkdown ? 'Edit Markdown' : 'View Markdown'}
               </Text>
-              <TouchableOpacity onPress={() => {
-                if (isEditingMarkdown) {
-                  handleCancelEditMarkdown();
-                } else {
-                  setShowMarkdownModal(false);
-                }
-              }}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (isEditingMarkdown) {
+                    handleCancelEditMarkdown();
+                  } else {
+                    setShowMarkdownModal(false);
+                  }
+                }}
+              >
                 <X size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             {isEditingMarkdown ? (
               <TextInput
-                style={[styles.markdownInput, {
-                  backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                  borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                  color: colors.text,
-                }]}
+                style={[
+                  styles.markdownInput,
+                  {
+                    backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                    borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    color: colors.text,
+                  },
+                ]}
                 value={editedMarkdown}
                 onChangeText={setEditedMarkdown}
                 multiline
@@ -810,10 +831,15 @@ export default function EditorScreen() {
                 autoFocus
               />
             ) : (
-              <View style={[styles.markdownContainer, {
-                backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-              }]}>
+              <View
+                style={[
+                  styles.markdownContainer,
+                  {
+                    backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                    borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  },
+                ]}
+              >
                 <Text style={[styles.markdownText, { color: colors.text }]}>{rawMarkdown}</Text>
               </View>
             )}

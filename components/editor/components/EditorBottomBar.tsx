@@ -71,11 +71,7 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
   const toolbarOpacity = useRef(new Animated.Value(0)).current;
   const lastMeasuredHeight = useRef(0);
 
-  const {
-    state,
-    updateBlock,
-    deleteBlock,
-  } = useEditor();
+  const { state, updateBlock, deleteBlock } = useEditor();
 
   const styles = useMemo(() => getStyles(colorScheme ?? 'light', colors), [colorScheme, colors]);
 
@@ -83,7 +79,7 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
     if (!state.focusedBlockId) {
       return null;
     }
-    return state.blocks.find((block) => block.id === state.focusedBlockId) ?? null;
+    return state.blocks.find(block => block.id === state.focusedBlockId) ?? null;
   }, [state.blocks, state.focusedBlockId]);
 
   const showToolbar = !!activeBlock && !readOnly && state.mode === 'edit';
@@ -106,118 +102,117 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
     };
   }, [onHeightChange]);
 
-  const handleLayout = useCallback((event: LayoutChangeEvent) => {
-    const height = event.nativeEvent.layout.height;
-    if (Math.abs(lastMeasuredHeight.current - height) > 1) {
-      lastMeasuredHeight.current = height;
-      onHeightChange?.(height);
-    }
-  }, [onHeightChange]);
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const height = event.nativeEvent.layout.height;
+      if (Math.abs(lastMeasuredHeight.current - height) > 1) {
+        lastMeasuredHeight.current = height;
+        onHeightChange?.(height);
+      }
+    },
+    [onHeightChange]
+  );
 
   // Keyboard dock positioning
   const translateY = visible ? 0 : 120;
-  const basePadding = Platform.OS === 'ios'
-    ? insets.bottom
-    : insets.bottom + 6;
+  const basePadding = Platform.OS === 'ios' ? insets.bottom : insets.bottom + 6;
 
   // Always use app background color for seamless integration
   const backgroundStyle = {
-    backgroundColor: colors.background
+    backgroundColor: colors.background,
   };
 
   // Block action handlers
-  const handleHeadingLevelChange = useCallback((delta: number) => {
-    if (!activeBlock) return;
-    const currentLevel = activeBlock.meta?.level ?? MIN_HEADING_LEVEL;
-    const nextLevel = Math.min(
-      MAX_HEADING_LEVEL,
-      Math.max(MIN_HEADING_LEVEL, currentLevel + delta)
-    );
-    if (nextLevel === currentLevel) return;
+  const handleHeadingLevelChange = useCallback(
+    (delta: number) => {
+      if (!activeBlock) return;
+      const currentLevel = activeBlock.meta?.level ?? MIN_HEADING_LEVEL;
+      const nextLevel = Math.min(MAX_HEADING_LEVEL, Math.max(MIN_HEADING_LEVEL, currentLevel + delta));
+      if (nextLevel === currentLevel) return;
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      level: nextLevel,
-    };
-    updateBlock(activeBlock.id, { meta: nextMeta });
-  }, [activeBlock, updateBlock]);
+      const nextMeta: Record<string, any> = {
+        ...(activeBlock.meta ?? {}),
+        level: nextLevel,
+      };
+      updateBlock(activeBlock.id, { meta: nextMeta });
+    },
+    [activeBlock, updateBlock]
+  );
 
-  const handleQuoteDepthChange = useCallback((delta: number) => {
-    if (!activeBlock) return;
+  const handleQuoteDepthChange = useCallback(
+    (delta: number) => {
+      if (!activeBlock) return;
 
-    const normalizedContent = (activeBlock.content ?? '').replace(/\r/g, '');
-    const lineCount = normalizedContent.length > 0 ? normalizedContent.split('\n').length : 1;
-    const lineDepths = normalizeQuoteDepths(activeBlock, lineCount);
-    const cursorInfo = getQuoteCursorState(activeBlock.id);
-    const targetIndex = Math.max(0, Math.min(cursorInfo?.lineIndex ?? 0, lineCount - 1));
+      const normalizedContent = (activeBlock.content ?? '').replace(/\r/g, '');
+      const lineCount = normalizedContent.length > 0 ? normalizedContent.split('\n').length : 1;
+      const lineDepths = normalizeQuoteDepths(activeBlock, lineCount);
+      const cursorInfo = getQuoteCursorState(activeBlock.id);
+      const targetIndex = Math.max(0, Math.min(cursorInfo?.lineIndex ?? 0, lineCount - 1));
 
-    const currentDepth = lineDepths[targetIndex] ?? MIN_QUOTE_DEPTH;
-    const nextDepth = Math.min(
-      MAX_QUOTE_DEPTH,
-      Math.max(MIN_QUOTE_DEPTH, currentDepth + delta)
-    );
-    if (nextDepth === currentDepth) return;
+      const currentDepth = lineDepths[targetIndex] ?? MIN_QUOTE_DEPTH;
+      const nextDepth = Math.min(MAX_QUOTE_DEPTH, Math.max(MIN_QUOTE_DEPTH, currentDepth + delta));
+      if (nextDepth === currentDepth) return;
 
-    lineDepths[targetIndex] = nextDepth;
+      lineDepths[targetIndex] = nextDepth;
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      depth: lineDepths[0] ?? MIN_QUOTE_DEPTH,
-      quoteLineDepths: lineDepths,
-    };
+      const nextMeta: Record<string, any> = {
+        ...(activeBlock.meta ?? {}),
+        depth: lineDepths[0] ?? MIN_QUOTE_DEPTH,
+        quoteLineDepths: lineDepths,
+      };
 
-    updateBlock(activeBlock.id, { meta: nextMeta });
-  }, [activeBlock, updateBlock]);
+      updateBlock(activeBlock.id, { meta: nextMeta });
+    },
+    [activeBlock, updateBlock]
+  );
 
-  const handleListLevelChange = useCallback((delta: number) => {
-    if (!activeBlock) return;
-    const currentLevel = activeBlock.meta?.level ?? MIN_LIST_LEVEL;
-    const nextLevel = Math.min(
-      MAX_LIST_LEVEL,
-      Math.max(MIN_LIST_LEVEL, currentLevel + delta)
-    );
-    if (nextLevel === currentLevel) return;
+  const handleListLevelChange = useCallback(
+    (delta: number) => {
+      if (!activeBlock) return;
+      const currentLevel = activeBlock.meta?.level ?? MIN_LIST_LEVEL;
+      const nextLevel = Math.min(MAX_LIST_LEVEL, Math.max(MIN_LIST_LEVEL, currentLevel + delta));
+      if (nextLevel === currentLevel) return;
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      level: nextLevel,
-    };
+      const nextMeta: Record<string, any> = {
+        ...(activeBlock.meta ?? {}),
+        level: nextLevel,
+      };
 
-    const simulatedBlocks = state.blocks.map((block) =>
-      block.id === activeBlock.id
-        ? { ...block, meta: nextMeta }
-        : block
-    );
+      const simulatedBlocks = state.blocks.map(block =>
+        block.id === activeBlock.id ? { ...block, meta: nextMeta } : block
+      );
 
-    updateBlock(activeBlock.id, { meta: nextMeta });
+      updateBlock(activeBlock.id, { meta: nextMeta });
 
-    if ((nextMeta.listType ?? 'unordered') === 'ordered') {
-      const counters: number[] = [];
-      simulatedBlocks.forEach((block) => {
-        if (block.type !== 'list') return;
-        const listMeta: Record<string, any> = { ...(block.meta ?? {}) };
-        const level = listMeta.level ?? 0;
-        const listType = listMeta.listType ?? 'unordered';
+      if ((nextMeta.listType ?? 'unordered') === 'ordered') {
+        const counters: number[] = [];
+        simulatedBlocks.forEach(block => {
+          if (block.type !== 'list') return;
+          const listMeta: Record<string, any> = { ...(block.meta ?? {}) };
+          const level = listMeta.level ?? 0;
+          const listType = listMeta.listType ?? 'unordered';
 
-        if (listType === 'ordered') {
-          counters[level] = (counters[level] ?? 0) + 1;
-          counters.length = level + 1;
-          const desiredIndex = counters[level];
+          if (listType === 'ordered') {
+            counters[level] = (counters[level] ?? 0) + 1;
+            counters.length = level + 1;
+            const desiredIndex = counters[level];
 
-          if (listMeta.index !== desiredIndex) {
-            updateBlock(block.id, {
-              meta: {
-                ...listMeta,
-                index: desiredIndex,
-              },
-            });
+            if (listMeta.index !== desiredIndex) {
+              updateBlock(block.id, {
+                meta: {
+                  ...listMeta,
+                  index: desiredIndex,
+                },
+              });
+            }
+          } else {
+            counters.length = level;
           }
-        } else {
-          counters.length = level;
-        }
-      });
-    }
-  }, [activeBlock, state.blocks, updateBlock]);
+        });
+      }
+    },
+    [activeBlock, state.blocks, updateBlock]
+  );
 
   const previousListMetaRef = useRef<Map<string, Record<string, any>>>(new Map());
 
@@ -234,7 +229,7 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
     const store = previousListMetaRef.current;
 
     if (currentType === 'unordered') {
-      targets.forEach((idx) => {
+      targets.forEach(idx => {
         const block = state.blocks[idx];
         if (!block || block.type !== 'list') return;
         store.set(block.id, { ...(block.meta ?? {}) });
@@ -268,21 +263,21 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
     });
   }, [activeBlock, state.blocks, updateBlock]);
 
-  const handleChecklistLevelChange = useCallback((delta: number) => {
-    if (!activeBlock) return;
-    const currentLevel = activeBlock.meta?.level ?? MIN_LIST_LEVEL;
-    const nextLevel = Math.min(
-      MAX_LIST_LEVEL,
-      Math.max(MIN_LIST_LEVEL, currentLevel + delta)
-    );
-    if (nextLevel === currentLevel) return;
+  const handleChecklistLevelChange = useCallback(
+    (delta: number) => {
+      if (!activeBlock) return;
+      const currentLevel = activeBlock.meta?.level ?? MIN_LIST_LEVEL;
+      const nextLevel = Math.min(MAX_LIST_LEVEL, Math.max(MIN_LIST_LEVEL, currentLevel + delta));
+      if (nextLevel === currentLevel) return;
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      level: nextLevel,
-    };
-    updateBlock(activeBlock.id, { meta: nextMeta });
-  }, [activeBlock, updateBlock]);
+      const nextMeta: Record<string, any> = {
+        ...(activeBlock.meta ?? {}),
+        level: nextLevel,
+      };
+      updateBlock(activeBlock.id, { meta: nextMeta });
+    },
+    [activeBlock, updateBlock]
+  );
 
   const handleDelete = useCallback(() => {
     if (!activeBlock) return;
@@ -440,16 +435,19 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
         },
       ]}
     >
-      <View style={[
-        styles.surface,
-        backgroundStyle,
-        {
-          paddingBottom: keyboardHeight > 0 ? 8 : Math.max(8, basePadding),
-          // Light shadow always visible to separate from content
-          shadowOpacity: colorScheme === 'dark' ? 0.4 : 0.2,
-          elevation: 4,
-        }
-      ]} onLayout={handleLayout}>
+      <View
+        style={[
+          styles.surface,
+          backgroundStyle,
+          {
+            paddingBottom: keyboardHeight > 0 ? 8 : Math.max(8, basePadding),
+            // Light shadow always visible to separate from content
+            shadowOpacity: colorScheme === 'dark' ? 0.4 : 0.2,
+            elevation: 4,
+          },
+        ]}
+        onLayout={handleLayout}
+      >
         {/* Block Action Toolbar Section - Fades in/out */}
         <Animated.View
           style={[
@@ -466,13 +464,10 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
           <View style={styles.toolbarInner}>
             {/* Level/Depth control buttons */}
             <View style={styles.controlGroup}>
-              {otherActions.map((action) => (
+              {otherActions.map(action => (
                 <TouchableOpacity
                   key={action.id}
-                  style={[
-                    styles.button,
-                    action.disabled && styles.buttonDisabled,
-                  ]}
+                  style={[styles.button, action.disabled && styles.buttonDisabled]}
                   onPress={action.onPress}
                   activeOpacity={0.7}
                   disabled={action.disabled}
@@ -486,12 +481,7 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
                       style={{ opacity: action.disabled ? 0.4 : 1 }}
                     />
                   ) : (
-                    <Text
-                      style={[
-                        styles.buttonText,
-                        action.disabled && styles.buttonTextDisabled,
-                      ]}
-                    >
+                    <Text style={[styles.buttonText, action.disabled && styles.buttonTextDisabled]}>
                       {action.content}
                     </Text>
                   )}
@@ -514,44 +504,26 @@ export const EditorBottomBar: React.FC<EditorBottomBarProps> = ({
                 activeOpacity={0.7}
                 accessibilityLabel={deleteAction.label}
               >
-                <Ionicons
-                  name={deleteAction.icon as any}
-                  size={20}
-                  color="#EF4444"
-                />
+                <Ionicons name={deleteAction.icon as any} size={20} color="#EF4444" />
               </TouchableOpacity>
             )}
           </View>
         </Animated.View>
 
         {/* Divider between toolbar and dock sections */}
-        {showToolbar && (
-          <View style={styles.sectionDivider} />
-        )}
+        {showToolbar && <View style={styles.sectionDivider} />}
 
         {/* Keyboard Dock Sections */}
-        {blockSection && (
-          <View style={styles.blockRow}>
-            {blockSection}
-          </View>
-        )}
+        {blockSection && <View style={styles.blockRow}>{blockSection}</View>}
 
-        {formattingSection && (
-          <View style={styles.divider} />
-        )}
+        {formattingSection && <View style={styles.divider} />}
 
-        {formattingSection && (
-          <View style={styles.formattingRow}>
-            {formattingSection}
-          </View>
-        )}
+        {formattingSection && <View style={styles.formattingRow}>{formattingSection}</View>}
 
         {actionSection && (
           <>
             <View style={styles.divider} />
-            <View style={styles.actionRow}>
-              {actionSection}
-            </View>
+            <View style={styles.actionRow}>{actionSection}</View>
           </>
         )}
       </View>
@@ -572,7 +544,7 @@ const getStyles = (theme: 'light' | 'dark', colors: typeof Colors.light) => {
     surface: {
       // backgroundColor is dynamic - applied inline
       borderRadius: 0,
-      paddingTop: 8,  // Padding for visual separation
+      paddingTop: 8, // Padding for visual separation
       paddingHorizontal: 8,
       // Top border for clear boundary
       borderTopWidth: StyleSheet.hairlineWidth,
@@ -608,9 +580,7 @@ const getStyles = (theme: 'light' | 'dark', colors: typeof Colors.light) => {
       borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: isDark
-        ? 'rgba(255, 255, 255, 0.12)'
-        : 'rgba(15, 23, 42, 0.1)',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.1)',
     },
     buttonDisabled: {
       opacity: 0.35,
@@ -619,9 +589,7 @@ const getStyles = (theme: 'light' | 'dark', colors: typeof Colors.light) => {
       paddingHorizontal: 16,
       paddingVertical: 8,
       borderRadius: 8,
-      backgroundColor: isDark
-        ? 'rgba(167, 139, 250, 0.2)'
-        : 'rgba(139, 92, 246, 0.15)',
+      backgroundColor: isDark ? 'rgba(167, 139, 250, 0.2)' : 'rgba(139, 92, 246, 0.15)',
       marginHorizontal: 12,
     },
     levelText: {
@@ -636,9 +604,7 @@ const getStyles = (theme: 'light' | 'dark', colors: typeof Colors.light) => {
       borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: isDark
-        ? 'rgba(239, 68, 68, 0.15)'
-        : 'rgba(239, 68, 68, 0.1)',
+      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
     },
     buttonText: {
       fontSize: 14,

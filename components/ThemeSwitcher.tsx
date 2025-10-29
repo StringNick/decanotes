@@ -14,38 +14,36 @@ export function ThemeSwitcher() {
   };
 
   return (
-    <View style={[
-      styles.container, 
-      { 
-        backgroundColor: colors.background.secondary,
-        borderColor: colors.neutral.gray200,
-      }
-    ]}>
-      <IconSymbol
-        name="paintbrush.pointed.fill"
-        size={14}
-        color={colors.text.tertiary}
-      />
-      <Text style={[styles.label, { color: colors.text.secondary }]}>
-        Theme
-      </Text>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background.secondary,
+          borderColor: colors.neutral.gray200,
+        },
+      ]}
+    >
+      <IconSymbol name="paintbrush.pointed.fill" size={14} color={colors.text.tertiary} />
+      <Text style={[styles.label, { color: colors.text.secondary }]}>Theme</Text>
       <TouchableOpacity
         style={[
           styles.switcher,
-          { 
+          {
             backgroundColor: isDark ? DesignSystem.Colors.primary.teal : colors.neutral.gray300,
-          }
+          },
         ]}
         onPress={toggleTheme}
         activeOpacity={0.8}
       >
-        <View style={[
-          styles.thumb,
-          {
-            backgroundColor: colors.background.primary,
-            transform: [{ translateX: isDark ? 20 : 2 }],
-          }
-        ]}>
+        <View
+          style={[
+            styles.thumb,
+            {
+              backgroundColor: colors.background.primary,
+              transform: [{ translateX: isDark ? 20 : 2 }],
+            },
+          ]}
+        >
           <IconSymbol
             name={isDark ? 'moon.fill' : 'sun.max.fill'}
             size={10}
@@ -53,9 +51,7 @@ export function ThemeSwitcher() {
           />
         </View>
       </TouchableOpacity>
-      <Text style={[styles.currentTheme, { color: colors.text.tertiary }]}>
-        {isDark ? 'Dark' : 'Light'}
-      </Text>
+      <Text style={[styles.currentTheme, { color: colors.text.tertiary }]}>{isDark ? 'Dark' : 'Light'}</Text>
     </View>
   );
 }

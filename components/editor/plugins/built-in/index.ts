@@ -23,13 +23,10 @@ export const BUILT_IN_BLOCK_PLUGINS = [
   'video',
   'callout',
   'divider',
-  'table'
+  'table',
 ] as const;
 
-export const BUILT_IN_MARKDOWN_PLUGINS = [
-  'video-markdown',
-  'callout-markdown'
-] as const;
+export const BUILT_IN_MARKDOWN_PLUGINS = ['video-markdown', 'callout-markdown'] as const;
 
-export type BuiltInBlockPlugin = typeof BUILT_IN_BLOCK_PLUGINS[number];
-export type BuiltInMarkdownPlugin = typeof BUILT_IN_MARKDOWN_PLUGINS[number];
+export type BuiltInBlockPlugin = (typeof BUILT_IN_BLOCK_PLUGINS)[number];
+export type BuiltInMarkdownPlugin = (typeof BUILT_IN_MARKDOWN_PLUGINS)[number];

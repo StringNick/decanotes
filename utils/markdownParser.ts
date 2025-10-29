@@ -81,7 +81,7 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
     if (quoteMatch) {
       const [, markers, content] = quoteMatch;
       const quoteDepth = markers.length;
-      
+
       // Check if we can combine with the current block
       if (currentBlock && currentBlock.type === 'quote' && currentBlock.meta?.depth === quoteDepth) {
         // Combine with previous quote block
@@ -117,7 +117,11 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
     const checklistMatch = trimmedLine.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
     if (checklistMatch) {
       const [, checked, content] = checklistMatch;
-      if (!currentBlock || currentBlock.type !== 'checklist' || currentBlock.meta?.checked !== (checked.toLowerCase() === 'x')) {
+      if (
+        !currentBlock ||
+        currentBlock.type !== 'checklist' ||
+        currentBlock.meta?.checked !== (checked.toLowerCase() === 'x')
+      ) {
         if (currentBlock) blocks.push(currentBlock);
         currentBlock = {
           id: generateId(),
@@ -156,7 +160,7 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
       // Check if this is the start of a table
       if (!currentBlock || currentBlock.type !== 'table') {
         if (currentBlock) blocks.push(currentBlock);
-        
+
         // Look ahead to collect all table lines
         const tableLines: string[] = [line];
         let j = i + 1;
@@ -172,7 +176,7 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
           const parseTableRow = (line: string): string[] => {
             return line
               .split('|')
-              .slice(1, -1)  // Remove first and last empty elements
+              .slice(1, -1) // Remove first and last empty elements
               .map(cell => cell.trim());
           };
 
@@ -189,13 +193,11 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
             if (startsWithColon && endsWithColon) return 'center';
             if (endsWithColon) return 'right';
             if (startsWithColon) return 'left';
-            return 'left';  // default
+            return 'left'; // default
           }) as ('left' | 'center' | 'right')[];
 
           // Validate that second row is actually an alignment row
-          const isValidAlignmentRow = alignmentCells.every(cell =>
-            /^:?-+:?$/.test(cell)
-          );
+          const isValidAlignmentRow = alignmentCells.every(cell => /^:?-+:?$/.test(cell));
 
           if (isValidAlignmentRow && headers.length > 0) {
             // Parse data rows
@@ -205,7 +207,7 @@ export const parseMarkdownToBlocks = (markdown: string): EditorBlock[] => {
               id: generateId(),
               type: 'table',
               content: '',
-              meta: { headers, rows, alignments }
+              meta: { headers, rows, alignments },
             });
             currentBlock = null;
           }
@@ -248,7 +250,10 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
         const depth = block.meta?.depth || 1;
         const prefix = '>'.repeat(depth);
         md = block.content.trim()
-          ? block.content.split('\n').map(l => `${prefix} ${l}`).join('\n')
+          ? block.content
+              .split('\n')
+              .map(l => `${prefix} ${l}`)
+              .join('\n')
           : `${prefix} `;
         break;
       }
@@ -265,7 +270,10 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
         const checked = block.meta?.checked ? 'x' : ' ';
         const depth = block.meta?.depth || 0;
         const indent = '  '.repeat(depth);
-        md = block.content.split('\n').map(it => `${indent}- [${checked}] ${it}`).join('\n');
+        md = block.content
+          .split('\n')
+          .map(it => `${indent}- [${checked}] ${it}`)
+          .join('\n');
         break;
       }
       case 'divider':
@@ -322,7 +330,12 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
     if (next) {
       if (block.type === 'quote' && next.type === 'quote' && block.meta?.depth === next.meta?.depth) {
         out.push('\n');
-      } else if (block.type === 'list' && next.type === 'list' && block.meta?.ordered === next.meta?.ordered && block.meta?.depth === next.meta?.depth) {
+      } else if (
+        block.type === 'list' &&
+        next.type === 'list' &&
+        block.meta?.ordered === next.meta?.ordered &&
+        block.meta?.depth === next.meta?.depth
+      ) {
         out.push('\n');
       } else if (block.type === 'checklist' && next.type === 'checklist') {
         out.push('\n');
@@ -339,7 +352,7 @@ export const blocksToMarkdown = (blocks: EditorBlock[]): string => {
  */
 export const parseRawText = (
   text: string,
-  currentBlock: EditorBlock,
+  currentBlock: EditorBlock
 ): { type: EditorBlockType; content: string; meta?: EditorBlock['meta'] } => {
   // empty – keep quote/list/checklist types so user can continue editing
   if (!text.trim()) {
@@ -480,7 +493,14 @@ export const processInlineFormatting = (text: string): FormattedTextSegment[] =>
 
     if (!handled) {
       let normal = '';
-      while (i < text.length && text[i] !== '`' && !text.slice(i).startsWith('**') && !text.slice(i).startsWith('__') && !(text[i] === '*' && text[i + 1] !== '*') && !(text[i] === '_' && text[i + 1] !== '_')) {
+      while (
+        i < text.length &&
+        text[i] !== '`' &&
+        !text.slice(i).startsWith('**') &&
+        !text.slice(i).startsWith('__') &&
+        !(text[i] === '*' && text[i + 1] !== '*') &&
+        !(text[i] === '_' && text[i + 1] !== '_')
+      ) {
         normal += text[i];
         i++;
       }
@@ -511,20 +531,29 @@ export const getDisplayValue = (block: EditorBlock, isActive: boolean): string =
       const depth = block.meta?.depth || 1;
       const prefix = '>'.repeat(depth);
       if (!block.content.trim()) return `${prefix} `;
-      return block.content.split('\n').map(l => `${prefix} ${l}`).join('\n');
+      return block.content
+        .split('\n')
+        .map(l => `${prefix} ${l}`)
+        .join('\n');
     }
     case 'list': {
       const depth = block.meta?.depth || 0;
       const ordered = block.meta?.ordered;
-      return block.content.split('\n').map((item, idx) => {
-        const pre = ordered ? `${idx + 1}. ` : `${indent(depth)}- `;
-        return `${pre}${item}`;
-      }).join('\n');
+      return block.content
+        .split('\n')
+        .map((item, idx) => {
+          const pre = ordered ? `${idx + 1}. ` : `${indent(depth)}- `;
+          return `${pre}${item}`;
+        })
+        .join('\n');
     }
     case 'checklist': {
       const depth = block.meta?.depth || 0;
       const check = block.meta?.checked ? 'x' : ' ';
-      return block.content.split('\n').map(i => `${indent(depth)}- [${check}] ${i}`).join('\n');
+      return block.content
+        .split('\n')
+        .map(i => `${indent(depth)}- [${check}] ${i}`)
+        .join('\n');
     }
     case 'divider':
       return '---';

@@ -4,16 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useStorage } from '@/contexts/StorageContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface SettingItemProps {
@@ -26,37 +17,23 @@ interface SettingItemProps {
   colors: ReturnType<typeof getThemeColors>;
 }
 
-function SettingItem({
-  icon,
-  title,
-  subtitle,
-  onPress,
-  rightElement,
-  showChevron = true,
-  colors,
-}: SettingItemProps) {
+function SettingItem({ icon, title, subtitle, onPress, rightElement, showChevron = true, colors }: SettingItemProps) {
   const isDark = colors.background.primary === '#000000';
-  
+
   return (
     <TouchableOpacity
       style={[
         styles.settingItem,
         {
-          borderBottomColor: isDark 
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(0, 0, 0, 0.05)',
-        }
+          borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        },
       ]}
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.7}
     >
       <View style={styles.settingLeft}>
-        <IconSymbol
-          name={icon}
-          size={20}
-          color={colors.text.tertiary}
-        />
+        <IconSymbol name={icon} size={20} color={colors.text.tertiary} />
         <View style={styles.textContainer}>
           <Text style={[styles.settingTitle, { color: colors.text.primary }]}>{title}</Text>
           {subtitle && <Text style={[styles.settingSubtitle, { color: colors.text.tertiary }]}>{subtitle}</Text>}
@@ -64,13 +41,7 @@ function SettingItem({
       </View>
       <View style={styles.settingRight}>
         {rightElement}
-        {showChevron && onPress && (
-          <IconSymbol
-            name="chevron.right"
-            size={14}
-            color={colors.text.tertiary}
-          />
-        )}
+        {showChevron && onPress && <IconSymbol name="chevron.right" size={14} color={colors.text.tertiary} />}
       </View>
     </TouchableOpacity>
   );
@@ -97,26 +68,22 @@ export default function SettingsScreen() {
   // };
 
   const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-              router.replace('/auth');
-            } catch (error) {
-              console.error('Sign out failed:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut();
+            router.replace('/auth');
+          } catch (error) {
+            console.error('Sign out failed:', error);
+            Alert.alert('Error', 'Failed to sign out. Please try again.');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleSyncNow = async () => {
@@ -133,11 +100,7 @@ export default function SettingsScreen() {
   };
 
   const handleExportData = () => {
-    Alert.alert(
-      'Export Data',
-      'Export functionality will be available soon.',
-      [{ text: 'OK' }]
-    );
+    Alert.alert('Export Data', 'Export functionality will be available soon.', [{ text: 'OK' }]);
   };
 
   const getBackendDisplayName = () => {
@@ -155,21 +118,10 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top']}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent
-      />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <IconSymbol
-            name="chevron.left"
-            size={24}
-            color={colors.text.primary}
-          />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <IconSymbol name="chevron.left" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Settings</Text>
         <View style={styles.placeholder} />
@@ -220,7 +172,7 @@ export default function SettingsScreen() {
             <SettingItem
               icon="arrow.clockwise"
               title="Sync Now"
-              subtitle={isSyncing ? "Syncing..." : "Manually sync your notes"}
+              subtitle={isSyncing ? 'Syncing...' : 'Manually sync your notes'}
               colors={colors}
               onPress={isSyncing ? undefined : handleSyncNow}
             />
@@ -262,13 +214,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>ABOUT</Text>
           <View style={styles.sectionContent}>
-            <SettingItem
-              icon="info.circle"
-              title="App Version"
-              subtitle="1.0.0"
-              colors={colors}
-              showChevron={false}
-            />
+            <SettingItem icon="info.circle" title="App Version" subtitle="1.0.0" colors={colors} showChevron={false} />
             <SettingItem
               icon="questionmark.circle"
               title="Help & Support"
@@ -286,11 +232,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionContent}>
-            <TouchableOpacity 
-              style={styles.signOutButton} 
-              onPress={handleSignOut}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.7}>
               <Text style={[styles.signOutText, { color: Colors.semantic.error }]}>Sign Out</Text>
             </TouchableOpacity>
           </View>

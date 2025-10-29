@@ -1,6 +1,9 @@
 jest.mock('../components/editor/core/KeyboardHandler', () => ({
-  KeyboardHandler: ({ children }: { children: (props: { onKeyPress: () => void; preventNewlines?: boolean }) => any }) =>
-    children({ onKeyPress: () => {}, preventNewlines: false }),
+  KeyboardHandler: ({
+    children,
+  }: {
+    children: (props: { onKeyPress: () => void; preventNewlines?: boolean }) => any;
+  }) => children({ onKeyPress: () => {}, preventNewlines: false }),
 }));
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -141,14 +144,7 @@ describe('Built-in plugins expose focus handles', () => {
 
       let renderer: TestRenderer.ReactTestRenderer;
       act(() => {
-        renderer = TestRenderer.create(
-          <Component
-            ref={ref}
-            block={block}
-            {...baseProps}
-            {...extraProps}
-          />
-        );
+        renderer = TestRenderer.create(<Component ref={ref} block={block} {...baseProps} {...extraProps} />);
       });
 
       expect(ref.current).toBeTruthy();
@@ -157,5 +153,4 @@ describe('Built-in plugins expose focus handles', () => {
       renderer.unmount();
     });
   });
-}
-);
+});

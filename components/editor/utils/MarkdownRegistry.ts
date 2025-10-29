@@ -38,8 +38,7 @@ class MarkdownRegistry {
    * Get all registered syntax rules sorted by priority
    */
   getSyntaxRules(): MarkdownSyntax[] {
-    return Array.from(this.syntaxRules.values())
-      .sort((a, b) => b.priority - a.priority);
+    return Array.from(this.syntaxRules.values()).sort((a, b) => b.priority - a.priority);
   }
 
   /**
@@ -77,7 +76,7 @@ class MarkdownRegistry {
             id: this.generateId(),
             type: 'code',
             content: currentBlock.trim(),
-            meta: { language: codeBlockLanguage }
+            meta: { language: codeBlockLanguage },
           });
           currentBlock = '';
           inCodeBlock = false;
@@ -144,7 +143,7 @@ class MarkdownRegistry {
           id: this.generateId(),
           type: 'code',
           content: currentBlock.trim(),
-          meta: { language: codeBlockLanguage }
+          meta: { language: codeBlockLanguage },
         });
       } else {
         blocks.push(this.parseTextBlock(currentBlock.trim()));
@@ -158,18 +157,20 @@ class MarkdownRegistry {
    * Serialize blocks to markdown using registered serializers
    */
   serializeToMarkdown(blocks: EditorBlock[]): string {
-    return blocks.map(block => {
-      // Try custom serializers first
-      for (const serializer of this.serializers.values()) {
-        if (serializer.canSerialize(block)) {
-          const result = serializer.serializeBlock(block);
-          if (result) return result;
+    return blocks
+      .map(block => {
+        // Try custom serializers first
+        for (const serializer of this.serializers.values()) {
+          if (serializer.canSerialize(block)) {
+            const result = serializer.serializeBlock(block);
+            if (result) return result;
+          }
         }
-      }
 
-      // Fall back to built-in serialization
-      return this.serializeBuiltInBlock(block);
-    }).join('\n\n');
+        // Fall back to built-in serialization
+        return this.serializeBuiltInBlock(block);
+      })
+      .join('\n\n');
   }
 
   /**
@@ -183,7 +184,7 @@ class MarkdownRegistry {
         id: this.generateId(),
         type: 'heading',
         content: headingMatch[2],
-        meta: { level: headingMatch[1].length }
+        meta: { level: headingMatch[1].length },
       };
     }
 
@@ -197,7 +198,7 @@ class MarkdownRegistry {
         tip: '💡',
         info: 'ℹ️',
         warning: '⚠️',
-        danger: '🚨'
+        danger: '🚨',
       };
       return {
         id: this.generateId(),
@@ -205,8 +206,8 @@ class MarkdownRegistry {
         content: content,
         meta: {
           calloutType,
-          emoji: emojiMap[calloutType] || '💡'
-        }
+          emoji: emojiMap[calloutType] || '💡',
+        },
       };
     }
 
@@ -215,7 +216,7 @@ class MarkdownRegistry {
       return {
         id: this.generateId(),
         type: 'quote',
-        content: line.substring(2)
+        content: line.substring(2),
       };
     }
 
@@ -232,7 +233,7 @@ class MarkdownRegistry {
         id: this.generateId(),
         type: 'checklist',
         content: content,
-        meta: { checked, level }
+        meta: { checked, level },
       };
     }
 
@@ -246,8 +247,8 @@ class MarkdownRegistry {
         content: listMatch[3],
         meta: {
           ordered: isOrdered,
-          depth: Math.floor(listMatch[1].length / 2)
-        }
+          depth: Math.floor(listMatch[1].length / 2),
+        },
       };
     }
 
@@ -261,8 +262,8 @@ class MarkdownRegistry {
         meta: {
           alt: imageMatch[1] || 'Image',
           url: imageMatch[2],
-          caption: imageMatch[3] || ''
-        }
+          caption: imageMatch[3] || '',
+        },
       };
     }
 
@@ -275,8 +276,8 @@ class MarkdownRegistry {
         content: videoMatch[2],
         meta: {
           url: videoMatch[2],
-          caption: videoMatch[1] || ''
-        }
+          caption: videoMatch[1] || '',
+        },
       };
     }
 
@@ -285,7 +286,7 @@ class MarkdownRegistry {
       return {
         id: this.generateId(),
         type: 'divider',
-        content: ''
+        content: '',
       };
     }
 
@@ -299,7 +300,7 @@ class MarkdownRegistry {
     return {
       id: this.generateId(),
       type: 'paragraph',
-      content
+      content,
     };
   }
 
@@ -311,14 +312,14 @@ class MarkdownRegistry {
       case 'heading':
         const level = block.meta?.level || 1;
         return `${'#'.repeat(level)} ${block.content}`;
-      
+
       case 'quote':
         return `> ${block.content}`;
-      
+
       case 'code':
         const language = block.meta?.language || '';
         return `\`\`\`${language}\n${block.content}\n\`\`\``;
-      
+
       case 'list':
         const indent = '  '.repeat(block.meta?.depth || 0);
         const marker = block.meta?.ordered ? '1.' : '-';
@@ -429,11 +430,11 @@ export function registerMarkdownSyntax(
   serializer?: MarkdownSerializer
 ): void {
   globalMarkdownRegistry.registerSyntax(id, syntax);
-  
+
   if (parser) {
     globalMarkdownRegistry.registerParser(id, parser);
   }
-  
+
   if (serializer) {
     globalMarkdownRegistry.registerSerializer(id, serializer);
   }
@@ -461,9 +462,9 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
   let codeBlockContent = '';
 
   // Get plugins that can parse markdown (have parseMarkdown method)
-  const markdownCapablePlugins = plugins.filter(plugin =>
-    plugin.type === 'block' && typeof plugin.parseMarkdown === 'function'
-  ).sort((a, b) => (b.markdownSyntax?.priority || 0) - (a.markdownSyntax?.priority || 0));
+  const markdownCapablePlugins = plugins
+    .filter(plugin => plugin.type === 'block' && typeof plugin.parseMarkdown === 'function')
+    .sort((a, b) => (b.markdownSyntax?.priority || 0) - (a.markdownSyntax?.priority || 0));
 
   // Get table plugin specifically
   const tablePlugin = markdownCapablePlugins.find(p => p.blockType === 'table');
@@ -479,7 +480,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
           id: generateId(),
           type: 'code',
           content: codeBlockContent.trim(),
-          meta: { language: codeBlockLanguage }
+          meta: { language: codeBlockLanguage },
         });
         codeBlockContent = '';
         inCodeBlock = false;
@@ -490,7 +491,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
           blocks.push({
             id: generateId(),
             type: 'paragraph',
-            content: currentBlock.trim()
+            content: currentBlock.trim(),
           });
           currentBlock = '';
         }
@@ -511,7 +512,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
         blocks.push({
           id: generateId(),
           type: 'paragraph',
-          content: currentBlock.trim()
+          content: currentBlock.trim(),
         });
         currentBlock = '';
       }
@@ -548,7 +549,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
             blocks.push({
               id: generateId(),
               type: 'paragraph',
-              content: currentBlock.trim()
+              content: currentBlock.trim(),
             });
             currentBlock = '';
           }
@@ -569,7 +570,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
           blocks.push({
             id: generateId(),
             type: 'paragraph',
-            content: currentBlock.trim()
+            content: currentBlock.trim(),
           });
           currentBlock = '';
         }
@@ -582,7 +583,7 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
           blocks.push({
             id: generateId(),
             type: 'paragraph',
-            content: currentBlock.trim()
+            content: currentBlock.trim(),
           });
           currentBlock = '';
         }
@@ -597,13 +598,13 @@ function parseMarkdownWithPlugins(markdown: string, plugins: any[]): EditorBlock
         id: generateId(),
         type: 'code',
         content: codeBlockContent.trim(),
-        meta: { language: codeBlockLanguage }
+        meta: { language: codeBlockLanguage },
       });
     } else {
       blocks.push({
         id: generateId(),
         type: 'paragraph',
-        content: currentBlock.trim()
+        content: currentBlock.trim(),
       });
     }
   }
@@ -622,7 +623,7 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       id: generateId(),
       type: 'heading',
       content: headingMatch[2],
-      meta: { level: headingMatch[1].length }
+      meta: { level: headingMatch[1].length },
     };
   }
 
@@ -636,7 +637,7 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       tip: '💡',
       info: 'ℹ️',
       warning: '⚠️',
-      danger: '🚨'
+      danger: '🚨',
     };
     return {
       id: generateId(),
@@ -644,8 +645,8 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       content: content,
       meta: {
         calloutType,
-        emoji: emojiMap[calloutType] || '💡'
-      }
+        emoji: emojiMap[calloutType] || '💡',
+      },
     };
   }
 
@@ -654,7 +655,7 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
     return {
       id: generateId(),
       type: 'quote',
-      content: line.substring(2)
+      content: line.substring(2),
     };
   }
 
@@ -671,7 +672,7 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       id: generateId(),
       type: 'checklist',
       content: content,
-      meta: { checked, level }
+      meta: { checked, level },
     };
   }
 
@@ -685,8 +686,8 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       content: listMatch[3],
       meta: {
         ordered: isOrdered,
-        depth: Math.floor(listMatch[1].length / 2)
-      }
+        depth: Math.floor(listMatch[1].length / 2),
+      },
     };
   }
 
@@ -700,8 +701,8 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       meta: {
         alt: imageMatch[1] || 'Image',
         url: imageMatch[2],
-        caption: imageMatch[3] || ''
-      }
+        caption: imageMatch[3] || '',
+      },
     };
   }
 
@@ -714,8 +715,8 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
       content: videoMatch[2],
       meta: {
         url: videoMatch[2],
-        caption: videoMatch[1] || ''
-      }
+        caption: videoMatch[1] || '',
+      },
     };
   }
 
@@ -724,7 +725,7 @@ function parseBuiltInMarkdownLine(line: string): EditorBlock | null {
     return {
       id: generateId(),
       type: 'divider',
-      content: ''
+      content: '',
     };
   }
 
@@ -762,7 +763,7 @@ export function createSimpleMarkdownPlugin({
   blockType,
   priority = 50,
   parseContent,
-  serializeContent
+  serializeContent,
 }: {
   id: string;
   name: string;
@@ -778,7 +779,7 @@ export function createSimpleMarkdownPlugin({
     readonly version = '1.0.0';
     readonly syntax = {
       patterns: { block: pattern },
-      priority
+      priority,
     };
 
     protected parseInline(text: string): string | null {
@@ -793,7 +794,7 @@ export function createSimpleMarkdownPlugin({
           id: this.generateId(),
           type: blockType as any,
           content,
-          meta
+          meta,
         };
       }
       return null;

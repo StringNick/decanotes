@@ -1,12 +1,31 @@
 import { NoteCard } from '@/components/NoteCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { getThemeColors, Animations, Colors, Spacing, createTextStyle, Typography, BorderRadius, Shadows } from '@/constants/DesignSystem';
+import {
+  getThemeColors,
+  Animations,
+  Colors,
+  Spacing,
+  createTextStyle,
+  Typography,
+  BorderRadius,
+  Shadows,
+} from '@/constants/DesignSystem';
 import { useStorage } from '@/contexts/StorageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { Note } from '@/types/storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, FlatList, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Animated,
+  FlatList,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Create Animated FlatList with proper typing
@@ -18,10 +37,10 @@ export default function HomeScreen() {
   const { notes, loadNotes, deleteNote, authState, needsCredentials } = useStorage();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
-  
+
   const isDark = effectiveTheme === 'dark';
   const colors = getThemeColors(isDark);
-  
+
   // Animation values
   const fabScale = useRef(new Animated.Value(1)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -58,61 +77,54 @@ export default function HomeScreen() {
         ...Animations.spring.bouncy,
       }),
     ]).start();
-    
+
     // Create new note and navigate to editor
     setTimeout(() => router.push('/editor'), 100);
   };
 
   const handleOptionsPress = (noteId: string) => {
-    Alert.alert(
-      'Note Options',
-      'What would you like to do?',
-      [
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => handleDeleteNote(noteId),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    Alert.alert('Note Options', 'What would you like to do?', [
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => handleDeleteNote(noteId),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    Alert.alert(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
-      [
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteNote(noteId);
-            } catch (error) {
-              console.error('Failed to delete note:', error);
-              Alert.alert('Error', 'Failed to delete note');
-            }
-          },
+    Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteNote(noteId);
+          } catch (error) {
+            console.error('Failed to delete note:', error);
+            Alert.alert('Error', 'Failed to delete note');
+          }
         },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const filteredNotes = notes.filter(note => {
-    const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         note.preview.toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const matchesSearch =
+      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.preview.toLowerCase().includes(searchQuery.toLowerCase());
+
     if (activeFilter === 'Recent') {
       const isRecent = Date.now() - note.lastModified.getTime() < 7 * 24 * 60 * 60 * 1000; // 7 days
       return matchesSearch && isRecent;
     }
-    
+
     return matchesSearch;
   });
 
-  const renderNoteItem = ({ item }: { item: typeof notes[0] }) => (
+  const renderNoteItem = ({ item }: { item: (typeof notes)[0] }) => (
     <NoteCard
       key={item.id}
       id={item.id}
@@ -127,49 +139,32 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top']}>
-      <StatusBar 
-        barStyle={isDark ? 'light-content' : 'dark-content'} 
-        backgroundColor="transparent"
-        translucent
-      />
-      
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
-            DecaNotes
-          </Text>
+          <Text style={[styles.headerTitle, { color: colors.text.primary }]}>DecaNotes</Text>
           <Text style={[styles.headerSubtitle, { color: colors.text.tertiary }]}>
             {filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}
           </Text>
         </View>
-        <TouchableOpacity 
-          style={styles.settingsButton}
-          onPress={() => router.push('/settings')}
-        >
-          <IconSymbol 
-            name="gearshape" 
-            size={22} 
-            color={colors.text.tertiary} 
-          />
+        <TouchableOpacity style={styles.settingsButton} onPress={() => router.push('/settings')}>
+          <IconSymbol name="gearshape" size={22} color={colors.text.tertiary} />
         </TouchableOpacity>
       </View>
 
       {/* Search Bar - Minimal */}
       <View style={styles.searchContainer}>
-        <View style={[
-          styles.searchBar,
-          {
-            backgroundColor: isDark 
-              ? 'rgba(255, 255, 255, 0.05)' 
-              : 'rgba(0, 0, 0, 0.03)',
-          }
-        ]}>
-          <IconSymbol 
-            name="magnifyingglass" 
-            size={16} 
-            color={colors.text.tertiary} 
-          />
+        <View
+          style={[
+            styles.searchBar,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+            },
+          ]}
+        >
+          <IconSymbol name="magnifyingglass" size={16} color={colors.text.tertiary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text.primary }]}
             placeholder="Search notes..."
@@ -178,15 +173,8 @@ export default function HomeScreen() {
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity 
-              onPress={() => setSearchQuery('')}
-              style={styles.clearButton}
-            >
-              <IconSymbol 
-                name="xmark.circle.fill" 
-                size={16} 
-                color={colors.text.tertiary} 
-              />
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <IconSymbol name="xmark.circle.fill" size={16} color={colors.text.tertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -194,18 +182,16 @@ export default function HomeScreen() {
 
       {/* Filter Tabs - Minimal */}
       <View style={styles.filterTabs}>
-        {['All', 'Recent', 'Favorites'].map((filter) => {
+        {['All', 'Recent', 'Favorites'].map(filter => {
           const isActive = activeFilter === filter;
           const isComingSoon = filter === 'Recent' || filter === 'Favorites';
           return (
-            <TouchableOpacity 
-              key={filter} 
+            <TouchableOpacity
+              key={filter}
               style={[
                 styles.filterTab,
                 {
-                  backgroundColor: isActive
-                    ? (isDark ? colors.text.primary : colors.text.primary)
-                    : 'transparent',
+                  backgroundColor: isActive ? (isDark ? colors.text.primary : colors.text.primary) : 'transparent',
                 },
                 isComingSoon && styles.disabledFilterTab,
               ]}
@@ -218,14 +204,18 @@ export default function HomeScreen() {
               }}
               disabled={isComingSoon && isActive}
             >
-              <Text style={[
-                styles.filterTabText,
-                {
-                  color: isActive 
-                    ? (isDark ? colors.background.primary : colors.background.primary)
-                    : colors.text.tertiary
-                }
-              ]}>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  {
+                    color: isActive
+                      ? isDark
+                        ? colors.background.primary
+                        : colors.background.primary
+                      : colors.text.tertiary,
+                  },
+                ]}
+              >
                 {filter}
               </Text>
               {isComingSoon && (
@@ -236,30 +226,21 @@ export default function HomeScreen() {
             </TouchableOpacity>
           );
         })}
-        
+
         {/* Quick Add when searching */}
         {searchQuery.length > 0 && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.quickAddTab,
-              { 
+              {
                 backgroundColor: Colors.primary.teal + '20',
                 borderColor: Colors.primary.teal,
-              }
+              },
             ]}
             onPress={handleNewNote}
           >
-            <IconSymbol 
-              name="plus" 
-              size={12} 
-              color={Colors.primary.teal} 
-            />
-            <Text style={[
-              styles.quickAddText,
-              { color: Colors.primary.teal }
-            ]}>
-              Create &quot;{searchQuery}&quot;
-            </Text>
+            <IconSymbol name="plus" size={12} color={Colors.primary.teal} />
+            <Text style={[styles.quickAddText, { color: Colors.primary.teal }]}>Create &quot;{searchQuery}&quot;</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -268,34 +249,25 @@ export default function HomeScreen() {
       <AnimatedFlatList
         data={filteredNotes}
         renderItem={renderNoteItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         style={styles.notesList}
         contentContainerStyle={styles.notesListContent}
         showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <IconSymbol
-              name="doc.text"
-              size={48}
-              color={colors.text.tertiary}
-            />
-            <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>
-              No notes yet
-            </Text>
+            <IconSymbol name="doc.text" size={48} color={colors.text.tertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>No notes yet</Text>
             <Text style={[styles.emptySubtitle, { color: colors.text.tertiary }]}>
               Tap the + button to create your first note
             </Text>
           </View>
         )}
       />
-      
+
       {/* Floating Action Button - Minimal */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.fabContainer,
           {
@@ -312,19 +284,12 @@ export default function HomeScreen() {
           },
         ]}
       >
-        <TouchableOpacity 
-          style={[
-            styles.fab,
-            { backgroundColor: colors.text.primary }
-          ]}
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.text.primary }]}
           onPress={handleNewNote}
           activeOpacity={0.8}
         >
-          <IconSymbol 
-            name="plus" 
-            size={24} 
-            color={colors.background.primary} 
-          />
+          <IconSymbol name="plus" size={24} color={colors.background.primary} />
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>

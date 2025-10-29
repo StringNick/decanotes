@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { forwardRef, memo, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../../../constants/Colors';
 import { useColorScheme } from '../../../../hooks/useColorScheme';
@@ -11,156 +11,149 @@ type FocusableHandle = { focus: () => void };
 /**
  * Video block component with modern dark theme support
  */
-const RawVideoComponent = forwardRef<FocusableHandle, BlockComponentProps>(({
-  block,
-  isSelected,
-  isFocused,
-  isDragging,
-  onBlockChange,
-  onFocus,
-  onBlur,
-  onKeyPress,
-  theme,
-  readOnly
-}, ref) => {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const styles = getStyles(colorScheme ?? 'light');
-  const [isUrlEditing, setIsUrlEditing] = useState(false);
-  const videoUrl = block.meta?.url || block.content;
-  const title = block.meta?.title || 'Video';
-  const thumbnail = block.meta?.thumbnail;
-  const urlInputRef = useRef<TextInput>(null);
+const RawVideoComponent = forwardRef<FocusableHandle, BlockComponentProps>(
+  ({ block, isSelected, isFocused, isDragging, onBlockChange, onFocus, onBlur, onKeyPress, theme, readOnly }, ref) => {
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme ?? 'light'];
+    const styles = getStyles(colorScheme ?? 'light');
+    const [isUrlEditing, setIsUrlEditing] = useState(false);
+    const videoUrl = block.meta?.url || block.content;
+    const title = block.meta?.title || 'Video';
+    const thumbnail = block.meta?.thumbnail;
+    const urlInputRef = useRef<TextInput>(null);
 
-  useImperativeHandle(ref, () => ({
-    focus: () => {
-      if (readOnly) {
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        if (readOnly) {
+          return;
+        }
+        if (!isUrlEditing) {
+          setIsUrlEditing(true);
+        }
+        setTimeout(() => {
+          urlInputRef.current?.focus();
+        }, 0);
+      },
+    }));
+
+    const handleUrlChange = (url: string) => {
+      onBlockChange({ content: url });
+    };
+
+    const handleTitleChange = (newTitle: string) => {
+      onBlockChange?.({
+        meta: {
+          ...block.meta,
+          title: newTitle,
+        },
+      });
+    };
+
+    const validateUrl = (url: string): boolean => {
+      try {
+        new URL(url);
+        return (
+          url.includes('.mp4') ||
+          url.includes('.webm') ||
+          url.includes('.ogg') ||
+          url.includes('youtube.com') ||
+          url.includes('vimeo.com') ||
+          url.includes('youtu.be')
+        );
+      } catch {
+        return false;
+      }
+    };
+
+    const handleUrlSubmit = () => {
+      if (videoUrl && !validateUrl(videoUrl)) {
+        Alert.alert('Invalid URL', 'Please enter a valid video URL');
         return;
       }
-      if (!isUrlEditing) {
-        setIsUrlEditing(true);
+      setIsUrlEditing(false);
+      onBlur?.();
+    };
+
+    const renderVideoPreview = () => {
+      if (!videoUrl) {
+        return (
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderText}>📹</Text>
+            <Text style={styles.placeholderLabel}>Click to add video URL</Text>
+          </View>
+        );
       }
-      setTimeout(() => {
-        urlInputRef.current?.focus();
-      }, 0);
-    }
-  }));
 
-  const handleUrlChange = (url: string) => {
-    onBlockChange({ content: url });
-  };
-
-  const handleTitleChange = (newTitle: string) => {
-    onBlockChange?.({
-      meta: {
-        ...block.meta,
-        title: newTitle
-      }
-    });
-  };
-
-  const validateUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      return url.includes('.mp4') || 
-             url.includes('.webm') || 
-             url.includes('.ogg') ||
-             url.includes('youtube.com') ||
-             url.includes('vimeo.com') ||
-             url.includes('youtu.be');
-    } catch {
-      return false;
-    }
-  };
-
-  const handleUrlSubmit = () => {
-    if (videoUrl && !validateUrl(videoUrl)) {
-      Alert.alert('Invalid URL', 'Please enter a valid video URL');
-      return;
-    }
-    setIsUrlEditing(false);
-    onBlur?.();
-  };
-
-  const renderVideoPreview = () => {
-    if (!videoUrl) {
       return (
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>📹</Text>
-          <Text style={styles.placeholderLabel}>Click to add video URL</Text>
+        <View style={styles.videoPreview}>
+          {thumbnail ? (
+            <View style={styles.thumbnailContainer}>
+              <Text style={styles.thumbnailPlaceholder}>🎬</Text>
+              <Text style={styles.videoTitle}>{title}</Text>
+            </View>
+          ) : (
+            <View style={styles.videoPlaceholder}>
+              <Text style={styles.videoIcon}>▶️</Text>
+              <Text style={styles.videoTitle}>{title}</Text>
+              <Text style={styles.videoUrl} numberOfLines={1}>
+                {videoUrl}
+              </Text>
+            </View>
+          )}
         </View>
       );
-    }
+    };
 
     return (
-      <View style={styles.videoPreview}>
-        {thumbnail ? (
-          <View style={styles.thumbnailContainer}>
-            <Text style={styles.thumbnailPlaceholder}>🎬</Text>
-            <Text style={styles.videoTitle}>{title}</Text>
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={[styles.videoContainer, isSelected && styles.selected, isFocused && styles.editing]}
+          onPress={() => !readOnly && setIsUrlEditing(true)}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          disabled={readOnly}
+        >
+          {renderVideoPreview()}
+        </TouchableOpacity>
+
+        {isUrlEditing && (
+          <View style={styles.editContainer}>
+            <TextInput
+              style={styles.urlInput}
+              value={videoUrl}
+              onChangeText={handleUrlChange}
+              placeholder="Enter video URL (YouTube, Vimeo, or direct link)"
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+              onSubmitEditing={handleUrlSubmit}
+              onBlur={handleUrlSubmit}
+              onFocus={() => onFocus?.()}
+              ref={urlInputRef}
+            />
+            <TextInput
+              style={styles.titleInput}
+              value={title}
+              onChangeText={handleTitleChange}
+              placeholder="Video title (optional)"
+              placeholderTextColor={colors.textMuted}
+              onFocus={() => onFocus?.()}
+              onBlur={() => onBlur?.()}
+            />
           </View>
-        ) : (
-          <View style={styles.videoPlaceholder}>
-            <Text style={styles.videoIcon}>▶️</Text>
-            <Text style={styles.videoTitle}>{title}</Text>
-            <Text style={styles.videoUrl} numberOfLines={1}>{videoUrl}</Text>
+        )}
+
+        {videoUrl && !isUrlEditing && (
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>URL: {videoUrl}</Text>
+            {title && <Text style={styles.infoText}>Title: {title}</Text>}
           </View>
         )}
       </View>
     );
-  };
+  }
+);
 
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={[
-          styles.videoContainer,
-          isSelected && styles.selected,
-          isFocused && styles.editing
-        ]}
-        onPress={() => !readOnly && setIsUrlEditing(true)}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        disabled={readOnly}
-      >
-        {renderVideoPreview()}
-      </TouchableOpacity>
-
-      {isUrlEditing && (
-        <View style={styles.editContainer}>
-          <TextInput
-            style={styles.urlInput}
-            value={videoUrl}
-            onChangeText={handleUrlChange}
-            placeholder="Enter video URL (YouTube, Vimeo, or direct link)"
-            placeholderTextColor={colors.textMuted}
-            autoFocus
-            onSubmitEditing={handleUrlSubmit}
-            onBlur={handleUrlSubmit}
-            onFocus={() => onFocus?.()}
-            ref={urlInputRef}
-          />
-          <TextInput
-            style={styles.titleInput}
-            value={title}
-            onChangeText={handleTitleChange}
-            placeholder="Video title (optional)"
-            placeholderTextColor={colors.textMuted}
-            onFocus={() => onFocus?.()}
-            onBlur={() => onBlur?.()}
-          />
-        </View>
-      )}
-
-      {videoUrl && !isUrlEditing && (
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>URL: {videoUrl}</Text>
-          {title && <Text style={styles.infoText}>Title: {title}</Text>}
-        </View>
-      )}
-    </View>
-  );
-});
+RawVideoComponent.displayName = 'RawVideoComponent';
 
 const VideoComponent = memo(RawVideoComponent, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
@@ -180,7 +173,7 @@ VideoComponent.displayName = 'VideoComponent';
 
 const getStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  
+
   return StyleSheet.create({
     container: {
       marginVertical: 12,
@@ -323,27 +316,27 @@ export class VideoPlugin implements BlockPlugin {
 
   readonly markdownSyntax = {
     patterns: {
-      block: /^!\[video\]\(([^)]+)(?:\s+"([^"]+)")?\)$/
+      block: /^!\[video\]\(([^)]+)(?:\s+"([^"]+)")?\)$/,
     },
-    priority: 70
+    priority: 70,
   };
 
   readonly toolbar = {
     icon: 'video',
     label: 'Video',
     shortcut: 'Ctrl+Alt+V',
-    group: 'media'
+    group: 'media',
   };
 
   readonly settings = {
     allowedParents: ['root', 'quote', 'callout'] as EditorBlockType[],
     validation: {
-      required: ['content'] as string[]
+      required: ['content'] as string[],
     },
     defaultMeta: {
       autoplay: false,
-      controls: true
-    }
+      controls: true,
+    },
   };
 
   /**
@@ -361,7 +354,7 @@ export class VideoPlugin implements BlockPlugin {
       id: this.generateId(),
       type: 'video' as EditorBlockType,
       content,
-      meta
+      meta,
     };
   }
 
@@ -378,7 +371,7 @@ export class VideoPlugin implements BlockPlugin {
       create: this.onCreate.bind(this),
       update: this.onUpdate.bind(this),
       delete: this.onDelete.bind(this),
-      actions: this.getActions.bind(this)
+      actions: this.getActions.bind(this),
     };
   }
 
@@ -427,21 +420,23 @@ export class VideoPlugin implements BlockPlugin {
       version: this.version,
       type: this.type,
       description: this.description,
-      blockType: this.blockType
+      blockType: this.blockType,
     };
   }
 
   protected validateContent(content: string): boolean {
     if (!content.trim()) return true; // Empty is allowed
-    
+
     try {
       new URL(content);
-      return content.includes('.mp4') || 
-             content.includes('.webm') || 
-             content.includes('.ogg') ||
-             content.includes('youtube.com') ||
-             content.includes('vimeo.com') ||
-             content.includes('youtu.be');
+      return (
+        content.includes('.mp4') ||
+        content.includes('.webm') ||
+        content.includes('.ogg') ||
+        content.includes('youtube.com') ||
+        content.includes('vimeo.com') ||
+        content.includes('youtu.be')
+      );
     } catch {
       return false;
     }
@@ -466,11 +461,11 @@ export class VideoPlugin implements BlockPlugin {
         meta: {
           ...block.meta,
           url: match[1],
-          title: match[2] || 'Video'
-        }
+          title: match[2] || 'Video',
+        },
       };
     }
-    
+
     // Ensure meta is set
     if (!block.meta?.type) {
       return {
@@ -478,11 +473,11 @@ export class VideoPlugin implements BlockPlugin {
         meta: {
           ...block.meta,
           url: block.content,
-          title: block.meta?.title || 'Video'
-        }
+          title: block.meta?.title || 'Video',
+        },
       };
     }
-    
+
     return block;
   }
 
@@ -492,23 +487,23 @@ export class VideoPlugin implements BlockPlugin {
       id: generateId(),
       type: 'paragraph',
       content: '',
-      meta: {}
+      meta: {},
     };
   }
 
   public getActions(block: EditorBlock) {
     // Return only the default actions (duplicate and delete)
     const actions: any[] = [];
-    
+
     actions.push({
       id: 'duplicate',
       label: 'Duplicate',
       icon: 'copy',
       handler: (block: EditorBlock, context: any) => {
         context.duplicateBlock();
-      }
+      },
     });
-    
+
     actions.push({
       id: 'delete',
       label: 'Delete',
@@ -516,9 +511,9 @@ export class VideoPlugin implements BlockPlugin {
       style: 'destructive',
       handler: (block: EditorBlock, context: any) => {
         context.deleteBlock();
-      }
+      },
     });
-    
+
     return actions;
   }
 }
@@ -534,7 +529,7 @@ export function createVideoBlock(url: string, title?: string): EditorBlock {
     url,
     title: title || 'Video',
     controls: true,
-    autoplay: false
+    autoplay: false,
   });
 }
 
@@ -544,10 +539,10 @@ export function createVideoBlock(url: string, title?: string): EditorBlock {
 export function parseMarkdown(text: string): EditorBlock | null {
   const match = text.match(/^!\[video\]\(([^)]+)(?:\s+"([^"]+)")?\)$/);
   if (!match) return null;
-  
+
   const url = match[1];
   const title = match[2] || 'Video';
-  
+
   return createVideoBlock(url, title);
 }
 
@@ -557,11 +552,11 @@ export function parseMarkdown(text: string): EditorBlock | null {
 export function toMarkdown(block: EditorBlock): string {
   const url = block.meta?.url || block.content;
   const title = block.meta?.title;
-  
+
   if (title && title !== 'Video') {
     return `![video](${url} "${title}")`;
   }
-  
+
   return `![video](${url})`;
 }
 
@@ -574,7 +569,7 @@ export function extractVideoId(url: string): { platform: string; id: string } | 
   if (youtubeMatch) {
     return { platform: 'youtube', id: youtubeMatch[1] };
   }
-  
+
   // Vimeo
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
   if (vimeoMatch) {
@@ -589,7 +584,7 @@ export function extractVideoId(url: string): { platform: string; id: string } | 
 export function getThumbnailUrl(url: string): string | null {
   const videoInfo = extractVideoId(url);
   if (!videoInfo) return null;
-  
+
   switch (videoInfo.platform) {
     case 'youtube':
       return `https://img.youtube.com/vi/${videoInfo.id}/maxresdefault.jpg`;

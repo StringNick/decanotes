@@ -53,114 +53,108 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
   const insets = useSafeAreaInsets();
   const keyboardOffset = useKeyboardOffset();
 
-  const {
-    state,
-    updateBlock,
-    deleteBlock,
-  } = useEditor();
+  const { state, updateBlock, deleteBlock } = useEditor();
   const previousListMetaRef = useRef<Map<string, Record<string, any>>>(new Map());
 
   const activeBlock = useMemo(() => {
     if (!state.focusedBlockId) {
       return null;
     }
-    return state.blocks.find((block) => block.id === state.focusedBlockId) ?? null;
+    return state.blocks.find(block => block.id === state.focusedBlockId) ?? null;
   }, [state.blocks, state.focusedBlockId]);
 
   const isVisible = !!activeBlock && !readOnly && state.mode === 'edit';
 
-  const handleHeadingLevelChange = useCallback((delta: number) => {
-    if (!activeBlock) return;
-    const currentLevel = activeBlock.meta?.level ?? MIN_HEADING_LEVEL;
-    const nextLevel = Math.min(
-      MAX_HEADING_LEVEL,
-      Math.max(MIN_HEADING_LEVEL, currentLevel + delta)
-    );
-    if (nextLevel === currentLevel) return;
+  const handleHeadingLevelChange = useCallback(
+    (delta: number) => {
+      if (!activeBlock) return;
+      const currentLevel = activeBlock.meta?.level ?? MIN_HEADING_LEVEL;
+      const nextLevel = Math.min(MAX_HEADING_LEVEL, Math.max(MIN_HEADING_LEVEL, currentLevel + delta));
+      if (nextLevel === currentLevel) return;
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      level: nextLevel,
-    };
-    updateBlock(activeBlock.id, { meta: nextMeta });
-  }, [activeBlock, updateBlock]);
+      const nextMeta: Record<string, any> = {
+        ...(activeBlock.meta ?? {}),
+        level: nextLevel,
+      };
+      updateBlock(activeBlock.id, { meta: nextMeta });
+    },
+    [activeBlock, updateBlock]
+  );
 
-  const handleQuoteDepthChange = useCallback((delta: number) => {
-    if (!activeBlock) return;
+  const handleQuoteDepthChange = useCallback(
+    (delta: number) => {
+      if (!activeBlock) return;
 
-    const normalizedContent = (activeBlock.content ?? '').replace(/\r/g, '');
-    const lineCount = normalizedContent.length > 0 ? normalizedContent.split('\n').length : 1;
-    const lineDepths = normalizeQuoteDepths(activeBlock, lineCount);
-    const cursorInfo = getQuoteCursorState(activeBlock.id);
-    const targetIndex = Math.max(0, Math.min(cursorInfo?.lineIndex ?? 0, lineCount - 1));
+      const normalizedContent = (activeBlock.content ?? '').replace(/\r/g, '');
+      const lineCount = normalizedContent.length > 0 ? normalizedContent.split('\n').length : 1;
+      const lineDepths = normalizeQuoteDepths(activeBlock, lineCount);
+      const cursorInfo = getQuoteCursorState(activeBlock.id);
+      const targetIndex = Math.max(0, Math.min(cursorInfo?.lineIndex ?? 0, lineCount - 1));
 
-    const currentDepth = lineDepths[targetIndex] ?? MIN_QUOTE_DEPTH;
-    const nextDepth = Math.min(
-      MAX_QUOTE_DEPTH,
-      Math.max(MIN_QUOTE_DEPTH, currentDepth + delta)
-    );
-    if (nextDepth === currentDepth) return;
+      const currentDepth = lineDepths[targetIndex] ?? MIN_QUOTE_DEPTH;
+      const nextDepth = Math.min(MAX_QUOTE_DEPTH, Math.max(MIN_QUOTE_DEPTH, currentDepth + delta));
+      if (nextDepth === currentDepth) return;
 
-    lineDepths[targetIndex] = nextDepth;
+      lineDepths[targetIndex] = nextDepth;
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      depth: lineDepths[0] ?? MIN_QUOTE_DEPTH,
-      quoteLineDepths: lineDepths,
-    };
+      const nextMeta: Record<string, any> = {
+        ...(activeBlock.meta ?? {}),
+        depth: lineDepths[0] ?? MIN_QUOTE_DEPTH,
+        quoteLineDepths: lineDepths,
+      };
 
-    updateBlock(activeBlock.id, { meta: nextMeta });
-  }, [activeBlock, updateBlock]);
+      updateBlock(activeBlock.id, { meta: nextMeta });
+    },
+    [activeBlock, updateBlock]
+  );
 
-  const handleListLevelChange = useCallback((delta: number) => {
-    if (!activeBlock) return;
-    const currentLevel = activeBlock.meta?.level ?? MIN_LIST_LEVEL;
-    const nextLevel = Math.min(
-      MAX_LIST_LEVEL,
-      Math.max(MIN_LIST_LEVEL, currentLevel + delta)
-    );
-    if (nextLevel === currentLevel) return;
+  const handleListLevelChange = useCallback(
+    (delta: number) => {
+      if (!activeBlock) return;
+      const currentLevel = activeBlock.meta?.level ?? MIN_LIST_LEVEL;
+      const nextLevel = Math.min(MAX_LIST_LEVEL, Math.max(MIN_LIST_LEVEL, currentLevel + delta));
+      if (nextLevel === currentLevel) return;
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      level: nextLevel,
-    };
+      const nextMeta: Record<string, any> = {
+        ...(activeBlock.meta ?? {}),
+        level: nextLevel,
+      };
 
-    const simulatedBlocks = state.blocks.map((block) =>
-      block.id === activeBlock.id
-        ? { ...block, meta: nextMeta }
-        : block
-    );
+      const simulatedBlocks = state.blocks.map(block =>
+        block.id === activeBlock.id ? { ...block, meta: nextMeta } : block
+      );
 
-    updateBlock(activeBlock.id, { meta: nextMeta });
+      updateBlock(activeBlock.id, { meta: nextMeta });
 
-    if ((nextMeta.listType ?? 'unordered') === 'ordered') {
-      const counters: number[] = [];
-      simulatedBlocks.forEach((block) => {
-        if (block.type !== 'list') return;
-        const listMeta: Record<string, any> = { ...(block.meta ?? {}) };
-        const level = listMeta.level ?? 0;
-        const listType = listMeta.listType ?? 'unordered';
+      if ((nextMeta.listType ?? 'unordered') === 'ordered') {
+        const counters: number[] = [];
+        simulatedBlocks.forEach(block => {
+          if (block.type !== 'list') return;
+          const listMeta: Record<string, any> = { ...(block.meta ?? {}) };
+          const level = listMeta.level ?? 0;
+          const listType = listMeta.listType ?? 'unordered';
 
-        if (listType === 'ordered') {
-          counters[level] = (counters[level] ?? 0) + 1;
-          counters.length = level + 1;
-          const desiredIndex = counters[level];
+          if (listType === 'ordered') {
+            counters[level] = (counters[level] ?? 0) + 1;
+            counters.length = level + 1;
+            const desiredIndex = counters[level];
 
-          if (listMeta.index !== desiredIndex) {
-            updateBlock(block.id, {
-              meta: {
-                ...listMeta,
-                index: desiredIndex,
-              },
-            });
+            if (listMeta.index !== desiredIndex) {
+              updateBlock(block.id, {
+                meta: {
+                  ...listMeta,
+                  index: desiredIndex,
+                },
+              });
+            }
+          } else {
+            counters.length = level;
           }
-        } else {
-          counters.length = level;
-        }
-      });
-    }
-  }, [activeBlock, state.blocks, updateBlock]);
+        });
+      }
+    },
+    [activeBlock, state.blocks, updateBlock]
+  );
 
   const handleToggleListType = useCallback(() => {
     if (!activeBlock) return;
@@ -175,7 +169,7 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
     const store = previousListMetaRef.current;
 
     if (currentType === 'unordered') {
-      targets.forEach((idx) => {
+      targets.forEach(idx => {
         const block = state.blocks[idx];
         if (!block || block.type !== 'list') return;
         store.set(block.id, { ...(block.meta ?? {}) });
@@ -209,21 +203,21 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
     });
   }, [activeBlock, state.blocks, updateBlock]);
 
-  const handleChecklistLevelChange = useCallback((delta: number) => {
-    if (!activeBlock) return;
-    const currentLevel = activeBlock.meta?.level ?? MIN_LIST_LEVEL;
-    const nextLevel = Math.min(
-      MAX_LIST_LEVEL,
-      Math.max(MIN_LIST_LEVEL, currentLevel + delta)
-    );
-    if (nextLevel === currentLevel) return;
+  const handleChecklistLevelChange = useCallback(
+    (delta: number) => {
+      if (!activeBlock) return;
+      const currentLevel = activeBlock.meta?.level ?? MIN_LIST_LEVEL;
+      const nextLevel = Math.min(MAX_LIST_LEVEL, Math.max(MIN_LIST_LEVEL, currentLevel + delta));
+      if (nextLevel === currentLevel) return;
 
-    const nextMeta: Record<string, any> = {
-      ...(activeBlock.meta ?? {}),
-      level: nextLevel,
-    };
-    updateBlock(activeBlock.id, { meta: nextMeta });
-  }, [activeBlock, updateBlock]);
+      const nextMeta: Record<string, any> = {
+        ...(activeBlock.meta ?? {}),
+        level: nextLevel,
+      };
+      updateBlock(activeBlock.id, { meta: nextMeta });
+    },
+    [activeBlock, updateBlock]
+  );
 
   const handleDelete = useCallback(() => {
     if (!activeBlock) return;
@@ -352,9 +346,10 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
   const baseOffset = insets.bottom + 8;
 
   // When keyboard is open, position directly above KeyboardDock
-  const bottomOffset = keyboardOffset > 0
-    ? keyboardOffset + keyboardDockHeight  // No magic numbers - just actual height
-    : baseOffset;
+  const bottomOffset =
+    keyboardOffset > 0
+      ? keyboardOffset + keyboardDockHeight // No magic numbers - just actual height
+      : baseOffset;
 
   // Get level/depth indicator
   const getLevelIndicator = () => {
@@ -389,13 +384,10 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
       <View style={styles.inner}>
         {/* Level/Depth control buttons */}
         <View style={styles.controlGroup}>
-          {otherActions.map((action) => (
+          {otherActions.map(action => (
             <TouchableOpacity
               key={action.id}
-              style={[
-                styles.button,
-                action.disabled && styles.buttonDisabled,
-              ]}
+              style={[styles.button, action.disabled && styles.buttonDisabled]}
               onPress={action.onPress}
               activeOpacity={0.7}
               disabled={action.disabled}
@@ -409,14 +401,7 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
                   style={{ opacity: action.disabled ? 0.4 : 1 }}
                 />
               ) : (
-                <Text
-                  style={[
-                    styles.buttonText,
-                    action.disabled && styles.buttonTextDisabled,
-                  ]}
-                >
-                  {action.content}
-                </Text>
+                <Text style={[styles.buttonText, action.disabled && styles.buttonTextDisabled]}>{action.content}</Text>
               )}
             </TouchableOpacity>
           ))}
@@ -437,11 +422,7 @@ export const BlockActionToolbar: React.FC<BlockActionToolbarProps> = ({ readOnly
             activeOpacity={0.7}
             accessibilityLabel={deleteAction.label}
           >
-            <Ionicons
-              name={deleteAction.icon as any}
-              size={20}
-              color="#EF4444"
-            />
+            <Ionicons name={deleteAction.icon as any} size={20} color="#EF4444" />
           </TouchableOpacity>
         )}
       </View>
@@ -456,8 +437,8 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
   return StyleSheet.create({
     container: {
       position: 'absolute',
-      left: 0,   // Full width like KeyboardDock
-      right: 0,  // Full width like KeyboardDock
+      left: 0, // Full width like KeyboardDock
+      right: 0, // Full width like KeyboardDock
       zIndex: 50,
     },
     inner: {
@@ -467,11 +448,9 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 0,
       paddingHorizontal: 16,
       paddingTop: 8,
-      paddingBottom: 0,  // No padding - seamless connection with KeyboardDock
+      paddingBottom: 0, // No padding - seamless connection with KeyboardDock
       marginBottom: 0,
-      backgroundColor: isDark
-        ? 'rgba(30, 30, 30, 0.98)'
-        : 'rgba(209, 213, 219, 0.95)',
+      backgroundColor: isDark ? 'rgba(30, 30, 30, 0.98)' : 'rgba(209, 213, 219, 0.95)',
       // No shadow - KeyboardDock has shadow for entire block
       borderTopWidth: StyleSheet.hairlineWidth,
       borderBottomWidth: 0,
@@ -489,9 +468,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: isDark
-        ? 'rgba(255, 255, 255, 0.12)'
-        : 'rgba(15, 23, 42, 0.1)',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.1)',
     },
     buttonDisabled: {
       opacity: 0.35,
@@ -501,7 +478,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       paddingVertical: 8,
       borderRadius: 8,
       backgroundColor: isDark
-        ? 'rgba(167, 139, 250, 0.2)'   // Purple accent
+        ? 'rgba(167, 139, 250, 0.2)' // Purple accent
         : 'rgba(139, 92, 246, 0.15)',
       marginHorizontal: 12,
     },
@@ -509,7 +486,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       fontSize: 15,
       fontWeight: '700',
       color: isDark ? '#C4B5FD' : '#7C3AED',
-      fontFamily: 'SpaceMono-Regular',  // Monospace for consistency
+      fontFamily: 'SpaceMono-Regular', // Monospace for consistency
     },
     deleteButton: {
       width: 38,
@@ -517,9 +494,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: isDark
-        ? 'rgba(239, 68, 68, 0.15)'
-        : 'rgba(239, 68, 68, 0.1)',
+      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
     },
     buttonText: {
       fontSize: 14,

@@ -22,40 +22,40 @@ export interface EditorBlock {
   meta?: {
     // Heading specific
     level?: number; // 1-6
-    
+
     // Code block specific
     language?: string;
     showLineNumbers?: boolean;
     theme?: string;
-    
+
     // List specific
     ordered?: boolean;
     depth?: number;
-    
+
     // Checklist specific
     checked?: boolean;
-    
+
     // Media specific (image/video)
     url?: string;
     alt?: string;
     title?: string;
     caption?: string;
-    
+
     // Video specific
     autoplay?: boolean;
     controls?: boolean;
-    
+
     // Callout specific
     calloutType?: 'note' | 'tip' | 'warning' | 'danger' | 'info' | 'success';
-    
+
     // Divider specific
     style?: 'solid' | 'dashed' | 'dotted';
-    
+
     // Table specific
     headers?: string[];
     rows?: string[][];
     alignments?: ('left' | 'center' | 'right')[];
-    
+
     // General
     [key: string]: any; // Allow plugins to add custom meta
     quoteLineDepths?: number[];

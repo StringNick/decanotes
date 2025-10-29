@@ -3,6 +3,7 @@
 ## Overview
 
 DecaNotes Editor uses a centralized, singleton-based plugin architecture that ensures:
+
 - **Single instance**: Plugins are created once and reused across re-renders
 - **Unified registry**: All plugins registered in a central `PluginRegistry` accessible via context
 - **Proper serialization**: All export/import operations use `MarkdownRegistry` to preserve metadata
@@ -30,6 +31,7 @@ const contextValue: EditorContextInterface = {
 ```
 
 **Key Features**:
+
 - Idempotent registration: Tracks registered plugin IDs to prevent duplicates
 - Type-specific access: `getAllBlockPlugins()`, `getMarkdownPlugins()`
 - Block type lookup: `getBlockPlugin(blockType)`
@@ -42,28 +44,29 @@ All built-in plugins are created as singletons using `useMemo`:
 
 ```typescript
 // Created once, never recreated
-const builtInPlugins = useMemo(() => [
-  new ParagraphPlugin(),
-  new HeadingPlugin(),
-  new CodePlugin(),
-  new ImagePlugin(),
-  new ListPlugin(),
-  new QuotePlugin(),
-  new DividerPlugin(),
-  new VideoPlugin(),
-  new CalloutPlugin(),
-  new ChecklistPlugin(),
-  new TablePlugin()
-], []);
+const builtInPlugins = useMemo(
+  () => [
+    new ParagraphPlugin(),
+    new HeadingPlugin(),
+    new CodePlugin(),
+    new ImagePlugin(),
+    new ListPlugin(),
+    new QuotePlugin(),
+    new DividerPlugin(),
+    new VideoPlugin(),
+    new CalloutPlugin(),
+    new ChecklistPlugin(),
+    new TablePlugin(),
+  ],
+  []
+);
 
 // Combined with custom plugins
-const allPlugins = useMemo(() => [
-  ...builtInPlugins,
-  ...plugins
-], [builtInPlugins, plugins]);
+const allPlugins = useMemo(() => [...builtInPlugins, ...plugins], [builtInPlugins, plugins]);
 ```
 
 **Why this matters**:
+
 - Prevents "Plugin already registered" errors
 - Stable plugin references across re-renders
 - Better performance (no unnecessary plugin recreation)
@@ -71,6 +74,7 @@ const allPlugins = useMemo(() => [
 #### Focus & Scroll Contract
 
 Block plugins participate in the editor's `FocusManager`. To ensure new plugins work with auto-focus and scroll-to-reveal:
+
 - Wrap the rendered block component in `React.forwardRef`.
 - Use `useImperativeHandle` to expose a `focus()` method that calls the primary input's `.focus()` (or opens any editing UI before focusing).
 - For non-text blocks (image, video, divider, etc.) make sure `focus()` also triggers any state needed so that the block becomes editable before requesting focus.
@@ -84,13 +88,14 @@ All markdown export/import operations go through `MarkdownRegistry`:
 
 ```typescript
 // Export: Blocks → Markdown
-export function serializeBlocksToMarkdown(blocks: EditorBlock[]): string
+export function serializeBlocksToMarkdown(blocks: EditorBlock[]): string;
 
 // Import: Markdown → Blocks
-export function parseMarkdownToBlocks(markdown: string, plugins?: any[]): EditorBlock[]
+export function parseMarkdownToBlocks(markdown: string, plugins?: any[]): EditorBlock[];
 ```
 
 **Supported Block Types**:
+
 - ✅ `heading` (with `level` meta)
 - ✅ `paragraph`
 - ✅ `code` (with `language` meta)
@@ -126,12 +131,14 @@ export function parseMarkdownToBlocks(markdown: string, plugins?: any[]): Editor
 ### 4. Meta Preservation
 
 **Problem (Before)**:
+
 ```typescript
 // Lost meta when creating blocks
-createBlock('image', 'url.jpg') // ❌ No alt, caption
+createBlock('image', 'url.jpg'); // ❌ No alt, caption
 ```
 
 **Solution (After)**:
+
 ```typescript
 // Signature updated to accept meta
 createBlock(type: string, content: string, index?: number, meta?: Record<string, any>)
@@ -145,6 +152,7 @@ createBlock('image', 'url.jpg', undefined, {
 ```
 
 **Key Points**:
+
 - `EditorProvider.createBlock` accepts `meta` parameter
 - All `addBlock` calls pass `block.meta`
 - Plugin `controller.onCreate` returns blocks with full meta
@@ -153,6 +161,7 @@ createBlock('image', 'url.jpg', undefined, {
 ### 5. Export/Import Flow
 
 **Export Flow**:
+
 ```
 User clicks Export
   → ref.exportContent('markdown')
@@ -165,6 +174,7 @@ User clicks Export
 ```
 
 **Import Flow**:
+
 ```
 User provides markdown
   → ref.importContent(markdown, 'markdown')
@@ -196,9 +206,9 @@ class MyCustomPlugin implements BlockPlugin {
   component = MyCustomBlockComponent; // React component
 
   controller = {
-    onCreate: (block) => ({
+    onCreate: block => ({
       ...block,
-      meta: { customProp: 'value' } // Set initial meta
+      meta: { customProp: 'value' }, // Set initial meta
     }),
     // ... other lifecycle methods
   };
@@ -210,7 +220,7 @@ class MyCustomPlugin implements BlockPlugin {
         id: generateId(),
         type: 'mycustom',
         content: line.substring(2),
-        meta: { customProp: 'value' }
+        meta: { customProp: 'value' },
       };
     }
     return null;
@@ -239,6 +249,7 @@ import { MyCustomPlugin } from './MyCustomPlugin';
 ```
 
 **Important**:
+
 - Create plugin instances **outside** the render function or use `useMemo`
 - Never recreate plugin instances on every render
 
@@ -277,16 +288,16 @@ function MyEditorComponent() {
 
 ```typescript
 controller: {
-  onCreate: (block) => {
+  onCreate: block => {
     return {
       ...block,
       meta: {
         ...block.meta, // Preserve existing
         timestamp: Date.now(), // Add new
-        author: 'system'
-      }
+        author: 'system',
+      },
     };
-  }
+  };
 }
 ```
 
@@ -300,8 +311,8 @@ updateBlock(blockId, {
   meta: {
     ...existingBlock.meta,
     edited: true,
-    editedAt: Date.now()
-  }
+    editedAt: Date.now(),
+  },
 });
 ```
 
@@ -310,11 +321,11 @@ updateBlock(blockId, {
 ```typescript
 class MyPlugin extends BlockPlugin {
   serializer = {
-    canSerialize: (block) => block.type === 'mycustom',
-    serializeBlock: (block) => {
+    canSerialize: block => block.type === 'mycustom',
+    serializeBlock: block => {
       const meta = block.meta || {};
       return `!!custom:${meta.variant}:${block.content}`;
-    }
+    },
   };
 }
 ```
@@ -331,8 +342,8 @@ const originalBlocks = [
     id: 'test-1',
     type: 'mycustom',
     content: 'Test content',
-    meta: { customProp: 'value' }
-  }
+    meta: { customProp: 'value' },
+  },
 ];
 
 // Serialize
@@ -352,6 +363,7 @@ assert.deepEqual(parsedBlocks[0].meta, originalBlocks[0].meta);
 If you have existing code that creates plugins on every render:
 
 ### Before
+
 ```typescript
 <MarkdownEditor
   plugins={[
@@ -361,6 +373,7 @@ If you have existing code that creates plugins on every render:
 ```
 
 ### After
+
 ```typescript
 const customPlugins = useMemo(() => [
   new CustomPlugin() // ✅ Singleton
@@ -370,6 +383,7 @@ const customPlugins = useMemo(() => [
 ```
 
 ### Before (Manual Registry)
+
 ```typescript
 const registry = new PluginRegistry();
 registry.register(new CustomPlugin());
@@ -377,6 +391,7 @@ registry.register(new CustomPlugin());
 ```
 
 ### After (Use Context)
+
 ```typescript
 import { useEditor } from '@/components/editor/core/EditorContext';
 
@@ -421,24 +436,33 @@ class PluginRegistry {
 ```typescript
 function serializeBlocksToMarkdown(blocks: EditorBlock[]): string;
 function parseMarkdownToBlocks(markdown: string, plugins?: any[]): EditorBlock[];
-function registerMarkdownSyntax(id: string, syntax: MarkdownSyntax, parser?: MarkdownParser, serializer?: MarkdownSerializer): void;
+function registerMarkdownSyntax(
+  id: string,
+  syntax: MarkdownSyntax,
+  parser?: MarkdownParser,
+  serializer?: MarkdownSerializer
+): void;
 ```
 
 ## Troubleshooting
 
 ### Issue: "Plugin already registered"
+
 **Cause**: Plugin instances recreated on every render
 **Fix**: Use `useMemo` to create stable plugin references
 
 ### Issue: Lost metadata after export/import
+
 **Cause**: Using primitive `join('\n\n')` instead of `MarkdownRegistry`
 **Fix**: All export/import now uses `serializeBlocksToMarkdown`/`parseMarkdownToBlocks`
 
 ### Issue: Empty plugin list from registry
+
 **Cause**: Creating local `PluginRegistry` instead of using context
 **Fix**: Access `pluginRegistry` from `useEditor()` context
 
 ### Issue: Block created without meta
+
 **Cause**: Not passing `meta` to `createBlock`
 **Fix**: `createBlock(type, content, index, meta)` now accepts meta parameter
 

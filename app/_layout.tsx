@@ -1,6 +1,5 @@
-import React from 'react';
-import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
 import { StorageProvider } from '@/contexts/StorageContext';
+import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
     AlbertSans_400Regular,
@@ -12,20 +11,26 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import React from 'react';
 import { NativeModules } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const hasKeyboardController = !!NativeModules.KeyboardControllerModule;
 
 let KeyboardProviderComponent: React.ComponentType<{ children: React.ReactNode }>;
 if (hasKeyboardController) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     KeyboardProviderComponent = require('react-native-keyboard-controller').KeyboardProvider;
-  } catch (error) {
-    KeyboardProviderComponent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+  } catch {
+    const FallbackProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+    FallbackProvider.displayName = 'FallbackKeyboardProvider';
+    KeyboardProviderComponent = FallbackProvider;
   }
 } else {
-  KeyboardProviderComponent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+  const NoOpProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+  NoOpProvider.displayName = 'NoOpKeyboardProvider';
+  KeyboardProviderComponent = NoOpProvider;
 }
 
 const KeyboardProvider = KeyboardProviderComponent;

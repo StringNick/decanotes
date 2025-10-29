@@ -34,7 +34,8 @@ export function EditorThemeProvider({ children, theme: propTheme }: EditorThemeP
     const colors = {
       background: theme.container?.backgroundColor || (colorScheme === 'dark' ? '#000' : '#fff'),
       text: theme.input?.color || (colorScheme === 'dark' ? '#fff' : '#000'),
-      border: theme.focusedBlock?.backgroundColor || (colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+      border:
+        theme.focusedBlock?.backgroundColor || (colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
       primary: theme.input?.color || (colorScheme === 'dark' ? '#14b8a6' : '#0891b2'),
       secondary: theme.placeholder?.color || (colorScheme === 'dark' ? '#666' : '#999'),
       placeholder: theme.placeholder?.color || (colorScheme === 'dark' ? '#666' : '#999'),
@@ -48,11 +49,7 @@ export function EditorThemeProvider({ children, theme: propTheme }: EditorThemeP
     };
   }, [colorScheme, propTheme]);
 
-  return (
-    <EditorThemeContext.Provider value={contextValue}>
-      {children}
-    </EditorThemeContext.Provider>
-  );
+  return <EditorThemeContext.Provider value={contextValue}>{children}</EditorThemeContext.Provider>;
 }
 
 /**

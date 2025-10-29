@@ -13,9 +13,9 @@ const mockMarkdownPlugin: MarkdownPlugin = {
   description: 'Test bold plugin',
   syntax: {
     patterns: {
-      inline: /\*\*(.*?)\*\*/g
+      inline: /\*\*(.*?)\*\*/g,
     },
-    priority: 100
+    priority: 100,
   },
   parser: {
     canParse: (line: string) => line.includes('**'),
@@ -23,15 +23,15 @@ const mockMarkdownPlugin: MarkdownPlugin = {
       id: 'test-block-id',
       type: 'paragraph',
       content: line.replace(/\*\*(.*?)\*\*/g, '$1'),
-      meta: { bold: true }
+      meta: { bold: true },
     }),
-    parseInline: (text: string) => text.replace(/\*\*(.*?)\*\*/g, '$1')
+    parseInline: (text: string) => text.replace(/\*\*(.*?)\*\*/g, '$1'),
   },
   serializer: {
     canSerialize: (block: EditorBlock) => block.meta?.bold === true,
     serializeBlock: (block: EditorBlock) => `**${block.content}**`,
-    serializeInline: (text: string) => text.replace(/\*\*(.*?)\*\*/g, '$1')
-  }
+    serializeInline: (text: string) => text.replace(/\*\*(.*?)\*\*/g, '$1'),
+  },
 };
 
 const defaultConfig: EditorConfig = {
@@ -42,32 +42,32 @@ const defaultConfig: EditorConfig = {
       secondary: '#666',
       background: '#fff',
       text: '#000',
-      border: '#E5E5E7'
+      border: '#E5E5E7',
     },
     spacing: {
       small: 4,
       medium: 8,
-      large: 16
+      large: 16,
     },
     typography: {
       fontSize: 16,
       lineHeight: 24,
-      fontFamily: 'System'
-    }
+      fontFamily: 'System',
+    },
   },
   toolbar: {
     enabled: true,
-    position: 'top'
+    position: 'top',
   },
   dragAndDrop: {
-    enabled: true
+    enabled: true,
   },
   keyboard: {
-    shortcuts: {}
+    shortcuts: {},
   },
   historyDebounceMs: 0, // Disable debouncing for tests
   maxHistorySize: 50,
-  debug: false
+  debug: false,
 };
 
 describe('useEditorState', () => {
@@ -83,10 +83,10 @@ describe('useEditorState', () => {
 
   describe('Initialization', () => {
     it('should initialize with empty blocks', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -98,13 +98,13 @@ describe('useEditorState', () => {
     it('should initialize with provided blocks', () => {
       const initialBlocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'Block 1' },
-        { id: '2', type: 'paragraph', content: 'Block 2' }
+        { id: '2', type: 'paragraph', content: 'Block 2' },
       ];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -114,18 +114,18 @@ describe('useEditorState', () => {
 
     it('should call onBlocksChange when blocks change', () => {
       const onBlocksChange = jest.fn();
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
           onBlocksChange,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
       const newBlock: EditorBlock = {
         id: 'test-block',
         type: 'paragraph',
-        content: 'Test content'
+        content: 'Test content',
       };
 
       act(() => {
@@ -142,17 +142,17 @@ describe('useEditorState', () => {
 
   describe('Block Operations', () => {
     it('should add a block', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
       const newBlock: EditorBlock = {
         id: 'test-block',
         type: 'paragraph',
-        content: 'Test content'
+        content: 'Test content',
       };
 
       act(() => {
@@ -172,20 +172,20 @@ describe('useEditorState', () => {
     it('should add a block at specific index', () => {
       const initialBlocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'Block 1' },
-        { id: '2', type: 'paragraph', content: 'Block 2' }
+        { id: '2', type: 'paragraph', content: 'Block 2' },
       ];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
       const newBlock: EditorBlock = {
         id: 'new-block',
         type: 'paragraph',
-        content: 'New block'
+        content: 'New block',
       };
 
       act(() => {
@@ -201,16 +201,16 @@ describe('useEditorState', () => {
     });
 
     it('should generate ID for block without ID', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
       const newBlock = {
         type: 'paragraph' as const,
-        content: 'Test content'
+        content: 'Test content',
       };
 
       act(() => {
@@ -227,14 +227,12 @@ describe('useEditorState', () => {
     });
 
     it('should update a block', () => {
-      const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Original content' }
-      ];
+      const initialBlocks: EditorBlock[] = [{ id: '1', type: 'paragraph', content: 'Original content' }];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -252,13 +250,13 @@ describe('useEditorState', () => {
     it('should delete a block', () => {
       const initialBlocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'Block 1' },
-        { id: '2', type: 'paragraph', content: 'Block 2' }
+        { id: '2', type: 'paragraph', content: 'Block 2' },
       ];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -277,13 +275,13 @@ describe('useEditorState', () => {
     it('should update selection when deleting selected block', () => {
       const initialBlocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'Block 1' },
-        { id: '2', type: 'paragraph', content: 'Block 2' }
+        { id: '2', type: 'paragraph', content: 'Block 2' },
       ];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -306,13 +304,13 @@ describe('useEditorState', () => {
       const initialBlocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'Block 1' },
         { id: '2', type: 'paragraph', content: 'Block 2' },
-        { id: '3', type: 'paragraph', content: 'Block 3' }
+        { id: '3', type: 'paragraph', content: 'Block 3' },
       ];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -331,13 +329,13 @@ describe('useEditorState', () => {
 
     it('should duplicate a block', () => {
       const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Original block', meta: { test: true } }
+        { id: '1', type: 'paragraph', content: 'Original block', meta: { test: true } },
       ];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -358,10 +356,10 @@ describe('useEditorState', () => {
 
   describe('Selection Operations', () => {
     it('should select a block', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -373,10 +371,10 @@ describe('useEditorState', () => {
     });
 
     it('should clear selection', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -394,10 +392,10 @@ describe('useEditorState', () => {
 
   describe('Editing Operations', () => {
     it('should start editing a block', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -410,10 +408,10 @@ describe('useEditorState', () => {
     });
 
     it('should stop editing', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -435,18 +433,18 @@ describe('useEditorState', () => {
         { id: '1', type: 'heading', content: 'Title', meta: { level: 1 } },
         { id: '2', type: 'paragraph', content: 'Regular text' },
         { id: '3', type: 'quote', content: 'Quote text' },
-        { id: '4', type: 'code', content: 'console.log("hello");', meta: { language: 'javascript' } }
+        { id: '4', type: 'code', content: 'console.log("hello");', meta: { language: 'javascript' } },
       ];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: blocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
       const markdown = result.current.actions.exportToMarkdown([]);
-      
+
       expect(markdown).toContain('# Title');
       expect(markdown).toContain('Regular text');
       expect(markdown).toContain('> Quote text');
@@ -456,13 +454,13 @@ describe('useEditorState', () => {
     it('should export to plain text', () => {
       const blocks: EditorBlock[] = [
         { id: '1', type: 'paragraph', content: 'First paragraph' },
-        { id: '2', type: 'paragraph', content: 'Second paragraph' }
+        { id: '2', type: 'paragraph', content: 'Second paragraph' },
       ];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: blocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -471,10 +469,10 @@ describe('useEditorState', () => {
     });
 
     it('should import from markdown', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -502,14 +500,12 @@ describe('useEditorState', () => {
 
   describe('History Operations', () => {
     it('should support undo', () => {
-      const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Original' }
-      ];
+      const initialBlocks: EditorBlock[] = [{ id: '1', type: 'paragraph', content: 'Original' }];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -532,14 +528,12 @@ describe('useEditorState', () => {
     });
 
     it('should support redo', () => {
-      const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Original' }
-      ];
+      const initialBlocks: EditorBlock[] = [{ id: '1', type: 'paragraph', content: 'Original' }];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -565,10 +559,10 @@ describe('useEditorState', () => {
     });
 
     it('should not undo when no history available', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -583,10 +577,10 @@ describe('useEditorState', () => {
     });
 
     it('should not redo when no future history available', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -603,10 +597,10 @@ describe('useEditorState', () => {
 
   describe('Utility Functions', () => {
     it('should generate unique block IDs', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -623,10 +617,10 @@ describe('useEditorState', () => {
 
   describe('Edge Cases', () => {
     it('should handle invalid block operations gracefully', () => {
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks: [],
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 
@@ -655,14 +649,12 @@ describe('useEditorState', () => {
     });
 
     it('should handle invalid move operations', () => {
-      const initialBlocks: EditorBlock[] = [
-        { id: '1', type: 'paragraph', content: 'Block 1' }
-      ];
+      const initialBlocks: EditorBlock[] = [{ id: '1', type: 'paragraph', content: 'Block 1' }];
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useEditorState({
           initialBlocks,
-          config: defaultConfig
+          config: defaultConfig,
         })
       );
 

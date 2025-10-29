@@ -14,12 +14,12 @@ export function calculatePreservedCursor(
   if (blockType === 'checklist') {
     const oldChecklistMatch = oldText.match(/^- \[([ x])\] /);
     const newChecklistMatch = newText.match(/^- \[([ x])\] /);
-    
+
     if (oldChecklistMatch && newChecklistMatch) {
       const oldPrefix = oldChecklistMatch[0]; // "- [x] " or "- [ ] "
       const newPrefix = newChecklistMatch[0];
       const lengthDiff = newPrefix.length - oldPrefix.length;
-      
+
       // If cursor is within checkbox syntax (positions 0-5)
       if (oldCursor.start <= oldPrefix.length) {
         // For specific positions in checkbox syntax
@@ -34,14 +34,14 @@ export function calculatePreservedCursor(
         // For other positions, adjust by length difference
         return {
           start: Math.max(0, Math.min(oldCursor.start + lengthDiff, newPrefix.length)),
-          end: Math.max(0, Math.min(oldCursor.end + lengthDiff, newPrefix.length))
+          end: Math.max(0, Math.min(oldCursor.end + lengthDiff, newPrefix.length)),
         };
       }
-      
+
       // If cursor is after prefix, adjust by length difference
       return {
         start: Math.min(oldCursor.start + lengthDiff, newText.length),
-        end: Math.min(oldCursor.end + lengthDiff, newText.length)
+        end: Math.min(oldCursor.end + lengthDiff, newText.length),
       };
     }
   }
@@ -51,11 +51,11 @@ export function calculatePreservedCursor(
     heading: /^#{1,6} /,
     quote: /^>+ /,
     code: /^```[^\\n]*/,
-    list: /^(\s*)([-*+]|\d+\.) /
+    list: /^(\s*)([-*+]|\d+\.) /,
   };
 
   const prefixPattern = syntaxPrefixes[blockType as keyof typeof syntaxPrefixes];
-  
+
   if (!prefixPattern) {
     // No special handling for regular paragraphs
     return oldCursor;
@@ -63,12 +63,12 @@ export function calculatePreservedCursor(
 
   const oldMatch = oldText.match(prefixPattern);
   const newMatch = newText.match(prefixPattern);
-  
+
   if (!oldMatch || !newMatch) {
     // If prefix pattern changes, keep cursor as-is
-    return { 
-      start: Math.min(oldCursor.start, newText.length), 
-      end: Math.min(oldCursor.end, newText.length) 
+    return {
+      start: Math.min(oldCursor.start, newText.length),
+      end: Math.min(oldCursor.end, newText.length),
     };
   }
 
@@ -86,6 +86,6 @@ export function calculatePreservedCursor(
   // If cursor is after prefix, adjust by length difference
   return {
     start: Math.min(oldCursor.start + lengthDiff, newText.length),
-    end: Math.min(oldCursor.end + lengthDiff, newText.length)
+    end: Math.min(oldCursor.end + lengthDiff, newText.length),
   };
-} 
+}

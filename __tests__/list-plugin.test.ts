@@ -87,11 +87,7 @@ describe('ListPlugin ordering logic', () => {
   });
 
   it('reorderList renumbers top-level ordered items after deletion', () => {
-    const blocks = [
-      ordered(1, 'First'),
-      ordered(2, 'Second'),
-      ordered(3, 'Third'),
-    ];
+    const blocks = [ordered(1, 'First'), ordered(2, 'Second'), ordered(3, 'Third')];
 
     const afterRemoval = plugin.reorderList([blocks[0], blocks[2]]);
 
@@ -101,11 +97,7 @@ describe('ListPlugin ordering logic', () => {
   });
 
   it('does not renumber nested ordered items when parent level changes', () => {
-    const blocks = [
-      ordered(1, 'First', 0),
-      ordered(1, 'Nested child', 1),
-      ordered(2, 'Second', 0),
-    ];
+    const blocks = [ordered(1, 'First', 0), ordered(1, 'Nested child', 1), ordered(2, 'Second', 0)];
 
     const after = plugin.reorderList(blocks);
     expect(after[0].meta?.index).toBe(1);
@@ -141,17 +133,13 @@ describe('ListPlugin ordering logic', () => {
   });
 
   it('reorderList assigns indices when toggled to ordered', () => {
-    const blocks = [
-      bullet('a', 'First'),
-      bullet('b', 'Second'),
-      bullet('c', 'Third'),
-    ].map((block) => ({
+    const blocks = [bullet('a', 'First'), bullet('b', 'Second'), bullet('c', 'Third')].map(block => ({
       ...block,
       meta: { ...block.meta, listType: 'ordered' },
     }));
 
     const reordered = plugin.reorderList(blocks);
-    expect(reordered.map((b) => b.meta?.index)).toEqual([1, 2, 3]);
+    expect(reordered.map(b => b.meta?.index)).toEqual([1, 2, 3]);
   });
 
   it('createBlock applies plugin defaults and overrides meta', () => {
