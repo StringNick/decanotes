@@ -22,7 +22,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon/foreground.png",
-        "backgroundImage": "./assets/images/adaptive-icon/background.png"
+        "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.decanotesexpo",
@@ -40,8 +40,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/splash.png",
-          "imageWidth": 600
+          "image": "./assets/images/adaptive-icon/foreground.png",
+          "imageWidth": 200
         }
       ],
       "expo-font",
