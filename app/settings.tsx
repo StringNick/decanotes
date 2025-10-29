@@ -1,7 +1,7 @@
 import { IconSymbol, IconSymbolName } from '@/components/ui/IconSymbol';
-import { getThemeColors, Colors, Spacing, Typography } from '@/constants/DesignSystem';
-import { useTheme } from '@/contexts/ThemeContext';
+import { Colors, getThemeColors, Spacing, Typography } from '@/constants/DesignSystem';
 import { useStorage } from '@/contexts/StorageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';

@@ -3,11 +3,8 @@ import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { BlockPlugin } from '../plugins/BlockPlugin';
 // import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
 import {
-  BlockComponentProps,
-  CustomPluginOptions,
-  // MarkdownSyntax,
-  // ToolbarConfig,
-  // BlockSettings
+    BlockComponentProps,
+    CustomPluginOptions,
 } from '../types/PluginTypes';
 
 /**

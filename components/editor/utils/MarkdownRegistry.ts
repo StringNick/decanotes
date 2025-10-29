@@ -1,6 +1,6 @@
 import { EditorBlock } from '../../../types/editor';
 import { MarkdownPlugin } from '../plugins/MarkdownPlugin';
-import { MarkdownSyntax, MarkdownParser, MarkdownSerializer } from '../types/PluginTypes';
+import { MarkdownParser, MarkdownSerializer, MarkdownSyntax } from '../types/PluginTypes';
 
 /**
  * Registry for custom markdown syntax extensions
