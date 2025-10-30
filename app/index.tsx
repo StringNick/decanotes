@@ -112,16 +112,28 @@ export default function HomeScreen() {
   };
 
   const filteredNotes = notes.filter(note => {
-    const matchesSearch =
-      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.preview.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!searchQuery) return true;
 
-    if (activeFilter === 'Recent') {
-      const isRecent = Date.now() - note.lastModified.getTime() < 7 * 24 * 60 * 60 * 1000; // 7 days
-      return matchesSearch && isRecent;
+    const query = searchQuery.toLowerCase();
+    
+    // Search in title
+    if (note.title.toLowerCase().includes(query)) return true;
+    
+    // Search in preview
+    if (note.preview.toLowerCase().includes(query)) return true;
+    
+    // Search in block content
+    if (note.content && Array.isArray(note.content)) {
+      const hasMatch = note.content.some((block: any) => {
+        if (typeof block.content === 'string') {
+          return block.content.toLowerCase().includes(query);
+        }
+        return false;
+      });
+      if (hasMatch) return true;
     }
 
-    return matchesSearch;
+    return false;
   });
 
   const renderNoteItem = ({ item }: { item: (typeof notes)[0] }) => (

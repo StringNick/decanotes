@@ -289,9 +289,11 @@ export default function EditorScreen() {
   const [rawMarkdown, setRawMarkdown] = useState('');
   const [isEditingMarkdown, setIsEditingMarkdown] = useState(false);
   const [editedMarkdown, setEditedMarkdown] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const isInitialLoad = useRef(true);
   const initialBlocksRef = useRef<EditorBlock[]>([]);
   const isTitleManuallySet = useRef(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const colors = Colors[colorScheme ?? 'light'];
   const styles = getStyles(colorScheme ?? 'light');
@@ -420,23 +422,20 @@ export default function EditorScreen() {
     [markAsChanged, clearUnsavedChanges, hasUnsavedChanges]
   );
 
-  // Save note handler
-  const handleSaveNote = useCallback(async () => {
-    if (isSaving) return;
+  // Auto-save with debounce
+  const performSave = useCallback(async () => {
+    if (isSaving || blocks.length === 0) return;
 
     setIsSaving(true);
+    setSaveStatus('saving');
     try {
       if (__DEV__) {
         const footnoteBlocks = blocks.filter(b => b.type === 'footnote');
-        console.log('[handleSaveNote] Saving blocks count:', blocks.length);
+        console.log('[performSave] Saving blocks count:', blocks.length);
         console.log(
-          '[handleSaveNote] Footnote blocks:',
+          '[performSave] Footnote blocks:',
           footnoteBlocks.length,
           footnoteBlocks.map(b => b.meta?.footnoteId)
-        );
-        console.log(
-          '[handleSaveNote] Block types:',
-          blocks.map(b => b.type)
         );
       }
 
@@ -473,14 +472,52 @@ export default function EditorScreen() {
       setCurrentNote(savedNote);
       // Update initial blocks reference after successful save
       initialBlocksRef.current = blocks;
-      Alert.alert('Success', 'Note saved successfully!');
+      clearUnsavedChanges();
+      setSaveStatus('saved');
+      
+      // Show saved status briefly, then hide
+      setTimeout(() => setSaveStatus('saved'), 1000);
     } catch (error) {
       console.error('Failed to save note:', error);
-      Alert.alert('Error', 'Failed to save note');
+      setSaveStatus('unsaved');
     } finally {
       setIsSaving(false);
     }
-  }, [blocks, currentNote, saveNote, isSaving, noteTitle]);
+  }, [blocks, currentNote, saveNote, isSaving, noteTitle, clearUnsavedChanges, setCurrentNote]);
+
+  // Trigger auto-save when blocks change
+  useEffect(() => {
+    if (isInitialLoad.current || blocks.length === 0) {
+      return;
+    }
+
+    // Clear existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set status to unsaved immediately
+    setSaveStatus('unsaved');
+
+    // Debounce save by 2 seconds
+    autoSaveTimerRef.current = setTimeout(() => {
+      performSave();
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [blocks, performSave]);
+
+  // Manual save handler (for explicit save button)
+  const handleSaveNote = useCallback(async () => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    await performSave();
+  }, [performSave]);
 
   // Handle undo
   const handleUndo = useCallback(() => {
@@ -498,9 +535,49 @@ export default function EditorScreen() {
 
   // Handle formatting actions
   const handleFormattingAction = useCallback((actionId: string) => {
-    console.log('Formatting action:', actionId);
-    // TODO: Implement formatting actions
-  }, []);
+    if (!editorRef.current) return;
+
+    // Get current blocks
+    const currentBlocks = editorRef.current.getBlocks();
+    if (currentBlocks.length === 0) return;
+
+    // For now, apply formatting to the last block (where cursor likely is)
+    const lastBlock = currentBlocks[currentBlocks.length - 1];
+    if (!lastBlock || lastBlock.type !== 'paragraph') return;
+
+    const content = lastBlock.content;
+    let newContent = content;
+
+    switch (actionId) {
+      case 'bold':
+        newContent = content.includes('**') ? content.replace(/\*\*/g, '') : `**${content}**`;
+        break;
+      case 'italic':
+        newContent = content.includes('*') && !content.includes('**') ? content.replace(/\*/g, '') : `*${content}*`;
+        break;
+      case 'strikethrough':
+        newContent = content.includes('~~') ? content.replace(/~~/g, '') : `~~${content}~~`;
+        break;
+      case 'code':
+        newContent = content.includes('`') ? content.replace(/`/g, '') : `\`${content}\``;
+        break;
+      case 'link':
+        if (!content.includes('[')) {
+          newContent = `[${content}](url)`;
+        }
+        break;
+      default:
+        return;
+    }
+
+    // Update blocks array
+    const updatedBlocks = [...currentBlocks];
+    updatedBlocks[updatedBlocks.length - 1] = { ...lastBlock, content: newContent };
+    
+    // Apply via setBlocks
+    setBlocks(updatedBlocks);
+    markAsChanged();
+  }, [markAsChanged]);
 
   // Handle rename
   const handleRename = useCallback(() => {
@@ -697,6 +774,16 @@ export default function EditorScreen() {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
+      
+      {/* Save Status Toast */}
+      {saveStatus !== 'saved' && (
+        <View style={[styles.saveToast, { backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.95)' }]}>
+          <Text style={[styles.saveToastText, { color: colors.text }]}>
+            {saveStatus === 'saving' ? '💾 Saving...' : saveStatus === 'unsaved' ? '✏️ Unsaved changes' : ''}
+          </Text>
+        </View>
+      )}
+
       {/* Compact Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
@@ -996,6 +1083,24 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     },
     saveButton: {
       backgroundColor: colors.tint,
+    },
+    saveToast: {
+      position: 'absolute',
+      top: 60,
+      alignSelf: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      zIndex: 1000,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    saveToastText: {
+      fontSize: 13,
+      fontFamily: 'AlbertSans_500Medium',
     },
     loadingContainer: {
       justifyContent: 'center',
