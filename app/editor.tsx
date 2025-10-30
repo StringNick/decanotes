@@ -273,7 +273,7 @@ export default function EditorScreen() {
   const params = useLocalSearchParams<{ noteId?: string }>();
   const { effectiveTheme } = useTheme();
   const colorScheme = effectiveTheme; // Use app theme setting instead of system theme
-  const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges } =
+  const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges, autoSaveEnabled } =
     useStorage();
 
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
@@ -485,9 +485,9 @@ export default function EditorScreen() {
     }
   }, [blocks, currentNote, saveNote, isSaving, noteTitle, clearUnsavedChanges, setCurrentNote]);
 
-  // Trigger auto-save when blocks change
+  // Trigger auto-save when blocks change (if enabled)
   useEffect(() => {
-    if (isInitialLoad.current || blocks.length === 0) {
+    if (isInitialLoad.current || blocks.length === 0 || !autoSaveEnabled) {
       return;
     }
 
@@ -509,7 +509,7 @@ export default function EditorScreen() {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [blocks, performSave]);
+  }, [blocks, performSave, autoSaveEnabled]);
 
   // Manual save handler (for explicit save button)
   const handleSaveNote = useCallback(async () => {

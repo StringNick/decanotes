@@ -50,7 +50,7 @@ function SettingItem({ icon, title, subtitle, onPress, rightElement, showChevron
 
 export default function SettingsScreen() {
   const { theme, effectiveTheme, setTheme } = useTheme();
-  const { authState, signOut, sync } = useStorage();
+  const { authState, signOut, sync, autoSaveEnabled, setAutoSaveEnabled } = useStorage();
   const isDark = effectiveTheme === 'dark';
   const colors = getThemeColors(isDark);
 
@@ -174,6 +174,28 @@ export default function SettingsScreen() {
                     { text: 'Dark', onPress: () => setTheme('dark') },
                     { text: 'System', onPress: () => setTheme('system') },
                     { text: 'Cancel', style: 'cancel' },
+                  ]
+                );
+              }}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>EDITOR</Text>
+          <View style={styles.sectionContent}>
+            <SettingItem
+              icon={'arrow.clockwise.circle' as any}
+              title="Auto-Save"
+              subtitle={autoSaveEnabled ? 'Enabled' : 'Disabled'}
+              colors={colors}
+              onPress={() => {
+                Alert.alert(
+                  'Auto-Save',
+                  autoSaveEnabled ? 'Disable auto-save? Changes will need to be saved manually.' : 'Enable auto-save? Changes will be saved automatically after 2 seconds.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: autoSaveEnabled ? 'Disable' : 'Enable', onPress: () => setAutoSaveEnabled(!autoSaveEnabled) },
                   ]
                 );
               }}

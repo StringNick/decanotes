@@ -8,6 +8,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 const AUTH_STATE_KEY = '@decanotes:auth_state';
 const BACKEND_TYPE_KEY = '@decanotes:backend_type';
 const BACKEND_CONFIG_KEY = '@decanotes:backend_config'; // Only for non-sensitive config
+const AUTO_SAVE_KEY = '@decanotes:auto_save';
 
 interface StorageContextType {
   // Auth state
@@ -20,6 +21,10 @@ interface StorageContextType {
   notes: Note[];
   currentNote: Note | null;
   hasUnsavedChanges: boolean;
+
+  // Settings
+  autoSaveEnabled: boolean;
+  setAutoSaveEnabled: (enabled: boolean) => void;
 
   // Auth actions
   signIn: (backendType: StorageBackendType, config: StorageConfig) => Promise<void>;
@@ -51,6 +56,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [backend, setBackend] = useState<StorageBackend | null>(null);
+  const [autoSaveEnabled, setAutoSaveEnabledState] = useState(false);
 
   // Initialize auth state from AsyncStorage
   useEffect(() => {
@@ -59,6 +65,12 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
 
   const loadAuthState = async () => {
     try {
+      // Load auto-save setting
+      const autoSaveStr = await AsyncStorage.getItem(AUTO_SAVE_KEY);
+      if (autoSaveStr !== null) {
+        setAutoSaveEnabledState(autoSaveStr === 'true');
+      }
+
       // Load saved backend type
       const backendTypeStr = await AsyncStorage.getItem(BACKEND_TYPE_KEY);
 
@@ -327,6 +339,16 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     }
   }, [backend, loadNotes]);
 
+  const setAutoSaveEnabled = useCallback(async (enabled: boolean) => {
+    try {
+      await AsyncStorage.setItem(AUTO_SAVE_KEY, enabled.toString());
+      setAutoSaveEnabledState(enabled);
+    } catch (error) {
+      console.error('Failed to save auto-save setting:', error);
+      throw error;
+    }
+  }, []);
+
   const value: StorageContextType = {
     authState,
     isLoading,
@@ -335,6 +357,8 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     notes,
     currentNote,
     hasUnsavedChanges,
+    autoSaveEnabled,
+    setAutoSaveEnabled,
     signIn,
     signOut,
     loadNotes,
