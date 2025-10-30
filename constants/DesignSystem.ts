@@ -145,12 +145,12 @@ export const Typography = {
 
   // Font Sizes
   sizes: {
-    xs: 10,
-    sm: 12,
-    base: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
+    xs: 11,
+    sm: 13,
+    base: 16,
+    md: 17,
+    lg: 19,
+    xl: 21,
     '2xl': 24,
     '3xl': 28,
     '4xl': 32,
@@ -160,9 +160,9 @@ export const Typography = {
 
   // Line Heights
   lineHeights: {
-    tight: 1.2,
-    normal: 1.5,
-    relaxed: 1.75,
+    tight: 1.25,
+    normal: 1.6,
+    relaxed: 1.8,
   },
 
   // Letter Spacing
@@ -187,6 +187,39 @@ export const Spacing = {
   '4xl': 48,
   '5xl': 64,
   '6xl': 80,
+};
+
+// === ELEVATION ===
+// Semantic elevation levels for layered surfaces
+export const Elevation = {
+  flat: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  modal: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  float: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
+  },
 };
 
 // === BORDER RADIUS ===

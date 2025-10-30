@@ -7,15 +7,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 type AuthMethod = StorageBackendType;
@@ -152,22 +152,21 @@ export default function AuthScreen() {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
+              <View
                 style={[
                   styles.methodButton,
                   styles.disabledMethodButton,
-                  activeMethod === 'ipfs' && styles.activeMethodButton,
+                  { opacity: 0.5 },
                 ]}
-                onPress={() => setActiveMethod('ipfs')}
               >
                 <View style={styles.methodButtonContent}>
-                  <IconSymbol name="globe" size={18} color={activeMethod === 'ipfs' ? '#FFFFFF' : '#6B7280'} />
-                  <Text style={[styles.methodText, activeMethod === 'ipfs' && styles.activeMethodText]}>IPFS</Text>
+                  <IconSymbol name="globe" size={18} color="#6B7280" />
+                  <Text style={styles.methodText}>IPFS</Text>
                 </View>
                 <View style={styles.soonBadge}>
                   <Text style={styles.soonText}>Soon</Text>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.formContainer}>

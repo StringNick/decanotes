@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface SettingItemProps {
@@ -161,23 +161,22 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>APPEARANCE</Text>
           <View style={styles.sectionContent}>
             <SettingItem
-              icon={'moon' as any}
-              title="Dark Mode"
-              subtitle={theme === 'system' ? 'Following system theme' : 'Toggle dark theme'}
+              icon={'circle.lefthalf.filled' as any}
+              title="Theme"
+              subtitle={theme === 'system' ? 'Following system' : theme === 'dark' ? 'Dark' : 'Light'}
               colors={colors}
-              rightElement={
-                <Switch
-                  value={theme === 'dark' || (theme === 'system' && isDark)}
-                  onValueChange={handleThemeChange}
-                  trackColor={{
-                    false: isDark ? Colors.neutral.gray700 : Colors.neutral.gray300,
-                    true: Colors.primary.purple,
-                  }}
-                  thumbColor={isDark ? Colors.neutral.white : Colors.neutral.white}
-                  ios_backgroundColor={isDark ? Colors.neutral.gray700 : Colors.neutral.gray300}
-                />
-              }
-              showChevron={false}
+              onPress={() => {
+                Alert.alert(
+                  'Theme',
+                  'Choose your preferred theme',
+                  [
+                    { text: 'Light', onPress: () => setTheme('light') },
+                    { text: 'Dark', onPress: () => setTheme('dark') },
+                    { text: 'System', onPress: () => setTheme('system') },
+                    { text: 'Cancel', style: 'cancel' },
+                  ]
+                );
+              }}
             />
           </View>
         </View>

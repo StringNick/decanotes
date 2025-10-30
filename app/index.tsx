@@ -1,14 +1,14 @@
 import { NoteCard } from '@/components/NoteCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import {
-  getThemeColors,
-  Animations,
-  Colors,
-  Spacing,
-  createTextStyle,
-  Typography,
-  BorderRadius,
-  Shadows,
+    Animations,
+    BorderRadius,
+    Colors,
+    createTextStyle,
+    getThemeColors,
+    Shadows,
+    Spacing,
+    Typography,
 } from '@/constants/DesignSystem';
 import { useStorage } from '@/contexts/StorageContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -16,15 +16,15 @@ import type { Note } from '@/types/storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  Animated,
-  FlatList,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    FlatList,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -182,9 +182,8 @@ export default function HomeScreen() {
 
       {/* Filter Tabs - Minimal */}
       <View style={styles.filterTabs}>
-        {['All', 'Recent', 'Favorites'].map(filter => {
+        {['All'].map(filter => {
           const isActive = activeFilter === filter;
-          const isComingSoon = filter === 'Recent' || filter === 'Favorites';
           return (
             <TouchableOpacity
               key={filter}
@@ -193,16 +192,8 @@ export default function HomeScreen() {
                 {
                   backgroundColor: isActive ? (isDark ? colors.text.primary : colors.text.primary) : 'transparent',
                 },
-                isComingSoon && styles.disabledFilterTab,
               ]}
-              onPress={() => {
-                if (isComingSoon) {
-                  Alert.alert('Coming Soon', `${filter} filter will be available soon!`);
-                } else {
-                  setActiveFilter(filter);
-                }
-              }}
-              disabled={isComingSoon && isActive}
+              onPress={() => setActiveFilter(filter)}
             >
               <Text
                 style={[
@@ -218,11 +209,6 @@ export default function HomeScreen() {
               >
                 {filter}
               </Text>
-              {isComingSoon && (
-                <View style={styles.soonBadgeSmall}>
-                  <Text style={styles.soonTextSmall}>Soon</Text>
-                </View>
-              )}
             </TouchableOpacity>
           );
         })}
