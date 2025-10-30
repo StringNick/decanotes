@@ -42,5 +42,7 @@ WARP.md
 
 app-example
 
-
-build-*.ipa
+# ios
+build-*.ipa 
+# android
+build-*.aab

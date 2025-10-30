@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Note, StorageBackend, StorageConfig, AuthState, StorageBackendType } from '@/types/storage';
+import { IPFSBackend } from '@/services/storage/IPFSBackend';
 import { LocalStorageBackend } from '@/services/storage/LocalStorageBackend';
 import { RenterdBackend } from '@/services/storage/RenterdBackend';
-import { IPFSBackend } from '@/services/storage/IPFSBackend';
+import { AuthState, Note, StorageBackend, StorageBackendType, StorageConfig } from '@/types/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 const AUTH_STATE_KEY = '@decanotes:auth_state';
 const BACKEND_TYPE_KEY = '@decanotes:backend_type';
@@ -257,16 +257,12 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       try {
         const savedNote = await backend.saveNote(note);
 
-        // Update notes list
+        // Update notes list and keep sorted by most recent first
         setNotes(prevNotes => {
-          const index = prevNotes.findIndex(n => n.id === savedNote.id);
-          if (index >= 0) {
-            const newNotes = [...prevNotes];
-            newNotes[index] = savedNote;
-            return newNotes;
-          } else {
-            return [savedNote, ...prevNotes];
-          }
+          // Remove existing note if updating
+          const filtered = prevNotes.filter(n => n.id !== savedNote.id);
+          // Add updated/new note at the top (most recent)
+          return [savedNote, ...filtered];
         });
 
         // Update current note if it matches

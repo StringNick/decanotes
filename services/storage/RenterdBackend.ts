@@ -1,4 +1,5 @@
-import { Note, StorageBackend, StorageConfig, RenterdStorageConfig } from '@/types/storage';
+import { Note, RenterdStorageConfig, StorageBackend, StorageConfig } from '@/types/storage';
+import { encode as base64Encode } from 'base-64';
 
 const BUCKET_NAME = 'decanotes';
 const NOTES_OBJECT_KEY = 'notes.json';
@@ -25,7 +26,7 @@ export class RenterdBackend implements StorageBackend {
     }
     // Format: ":<password>" encoded in base64
     const credentials = `:${this.config.password}`;
-    return `Basic ${btoa(credentials)}`;
+    return `Basic ${base64Encode(credentials)}`;
   }
 
   private async checkBucketExists(): Promise<boolean> {

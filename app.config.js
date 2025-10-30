@@ -35,7 +35,7 @@ module.exports = {
         backgroundColor: '#FFFFFF',
       },
       edgeToEdgeEnabled: true,
-      package: 'com.anonymous.decanotesexpo',
+      package: 'com.stringnick.decanotes',
       permissions: ['INTERNET'],
       newArchEnabled: true,
     },
