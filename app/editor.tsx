@@ -7,37 +7,37 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-    CheckSquare,
-    Code,
-    Heading1,
-    Heading2,
-    Heading3,
-    Lightbulb,
-    List,
-    ListOrdered,
-    Minus,
-    Plus,
-    Quote,
-    Redo2,
-    Save,
-    Table,
-    Type,
-    Undo2,
-    X,
+  CheckSquare,
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  Lightbulb,
+  List,
+  ListOrdered,
+  Minus,
+  Plus,
+  Quote,
+  Redo2,
+  Save,
+  Table,
+  Type,
+  Undo2,
+  X,
 } from 'lucide-react-native';
 import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    Modal,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MarkdownEditor } from '../components/editor/MarkdownEditor';
@@ -270,8 +270,16 @@ export default function EditorScreen() {
   const params = useLocalSearchParams<{ noteId?: string }>();
   const { effectiveTheme } = useTheme();
   const colorScheme = effectiveTheme; // Use app theme setting instead of system theme
-  const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges, autoSaveEnabled } =
-    useStorage();
+  const {
+    loadNote,
+    saveNote,
+    currentNote,
+    setCurrentNote,
+    hasUnsavedChanges,
+    markAsChanged,
+    clearUnsavedChanges,
+    autoSaveEnabled,
+  } = useStorage();
 
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
@@ -469,7 +477,7 @@ export default function EditorScreen() {
       initialBlocksRef.current = blocks;
       clearUnsavedChanges();
       setSaveStatus('saved');
-      
+
       // Show saved status briefly, then hide
       setTimeout(() => setSaveStatus('saved'), 1000);
     } catch (error) {
@@ -529,50 +537,53 @@ export default function EditorScreen() {
   }, []);
 
   // Handle formatting actions
-  const handleFormattingAction = useCallback((actionId: string) => {
-    if (!editorRef.current) return;
+  const handleFormattingAction = useCallback(
+    (actionId: string) => {
+      if (!editorRef.current) return;
 
-    // Get current blocks
-    const currentBlocks = editorRef.current.getBlocks();
-    if (currentBlocks.length === 0) return;
+      // Get current blocks
+      const currentBlocks = editorRef.current.getBlocks();
+      if (currentBlocks.length === 0) return;
 
-    // For now, apply formatting to the last block (where cursor likely is)
-    const lastBlock = currentBlocks[currentBlocks.length - 1];
-    if (!lastBlock || lastBlock.type !== 'paragraph') return;
+      // For now, apply formatting to the last block (where cursor likely is)
+      const lastBlock = currentBlocks[currentBlocks.length - 1];
+      if (!lastBlock || lastBlock.type !== 'paragraph') return;
 
-    const content = lastBlock.content;
-    let newContent = content;
+      const content = lastBlock.content;
+      let newContent = content;
 
-    switch (actionId) {
-      case 'bold':
-        newContent = content.includes('**') ? content.replace(/\*\*/g, '') : `**${content}**`;
-        break;
-      case 'italic':
-        newContent = content.includes('*') && !content.includes('**') ? content.replace(/\*/g, '') : `*${content}*`;
-        break;
-      case 'strikethrough':
-        newContent = content.includes('~~') ? content.replace(/~~/g, '') : `~~${content}~~`;
-        break;
-      case 'code':
-        newContent = content.includes('`') ? content.replace(/`/g, '') : `\`${content}\``;
-        break;
-      case 'link':
-        if (!content.includes('[')) {
-          newContent = `[${content}](url)`;
-        }
-        break;
-      default:
-        return;
-    }
+      switch (actionId) {
+        case 'bold':
+          newContent = content.includes('**') ? content.replace(/\*\*/g, '') : `**${content}**`;
+          break;
+        case 'italic':
+          newContent = content.includes('*') && !content.includes('**') ? content.replace(/\*/g, '') : `*${content}*`;
+          break;
+        case 'strikethrough':
+          newContent = content.includes('~~') ? content.replace(/~~/g, '') : `~~${content}~~`;
+          break;
+        case 'code':
+          newContent = content.includes('`') ? content.replace(/`/g, '') : `\`${content}\``;
+          break;
+        case 'link':
+          if (!content.includes('[')) {
+            newContent = `[${content}](url)`;
+          }
+          break;
+        default:
+          return;
+      }
 
-    // Update blocks array
-    const updatedBlocks = [...currentBlocks];
-    updatedBlocks[updatedBlocks.length - 1] = { ...lastBlock, content: newContent };
-    
-    // Apply via setBlocks
-    setBlocks(updatedBlocks);
-    markAsChanged();
-  }, [markAsChanged]);
+      // Update blocks array
+      const updatedBlocks = [...currentBlocks];
+      updatedBlocks[updatedBlocks.length - 1] = { ...lastBlock, content: newContent };
+
+      // Apply via setBlocks
+      setBlocks(updatedBlocks);
+      markAsChanged();
+    },
+    [markAsChanged]
+  );
 
   // Handle rename
   const handleRename = useCallback(() => {
@@ -595,29 +606,29 @@ export default function EditorScreen() {
   // Toggle markdown mode
   const handleToggleMarkdownMode = useCallback(() => {
     console.log('[Toggle] Called, isMarkdownMode:', isMarkdownMode);
-    
+
     if (isMarkdownMode) {
       // Switching from markdown to blocks - parse and apply changes
       console.log('[Toggle] Switching to BLOCKS mode, markdown length:', markdownText.length);
-      
+
       try {
         // Import the parser directly to parse markdown into blocks
         // We can't use editorRef here because MarkdownEditor is unmounted
         const { parseMarkdownToBlocks } = require('../components/editor/utils/MarkdownRegistry');
-        
+
         // Parse markdown to blocks (using built-in plugins)
         const parsedBlocks = parseMarkdownToBlocks(markdownText, []);
         console.log('[Toggle] Parsed blocks:', parsedBlocks.length);
-        
+
         // Update blocks state - this will trigger the editor to re-render with new blocks
         setBlocks(parsedBlocks);
-        
+
         // Mark as changed if content differs
         const hasActualChanges = JSON.stringify(parsedBlocks) !== JSON.stringify(initialBlocksRef.current);
         if (hasActualChanges && !isInitialLoad.current) {
           markAsChanged();
         }
-        
+
         // Switch mode
         setIsMarkdownMode(false);
       } catch (error) {
@@ -627,7 +638,7 @@ export default function EditorScreen() {
     } else {
       // Switching from blocks to markdown - get fresh markdown
       console.log('[Toggle] Switching to MARKDOWN mode');
-      
+
       if (editorRef.current) {
         const markdown = editorRef.current.getMarkdown();
         console.log('[Toggle] Got markdown, length:', markdown.length);
@@ -638,12 +649,15 @@ export default function EditorScreen() {
   }, [isMarkdownMode, markdownText, markAsChanged]);
 
   // Handle markdown text change
-  const handleMarkdownTextChange = useCallback((text: string) => {
-    setMarkdownText(text);
-    if (!isInitialLoad.current) {
-      markAsChanged();
-    }
-  }, [markAsChanged]);
+  const handleMarkdownTextChange = useCallback(
+    (text: string) => {
+      setMarkdownText(text);
+      if (!isInitialLoad.current) {
+        markAsChanged();
+      }
+    },
+    [markAsChanged]
+  );
 
   // Block types for the menu - Notion-style
   const blockTypes: {
@@ -742,10 +756,15 @@ export default function EditorScreen() {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-      
+
       {/* Save Status Toast */}
       {saveStatus !== 'saved' && (
-        <View style={[styles.saveToast, { backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.95)' }]}>
+        <View
+          style={[
+            styles.saveToast,
+            { backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.95)' },
+          ]}
+        >
           <Text style={[styles.saveToastText, { color: colors.text }]}>
             {saveStatus === 'saving' ? '💾 Saving...' : saveStatus === 'unsaved' ? '✏️ Unsaved changes' : ''}
           </Text>
@@ -801,14 +820,11 @@ export default function EditorScreen() {
                 )}
               </TouchableOpacity>
             )}
-            
+
             {/* Тумблер Blocks ↔ Markdown */}
             <View style={styles.modeToggleContainer}>
               <TouchableOpacity
-                style={[
-                  styles.modeToggleButton,
-                  !isMarkdownMode && styles.modeToggleButtonActive,
-                ]}
+                style={[styles.modeToggleButton, !isMarkdownMode && styles.modeToggleButtonActive]}
                 onPress={() => {
                   if (isMarkdownMode) {
                     handleToggleMarkdownMode();
@@ -818,10 +834,7 @@ export default function EditorScreen() {
                 <Type size={14} color={!isMarkdownMode ? colors.background : colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.modeToggleButton,
-                  isMarkdownMode && styles.modeToggleButtonActive,
-                ]}
+                style={[styles.modeToggleButton, isMarkdownMode && styles.modeToggleButtonActive]}
                 onPress={() => {
                   if (!isMarkdownMode) {
                     handleToggleMarkdownMode();
@@ -847,7 +860,7 @@ export default function EditorScreen() {
         </View>
       ) : isMarkdownMode ? (
         <View style={styles.editorContainer}>
-          <ScrollView 
+          <ScrollView
             style={styles.markdownScrollContainer}
             contentContainerStyle={{ paddingBottom: keyboardOffset || 20 }}
             keyboardShouldPersistTaps="handled"
@@ -940,7 +953,6 @@ export default function EditorScreen() {
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }

@@ -5,17 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { Copy, Save, X } from 'lucide-react-native';
 import React, { useState } from 'react';
-import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export type MarkdownSheetMode = 'view' | 'edit';
 
@@ -41,7 +31,7 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
   const { effectiveTheme } = useTheme();
   const colorScheme = effectiveTheme;
   const colors = Colors[colorScheme ?? 'light'];
-  
+
   const [mode, setMode] = useState<MarkdownSheetMode>('view');
   const [editedMarkdown, setEditedMarkdown] = useState(markdown);
   const [includeLink, setIncludeLink] = useState(false);
@@ -57,7 +47,7 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
 
   const handleCopy = async () => {
     const contentToCopy = mode === 'edit' ? editedMarkdown : markdown;
-    
+
     let finalContent = contentToCopy;
     if (includeLink && noteId) {
       const wikiLink = `[[${noteTitle}]]`;
@@ -66,11 +56,11 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
     }
 
     await Clipboard.setStringAsync(finalContent);
-    
+
     if (onCopy) {
       onCopy(finalContent, includeLink);
     }
-    
+
     Alert.alert('✓ Copied', 'Markdown copied to clipboard');
     onClose();
   };
@@ -86,19 +76,10 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
   const styles = getStyles(colorScheme ?? 'light');
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <TouchableOpacity 
-          style={styles.backdrop} 
-          activeOpacity={1} 
-          onPress={onClose}
-        />
-        
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           {/* Header with tabs */}
           <View style={styles.header}>
@@ -107,15 +88,8 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
                 style={[styles.tab, mode === 'view' && styles.tabActive]}
                 onPress={() => setMode('view')}
               >
-                <Ionicons 
-                  name="eye-outline" 
-                  size={18} 
-                  color={mode === 'view' ? colors.tint : colors.textSecondary} 
-                />
-                <Text style={[
-                  styles.tabText,
-                  { color: mode === 'view' ? colors.tint : colors.textSecondary }
-                ]}>
+                <Ionicons name="eye-outline" size={18} color={mode === 'view' ? colors.tint : colors.textSecondary} />
+                <Text style={[styles.tabText, { color: mode === 'view' ? colors.tint : colors.textSecondary }]}>
                   Preview
                 </Text>
               </TouchableOpacity>
@@ -124,15 +98,12 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
                 style={[styles.tab, mode === 'edit' && styles.tabActive]}
                 onPress={() => setMode('edit')}
               >
-                <Ionicons 
-                  name="create-outline" 
-                  size={18} 
-                  color={mode === 'edit' ? colors.tint : colors.textSecondary} 
+                <Ionicons
+                  name="create-outline"
+                  size={18}
+                  color={mode === 'edit' ? colors.tint : colors.textSecondary}
                 />
-                <Text style={[
-                  styles.tabText,
-                  { color: mode === 'edit' ? colors.tint : colors.textSecondary }
-                ]}>
+                <Text style={[styles.tabText, { color: mode === 'edit' ? colors.tint : colors.textSecondary }]}>
                   Edit
                 </Text>
               </TouchableOpacity>
@@ -147,20 +118,19 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
           <View style={styles.content}>
             {mode === 'view' ? (
               <ScrollView style={styles.scrollView}>
-                <View style={[
-                  styles.markdownContainer,
-                  {
-                    backgroundColor: colorScheme === 'dark' 
-                      ? DesignSystem.Colors.glass.dark.soft
-                      : DesignSystem.Colors.glass.light.soft,
-                    borderColor: colorScheme === 'dark' 
-                      ? 'rgba(255, 255, 255, 0.1)' 
-                      : 'rgba(0, 0, 0, 0.1)',
-                  }
-                ]}>
-                  <Text style={[styles.markdownText, { color: colors.text }]}>
-                    {markdown}
-                  </Text>
+                <View
+                  style={[
+                    styles.markdownContainer,
+                    {
+                      backgroundColor:
+                        colorScheme === 'dark'
+                          ? DesignSystem.Colors.glass.dark.soft
+                          : DesignSystem.Colors.glass.light.soft,
+                      borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.markdownText, { color: colors.text }]}>{markdown}</Text>
                 </View>
               </ScrollView>
             ) : (
@@ -168,12 +138,11 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
                 style={[
                   styles.markdownInput,
                   {
-                    backgroundColor: colorScheme === 'dark' 
-                      ? DesignSystem.Colors.glass.dark.soft
-                      : DesignSystem.Colors.glass.light.soft,
-                    borderColor: colorScheme === 'dark' 
-                      ? 'rgba(255, 255, 255, 0.1)' 
-                      : 'rgba(0, 0, 0, 0.1)',
+                    backgroundColor:
+                      colorScheme === 'dark'
+                        ? DesignSystem.Colors.glass.dark.soft
+                        : DesignSystem.Colors.glass.light.soft,
+                    borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
                     color: colors.text,
                   },
                 ]}
@@ -191,15 +160,13 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
           {/* Footer with actions */}
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
             <View style={styles.linkOption}>
-              <Text style={[styles.linkLabel, { color: colors.text }]}>
-                Add note link
-              </Text>
+              <Text style={[styles.linkLabel, { color: colors.text }]}>Add note link</Text>
               <Switch
                 value={includeLink}
                 onValueChange={setIncludeLink}
-                trackColor={{ 
-                  false: colors.surface, 
-                  true: colors.tint + '40' 
+                trackColor={{
+                  false: colors.surface,
+                  true: colors.tint + '40',
                 }}
                 thumbColor={includeLink ? colors.tint : colors.icon}
               />
@@ -211,9 +178,7 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
                 onPress={handleCopy}
               >
                 <Copy size={16} color={colors.text} />
-                <Text style={[styles.actionText, { color: colors.text }]}>
-                  Copy & Close
-                </Text>
+                <Text style={[styles.actionText, { color: colors.text }]}>Copy & Close</Text>
               </TouchableOpacity>
 
               {mode === 'edit' && onApply && editedMarkdown !== markdown && (
@@ -222,9 +187,7 @@ export const MarkdownSheet: React.FC<MarkdownSheetProps> = ({
                   onPress={handleApply}
                 >
                   <Save size={16} color="#FFFFFF" />
-                  <Text style={[styles.actionText, { color: '#FFFFFF' }]}>
-                    Apply
-                  </Text>
+                  <Text style={[styles.actionText, { color: '#FFFFFF' }]}>Apply</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -268,9 +231,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
     tabs: {
       flexDirection: 'row',
       gap: DesignSystem.Spacing.sm,
-      backgroundColor: colorScheme === 'dark' 
-        ? 'rgba(255, 255, 255, 0.05)' 
-        : 'rgba(0, 0, 0, 0.03)',
+      backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
       borderRadius: DesignSystem.BorderRadius.lg,
       padding: 4,
     },
@@ -283,9 +244,7 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: DesignSystem.BorderRadius.md,
     },
     tabActive: {
-      backgroundColor: colorScheme === 'dark' 
-        ? 'rgba(20, 184, 166, 0.15)' 
-        : 'rgba(20, 184, 166, 0.12)',
+      backgroundColor: colorScheme === 'dark' ? 'rgba(20, 184, 166, 0.15)' : 'rgba(20, 184, 166, 0.12)',
     },
     tabText: {
       fontSize: DesignSystem.Typography.sizes.sm,

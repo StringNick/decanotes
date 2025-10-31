@@ -125,24 +125,22 @@ export default function SettingsScreen() {
     if (!commitHash || commitHash === 'dev') return;
 
     const commitUrl = `https://github.com/StringNick/decanotes/commit/${commitHash}`;
-    
-    Alert.alert(
-      'View Commit',
-      `Open commit ${commitHash} on GitHub?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Open',
-          onPress: () => {
-            import('expo-web-browser').then(({ openBrowserAsync }) => {
+
+    Alert.alert('View Commit', `Open commit ${commitHash} on GitHub?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Open',
+        onPress: () => {
+          import('expo-web-browser')
+            .then(({ openBrowserAsync }) => {
               openBrowserAsync(commitUrl);
-            }).catch(() => {
+            })
+            .catch(() => {
               Alert.alert('Commit Link', commitUrl);
             });
-          },
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
@@ -166,16 +164,12 @@ export default function SettingsScreen() {
               subtitle={theme === 'system' ? 'Following system' : theme === 'dark' ? 'Dark' : 'Light'}
               colors={colors}
               onPress={() => {
-                Alert.alert(
-                  'Theme',
-                  'Choose your preferred theme',
-                  [
-                    { text: 'Light', onPress: () => setTheme('light') },
-                    { text: 'Dark', onPress: () => setTheme('dark') },
-                    { text: 'System', onPress: () => setTheme('system') },
-                    { text: 'Cancel', style: 'cancel' },
-                  ]
-                );
+                Alert.alert('Theme', 'Choose your preferred theme', [
+                  { text: 'Light', onPress: () => setTheme('light') },
+                  { text: 'Dark', onPress: () => setTheme('dark') },
+                  { text: 'System', onPress: () => setTheme('system') },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
               }}
             />
           </View>
@@ -192,10 +186,15 @@ export default function SettingsScreen() {
               onPress={() => {
                 Alert.alert(
                   'Auto-Save',
-                  autoSaveEnabled ? 'Disable auto-save? Changes will need to be saved manually.' : 'Enable auto-save? Changes will be saved automatically after 2 seconds.',
+                  autoSaveEnabled
+                    ? 'Disable auto-save? Changes will need to be saved manually.'
+                    : 'Enable auto-save? Changes will be saved automatically after 2 seconds.',
                   [
                     { text: 'Cancel', style: 'cancel' },
-                    { text: autoSaveEnabled ? 'Disable' : 'Enable', onPress: () => setAutoSaveEnabled(!autoSaveEnabled) },
+                    {
+                      text: autoSaveEnabled ? 'Disable' : 'Enable',
+                      onPress: () => setAutoSaveEnabled(!autoSaveEnabled),
+                    },
                   ]
                 );
               }}
@@ -255,11 +254,13 @@ export default function SettingsScreen() {
               onPress={() => {
                 // Open GitHub issues page
                 const githubIssuesUrl = 'https://github.com/StringNick/decanotes/issues';
-                import('expo-web-browser').then(({ openBrowserAsync }) => {
-                  openBrowserAsync(githubIssuesUrl);
-                }).catch(() => {
-                  Alert.alert('Help & Support', `Visit: ${githubIssuesUrl}`);
-                });
+                import('expo-web-browser')
+                  .then(({ openBrowserAsync }) => {
+                    openBrowserAsync(githubIssuesUrl);
+                  })
+                  .catch(() => {
+                    Alert.alert('Help & Support', `Visit: ${githubIssuesUrl}`);
+                  });
               }}
             />
             <SettingItem

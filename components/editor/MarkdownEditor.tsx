@@ -312,7 +312,6 @@ const EditorWithContext = forwardRef<ExtendedMarkdownEditorRef, ExtendedMarkdown
       getCurrentMode: () => {
         return 'edit' as any;
       },
-       
     }),
     [state, actions]
   );

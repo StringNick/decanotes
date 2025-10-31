@@ -298,7 +298,6 @@ export function useEditorKeyboard(options: EditorKeyboardOptions) {
           handleTabKey(event);
           break;
       }
-       
     },
     [allShortcuts, pluginRegistry]
   );
