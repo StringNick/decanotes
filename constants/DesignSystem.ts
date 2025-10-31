@@ -130,6 +130,78 @@ export const Colors = {
       strong: 'rgba(24, 24, 27, 0.9)',
     },
   },
+
+  // Syntax highlighting tokens
+  syntax: {
+    light: {
+      code: {
+        background: 'rgba(244, 244, 245, 0.8)', // zinc-100 with transparency
+        border: 'rgba(228, 228, 231, 0.6)', // zinc-200 with transparency
+        text: '#18181B', // zinc-900
+      },
+      quote: {
+        background: 'rgba(167, 139, 250, 0.08)', // purple with low opacity
+        border: '#A78BFA', // purple-400
+        text: '#3F3F46', // zinc-700
+      },
+      callout: {
+        info: {
+          background: 'rgba(96, 165, 250, 0.12)', // blue-400
+          border: '#60A5FA',
+          text: '#1E3A5F',
+        },
+        warning: {
+          background: 'rgba(251, 191, 36, 0.12)', // amber-400
+          border: '#FBBF24',
+          text: '#78350F',
+        },
+        danger: {
+          background: 'rgba(248, 113, 113, 0.12)', // red-400
+          border: '#F87171',
+          text: '#7F1D1D',
+        },
+        success: {
+          background: 'rgba(52, 211, 153, 0.12)', // emerald-400
+          border: '#34D399',
+          text: '#064E3B',
+        },
+      },
+    },
+    dark: {
+      code: {
+        background: 'rgba(39, 39, 42, 0.8)', // zinc-800 with transparency
+        border: 'rgba(63, 63, 70, 0.6)', // zinc-700 with transparency
+        text: '#FAFAFA', // zinc-50
+      },
+      quote: {
+        background: 'rgba(167, 139, 250, 0.15)', // purple with medium opacity
+        border: '#A78BFA', // purple-400
+        text: '#E4E4E7', // zinc-200
+      },
+      callout: {
+        info: {
+          background: 'rgba(96, 165, 250, 0.18)', // blue-400
+          border: '#60A5FA',
+          text: '#DBEAFE',
+        },
+        warning: {
+          background: 'rgba(251, 191, 36, 0.18)', // amber-400
+          border: '#FBBF24',
+          text: '#FEF3C7',
+        },
+        danger: {
+          background: 'rgba(248, 113, 113, 0.18)', // red-400
+          border: '#F87171',
+          text: '#FECDD3',
+        },
+        success: {
+          background: 'rgba(52, 211, 153, 0.18)', // emerald-400
+          border: '#34D399',
+          text: '#D1FAE5',
+        },
+      },
+    },
+  },
 };
 
 // === TYPOGRAPHY ===
