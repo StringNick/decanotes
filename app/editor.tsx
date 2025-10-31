@@ -612,13 +612,49 @@ export default function EditorScreen() {
       console.log('[Toggle] Switching to BLOCKS mode, markdown length:', markdownText.length);
 
       try {
-        // Import the parser directly to parse markdown into blocks
-        // We can't use editorRef here because MarkdownEditor is unmounted
+        // Import the parser and plugins
         const { parseMarkdownToBlocks } = require('../components/editor/utils/MarkdownRegistry');
+        const {
+          ParagraphPlugin,
+          HeadingPlugin,
+          CodePlugin,
+          ImagePlugin,
+          ListPlugin,
+          QuotePlugin,
+          DividerPlugin,
+          VideoPlugin,
+          CalloutPlugin,
+          ChecklistPlugin,
+          TablePlugin,
+          FootnotePlugin,
+          DefinitionListPlugin,
+        } = require('../components/editor/plugins/built-in');
 
-        // Parse markdown to blocks (using built-in plugins)
-        const parsedBlocks = parseMarkdownToBlocks(markdownText, []);
-        console.log('[Toggle] Parsed blocks:', parsedBlocks.length);
+        // Create plugin instances
+        const plugins = [
+          new ParagraphPlugin(),
+          new HeadingPlugin(),
+          new CodePlugin(),
+          new ImagePlugin(),
+          new ListPlugin(),
+          new QuotePlugin(),
+          new DividerPlugin(),
+          new VideoPlugin(),
+          new CalloutPlugin(),
+          new ChecklistPlugin(),
+          new TablePlugin(),
+          new FootnotePlugin(),
+          new DefinitionListPlugin(),
+        ];
+
+        // Parse markdown to blocks with all plugins
+        const parsedBlocks = parseMarkdownToBlocks(markdownText, plugins);
+        console.log(
+          '[Toggle] Parsed blocks:',
+          parsedBlocks.length,
+          'types:',
+          parsedBlocks.map((b: EditorBlock) => b.type)
+        );
 
         // Update blocks state - this will trigger the editor to re-render with new blocks
         setBlocks(parsedBlocks);
