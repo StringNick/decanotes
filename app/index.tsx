@@ -1,14 +1,14 @@
 import { NoteCard } from '@/components/NoteCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import {
-    Animations,
-    BorderRadius,
-    Colors,
-    createTextStyle,
-    getThemeColors,
-    Shadows,
-    Spacing,
-    Typography,
+  Animations,
+  BorderRadius,
+  Colors,
+  createTextStyle,
+  getThemeColors,
+  Shadows,
+  Spacing,
+  Typography,
 } from '@/constants/DesignSystem';
 import { useStorage } from '@/contexts/StorageContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -16,15 +16,15 @@ import type { Note } from '@/types/storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    FlatList,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  FlatList,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -115,13 +115,13 @@ export default function HomeScreen() {
     if (!searchQuery) return true;
 
     const query = searchQuery.toLowerCase();
-    
+
     // Search in title
     if (note.title.toLowerCase().includes(query)) return true;
-    
+
     // Search in preview
     if (note.preview.toLowerCase().includes(query)) return true;
-    
+
     // Search in block content
     if (note.content && Array.isArray(note.content)) {
       const hasMatch = note.content.some((block: any) => {

@@ -7,15 +7,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 type AuthMethod = StorageBackendType;
@@ -152,13 +152,7 @@ export default function AuthScreen() {
                 </Text>
               </TouchableOpacity>
 
-              <View
-                style={[
-                  styles.methodButton,
-                  styles.disabledMethodButton,
-                  { opacity: 0.5 },
-                ]}
-              >
+              <View style={[styles.methodButton, styles.disabledMethodButton, { opacity: 0.5 }]}>
                 <View style={styles.methodButtonContent}>
                   <IconSymbol name="globe" size={18} color="#6B7280" />
                   <Text style={styles.methodText}>IPFS</Text>

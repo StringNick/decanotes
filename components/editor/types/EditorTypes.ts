@@ -46,6 +46,9 @@ export interface ExtendedMarkdownEditorProps {
   keyboardDockBlockSection?: React.ReactNode;
   keyboardDockFormattingSection?: React.ReactNode;
   keyboardDockActionSection?: React.ReactNode;
+
+  // Display mode for split-view support
+  displayMode?: 'blocks' | 'markdown' | 'split';
 }
 
 // Editor configuration

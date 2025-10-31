@@ -1,27 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
-    Dimensions,
-    FlatList,
-    InteractionManager,
-    LayoutChangeEvent,
-    ListRenderItemInfo,
-    NativeScrollEvent,
-    NativeSyntheticEvent,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  FlatList,
+  InteractionManager,
+  LayoutChangeEvent,
+  ListRenderItemInfo,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EditorBlock, EditorBlockType } from '../../../types/editor';
 import { EditorBottomBar } from '../components/EditorBottomBar';
 import { PluginRegistry } from '../plugins/PluginRegistry';
 import {
-    EditorConfig,
-    EditorError,
-    ExtendedMarkdownEditorProps,
-    ExtendedMarkdownEditorRef,
+  EditorConfig,
+  EditorError,
+  ExtendedMarkdownEditorProps,
+  ExtendedMarkdownEditorRef,
 } from '../types/EditorTypes';
 import { BlockPlugin, MarkdownPlugin } from '../types/PluginTypes';
 import { FocusManager } from '../utils/FocusManager';

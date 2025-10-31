@@ -298,7 +298,6 @@ export function useEditorKeyboard(options: EditorKeyboardOptions) {
           handleTabKey(event);
           break;
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [allShortcuts, pluginRegistry]
   );

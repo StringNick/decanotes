@@ -1,50 +1,47 @@
 import { Colors } from '@/constants/Colors';
 import { useStorage } from '@/contexts/StorageContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import type { Note } from '@/types/storage';
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-    CheckSquare,
-    Code,
-    Copy,
-    Heading1,
-    Heading2,
-    Heading3,
-    Lightbulb,
-    List,
-    ListOrdered,
-    Minus,
-    Plus,
-    Quote,
-    Redo2,
-    Save,
-    Table,
-    Type,
-    Undo2,
-    X,
+  CheckSquare,
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  Lightbulb,
+  List,
+  ListOrdered,
+  Minus,
+  Plus,
+  Quote,
+  Redo2,
+  Save,
+  Table,
+  Type,
+  Undo2,
+  X,
 } from 'lucide-react-native';
 import React, { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    Modal,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { FormattingToolbar } from '../components/editor/components/FormattingToolbar';
-// EditorBottomBar now rendered inside MarkdownEditor
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { ExtendedMarkdownEditorRef } from '../components/editor/types/EditorTypes';
 import { getEditorTheme } from '../themes/defaultTheme';
 import { EditorBlock, EditorBlockType } from '../types/editor';
@@ -273,8 +270,16 @@ export default function EditorScreen() {
   const params = useLocalSearchParams<{ noteId?: string }>();
   const { effectiveTheme } = useTheme();
   const colorScheme = effectiveTheme; // Use app theme setting instead of system theme
-  const { loadNote, saveNote, currentNote, setCurrentNote, hasUnsavedChanges, markAsChanged, clearUnsavedChanges, autoSaveEnabled } =
-    useStorage();
+  const {
+    loadNote,
+    saveNote,
+    currentNote,
+    setCurrentNote,
+    hasUnsavedChanges,
+    markAsChanged,
+    clearUnsavedChanges,
+    autoSaveEnabled,
+  } = useStorage();
 
   const editorRef = useRef<ExtendedMarkdownEditorRef>(null);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
@@ -285,10 +290,8 @@ export default function EditorScreen() {
   const [noteTitle, setNoteTitle] = useState('Untitled');
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
-  const [showMarkdownModal, setShowMarkdownModal] = useState(false);
-  const [rawMarkdown, setRawMarkdown] = useState('');
-  const [isEditingMarkdown, setIsEditingMarkdown] = useState(false);
-  const [editedMarkdown, setEditedMarkdown] = useState('');
+  const [isMarkdownMode, setIsMarkdownMode] = useState(false);
+  const [markdownText, setMarkdownText] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const isInitialLoad = useRef(true);
   const initialBlocksRef = useRef<EditorBlock[]>([]);
@@ -474,7 +477,7 @@ export default function EditorScreen() {
       initialBlocksRef.current = blocks;
       clearUnsavedChanges();
       setSaveStatus('saved');
-      
+
       // Show saved status briefly, then hide
       setTimeout(() => setSaveStatus('saved'), 1000);
     } catch (error) {
@@ -534,50 +537,53 @@ export default function EditorScreen() {
   }, []);
 
   // Handle formatting actions
-  const handleFormattingAction = useCallback((actionId: string) => {
-    if (!editorRef.current) return;
+  const handleFormattingAction = useCallback(
+    (actionId: string) => {
+      if (!editorRef.current) return;
 
-    // Get current blocks
-    const currentBlocks = editorRef.current.getBlocks();
-    if (currentBlocks.length === 0) return;
+      // Get current blocks
+      const currentBlocks = editorRef.current.getBlocks();
+      if (currentBlocks.length === 0) return;
 
-    // For now, apply formatting to the last block (where cursor likely is)
-    const lastBlock = currentBlocks[currentBlocks.length - 1];
-    if (!lastBlock || lastBlock.type !== 'paragraph') return;
+      // For now, apply formatting to the last block (where cursor likely is)
+      const lastBlock = currentBlocks[currentBlocks.length - 1];
+      if (!lastBlock || lastBlock.type !== 'paragraph') return;
 
-    const content = lastBlock.content;
-    let newContent = content;
+      const content = lastBlock.content;
+      let newContent = content;
 
-    switch (actionId) {
-      case 'bold':
-        newContent = content.includes('**') ? content.replace(/\*\*/g, '') : `**${content}**`;
-        break;
-      case 'italic':
-        newContent = content.includes('*') && !content.includes('**') ? content.replace(/\*/g, '') : `*${content}*`;
-        break;
-      case 'strikethrough':
-        newContent = content.includes('~~') ? content.replace(/~~/g, '') : `~~${content}~~`;
-        break;
-      case 'code':
-        newContent = content.includes('`') ? content.replace(/`/g, '') : `\`${content}\``;
-        break;
-      case 'link':
-        if (!content.includes('[')) {
-          newContent = `[${content}](url)`;
-        }
-        break;
-      default:
-        return;
-    }
+      switch (actionId) {
+        case 'bold':
+          newContent = content.includes('**') ? content.replace(/\*\*/g, '') : `**${content}**`;
+          break;
+        case 'italic':
+          newContent = content.includes('*') && !content.includes('**') ? content.replace(/\*/g, '') : `*${content}*`;
+          break;
+        case 'strikethrough':
+          newContent = content.includes('~~') ? content.replace(/~~/g, '') : `~~${content}~~`;
+          break;
+        case 'code':
+          newContent = content.includes('`') ? content.replace(/`/g, '') : `\`${content}\``;
+          break;
+        case 'link':
+          if (!content.includes('[')) {
+            newContent = `[${content}](url)`;
+          }
+          break;
+        default:
+          return;
+      }
 
-    // Update blocks array
-    const updatedBlocks = [...currentBlocks];
-    updatedBlocks[updatedBlocks.length - 1] = { ...lastBlock, content: newContent };
-    
-    // Apply via setBlocks
-    setBlocks(updatedBlocks);
-    markAsChanged();
-  }, [markAsChanged]);
+      // Update blocks array
+      const updatedBlocks = [...currentBlocks];
+      updatedBlocks[updatedBlocks.length - 1] = { ...lastBlock, content: newContent };
+
+      // Apply via setBlocks
+      setBlocks(updatedBlocks);
+      markAsChanged();
+    },
+    [markAsChanged]
+  );
 
   // Handle rename
   const handleRename = useCallback(() => {
@@ -597,85 +603,61 @@ export default function EditorScreen() {
     setShowRenameModal(false);
   }, [tempTitle, markAsChanged]);
 
-  // Get raw markdown
-  const handleGetRawMarkdown = useCallback(() => {
-    if (editorRef.current) {
-      const markdown = editorRef.current.getMarkdown();
-      setRawMarkdown(markdown);
-      setEditedMarkdown(markdown);
-      setIsEditingMarkdown(false);
-      setShowMarkdownModal(true);
-    }
-  }, []);
+  // Toggle markdown mode
+  const handleToggleMarkdownMode = useCallback(() => {
+    console.log('[Toggle] Called, isMarkdownMode:', isMarkdownMode);
 
-  // Copy markdown to clipboard (unused but kept for future feature)
-  // const handleCopyMarkdown = useCallback(async () => {
-  //   if (editorRef.current) {
-  //     const markdown = editorRef.current.getMarkdown();
-  //     await Clipboard.setStringAsync(markdown);
-  //     Alert.alert('Copied!', 'Markdown copied to clipboard');
-  //   }
-  // }, []);
+    if (isMarkdownMode) {
+      // Switching from markdown to blocks - parse and apply changes
+      console.log('[Toggle] Switching to BLOCKS mode, markdown length:', markdownText.length);
 
-  const handleCopyFromModal = useCallback(async () => {
-    await Clipboard.setStringAsync(isEditingMarkdown ? editedMarkdown : rawMarkdown);
-    Alert.alert('Copied!', 'Markdown copied to clipboard');
-  }, [rawMarkdown, editedMarkdown, isEditingMarkdown]);
-
-  // Apply edited markdown
-  const handleApplyMarkdown = useCallback(() => {
-    if (editorRef.current && editedMarkdown !== rawMarkdown) {
       try {
-        // Apply the markdown to the editor
-        editorRef.current.setMarkdown(editedMarkdown);
+        // Import the parser directly to parse markdown into blocks
+        // We can't use editorRef here because MarkdownEditor is unmounted
+        const { parseMarkdownToBlocks } = require('../components/editor/utils/MarkdownRegistry');
 
-        // Get the updated blocks from the editor after parsing
-        setTimeout(() => {
-          if (editorRef.current) {
-            const updatedBlocks = editorRef.current.getBlocks();
+        // Parse markdown to blocks (using built-in plugins)
+        const parsedBlocks = parseMarkdownToBlocks(markdownText, []);
+        console.log('[Toggle] Parsed blocks:', parsedBlocks.length);
 
-            if (__DEV__) {
-              const footnoteBlocks = updatedBlocks.filter(b => b.type === 'footnote');
-              console.log('[handleApplyMarkdown] Updated blocks count:', updatedBlocks.length);
-              console.log(
-                '[handleApplyMarkdown] Footnote blocks:',
-                footnoteBlocks.length,
-                footnoteBlocks.map(b => b.meta?.footnoteId)
-              );
-              console.log(
-                '[handleApplyMarkdown] Block types:',
-                updatedBlocks.map(b => b.type)
-              );
-            }
+        // Update blocks state - this will trigger the editor to re-render with new blocks
+        setBlocks(parsedBlocks);
 
-            setBlocks(updatedBlocks);
-          }
-        }, 100);
+        // Mark as changed if content differs
+        const hasActualChanges = JSON.stringify(parsedBlocks) !== JSON.stringify(initialBlocksRef.current);
+        if (hasActualChanges && !isInitialLoad.current) {
+          markAsChanged();
+        }
 
-        setRawMarkdown(editedMarkdown);
-        setIsEditingMarkdown(false);
-        markAsChanged();
-        Alert.alert('Success', 'Markdown applied successfully!');
+        // Switch mode
+        setIsMarkdownMode(false);
       } catch (error) {
-        console.error('Failed to apply markdown:', error);
+        console.error('[Toggle] Failed to parse markdown:', error);
         Alert.alert('Error', 'Failed to parse markdown. Please check your syntax.');
       }
     } else {
-      setIsEditingMarkdown(false);
+      // Switching from blocks to markdown - get fresh markdown
+      console.log('[Toggle] Switching to MARKDOWN mode');
+
+      if (editorRef.current) {
+        const markdown = editorRef.current.getMarkdown();
+        console.log('[Toggle] Got markdown, length:', markdown.length);
+        setMarkdownText(markdown);
+      }
+      setIsMarkdownMode(true);
     }
-  }, [editedMarkdown, rawMarkdown, markAsChanged]);
+  }, [isMarkdownMode, markdownText, markAsChanged]);
 
-  // Start editing markdown
-  const handleEditMarkdown = useCallback(() => {
-    setEditedMarkdown(rawMarkdown);
-    setIsEditingMarkdown(true);
-  }, [rawMarkdown]);
-
-  // Cancel editing markdown
-  const handleCancelEditMarkdown = useCallback(() => {
-    setEditedMarkdown(rawMarkdown);
-    setIsEditingMarkdown(false);
-  }, [rawMarkdown]);
+  // Handle markdown text change
+  const handleMarkdownTextChange = useCallback(
+    (text: string) => {
+      setMarkdownText(text);
+      if (!isInitialLoad.current) {
+        markAsChanged();
+      }
+    },
+    [markAsChanged]
+  );
 
   // Block types for the menu - Notion-style
   const blockTypes: {
@@ -774,10 +756,15 @@ export default function EditorScreen() {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-      
+
       {/* Save Status Toast */}
       {saveStatus !== 'saved' && (
-        <View style={[styles.saveToast, { backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.95)' }]}>
+        <View
+          style={[
+            styles.saveToast,
+            { backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.95)' },
+          ]}
+        >
           <Text style={[styles.saveToastText, { color: colors.text }]}>
             {saveStatus === 'saving' ? '💾 Saving...' : saveStatus === 'unsaved' ? '✏️ Unsaved changes' : ''}
           </Text>
@@ -833,11 +820,33 @@ export default function EditorScreen() {
                 )}
               </TouchableOpacity>
             )}
+
+            {/* Тумблер Blocks ↔ Markdown */}
+            <View style={styles.modeToggleContainer}>
+              <TouchableOpacity
+                style={[styles.modeToggleButton, !isMarkdownMode && styles.modeToggleButtonActive]}
+                onPress={() => {
+                  if (isMarkdownMode) {
+                    handleToggleMarkdownMode();
+                  }
+                }}
+              >
+                <Type size={14} color={!isMarkdownMode ? colors.background : colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modeToggleButton, isMarkdownMode && styles.modeToggleButtonActive]}
+                onPress={() => {
+                  if (!isMarkdownMode) {
+                    handleToggleMarkdownMode();
+                  }
+                }}
+              >
+                <Code size={14} color={isMarkdownMode ? colors.background : colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={styles.actionButton} onPress={handleRename}>
               <Ionicons name="pencil" size={16} color={colors.textSecondary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={handleGetRawMarkdown}>
-              <Code size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -848,6 +857,31 @@ export default function EditorScreen() {
         <View style={[styles.editorContainer, styles.loadingContainer]}>
           <ActivityIndicator size="large" color={colors.text} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading note...</Text>
+        </View>
+      ) : isMarkdownMode ? (
+        <View style={styles.editorContainer}>
+          <ScrollView
+            style={styles.markdownScrollContainer}
+            contentContainerStyle={{ paddingBottom: keyboardOffset || 20 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <TextInput
+              style={[
+                styles.markdownEditor,
+                {
+                  backgroundColor: colors.background,
+                  color: colors.text,
+                },
+              ]}
+              value={markdownText}
+              onChangeText={handleMarkdownTextChange}
+              multiline
+              textAlignVertical="top"
+              placeholder="# Markdown text here..."
+              placeholderTextColor={colors.textSecondary}
+              autoFocus={false}
+            />
+          </ScrollView>
         </View>
       ) : (
         <View style={styles.editorContainer}>
@@ -915,110 +949,6 @@ export default function EditorScreen() {
               <TouchableOpacity style={[styles.modalButton, styles.modalButtonConfirm]} onPress={handleConfirmRename}>
                 <Text style={styles.modalButtonTextConfirm}>Rename</Text>
               </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Raw Markdown Modal */}
-      <Modal
-        visible={showMarkdownModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          if (isEditingMarkdown) {
-            handleCancelEditMarkdown();
-          } else {
-            setShowMarkdownModal(false);
-          }
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.markdownModalContent, { backgroundColor: colors.background }]}>
-            <View style={styles.markdownModalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {isEditingMarkdown ? 'Edit Markdown' : 'View Markdown'}
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  if (isEditingMarkdown) {
-                    handleCancelEditMarkdown();
-                  } else {
-                    setShowMarkdownModal(false);
-                  }
-                }}
-              >
-                <X size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            {isEditingMarkdown ? (
-              <TextInput
-                style={[
-                  styles.markdownInput,
-                  {
-                    backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                    borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                    color: colors.text,
-                  },
-                ]}
-                value={editedMarkdown}
-                onChangeText={setEditedMarkdown}
-                multiline
-                textAlignVertical="top"
-                placeholder="Enter your markdown here..."
-                placeholderTextColor={colors.textSecondary}
-                autoFocus
-              />
-            ) : (
-              <View
-                style={[
-                  styles.markdownContainer,
-                  {
-                    backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                    borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                  },
-                ]}
-              >
-                <Text style={[styles.markdownText, { color: colors.text }]}>{rawMarkdown}</Text>
-              </View>
-            )}
-
-            <View style={styles.markdownModalActions}>
-              {isEditingMarkdown ? (
-                <>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonCancel]}
-                    onPress={handleCancelEditMarkdown}
-                  >
-                    <Text style={[styles.modalButtonTextCancel, { color: colors.text }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonConfirm]}
-                    onPress={handleApplyMarkdown}
-                  >
-                    <Save size={16} color="#FFFFFF" />
-                    <Text style={styles.modalButtonTextConfirm}>Apply Changes</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonSecondary]}
-                    onPress={handleCopyFromModal}
-                  >
-                    <Copy size={16} color={colors.text} />
-                    <Text style={[styles.modalButtonTextSecondary, { color: colors.text }]}>Copy</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonConfirm]}
-                    onPress={handleEditMarkdown}
-                  >
-                    <Ionicons name="pencil" size={16} color="#FFFFFF" />
-                    <Text style={styles.modalButtonTextConfirm}>Edit Markdown</Text>
-                  </TouchableOpacity>
-                </>
-              )}
             </View>
           </View>
         </View>
@@ -1234,9 +1164,37 @@ const getStyles = (colorScheme: 'light' | 'dark') => {
       justifyContent: 'center',
       backgroundColor: colors.surface,
     },
+    modeToggleContainer: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      padding: 2,
+      gap: 2,
+    },
+    modeToggleButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+    },
+    modeToggleButtonActive: {
+      backgroundColor: colors.tint,
+    },
     editorContainer: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    markdownScrollContainer: {
+      flex: 1,
+    },
+    markdownEditor: {
+      minHeight: '100%',
+      padding: 16,
+      fontSize: 16,
+      fontFamily: 'SpaceMono',
+      lineHeight: 24,
     },
     blockQuickContent: {
       paddingHorizontal: 12,
