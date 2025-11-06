@@ -117,7 +117,7 @@ export default function AuthScreen() {
             </Text>
             {needsCredentials && savedBackendType && (
               <View style={styles.infoBox}>
-                <Text style={styles.infoText}>Using {savedBackendType === 'renterd' ? 'Sia Renterd' : 'IPFS'}</Text>
+                <Text style={styles.infoText}>Using {savedBackendType === 'renterd' ? 'Sia Renterd' : 'Local Storage'}</Text>
               </View>
             )}
           </View>
@@ -151,16 +151,6 @@ export default function AuthScreen() {
                   Sia{'\n'}Renterd
                 </Text>
               </TouchableOpacity>
-
-              <View style={[styles.methodButton, styles.disabledMethodButton, { opacity: 0.5 }]}>
-                <View style={styles.methodButtonContent}>
-                  <IconSymbol name="globe" size={18} color="#6B7280" />
-                  <Text style={styles.methodText}>IPFS</Text>
-                </View>
-                <View style={styles.soonBadge}>
-                  <Text style={styles.soonText}>Soon</Text>
-                </View>
-              </View>
             </View>
 
             <View style={styles.formContainer}>
@@ -356,18 +346,6 @@ const styles = StyleSheet.create({
     ...createTextStyle('sm', 'primary', '#FFFFFF'),
     opacity: 0.8,
     textAlign: 'center',
-  },
-  soonBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: '#FCD34D',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  soonText: {
-    ...createTextStyle('xs', 'semibold', '#92400E'),
   },
   infoBox: {
     marginTop: Spacing.lg,

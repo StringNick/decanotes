@@ -97,9 +97,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleExportData = () => {
-    Alert.alert('Export Data', 'Export functionality will be available soon.', [{ text: 'OK' }]);
-  };
 
   const getBackendDisplayName = () => {
     switch (authState.backendType) {
@@ -107,8 +104,6 @@ export default function SettingsScreen() {
         return 'Local Storage';
       case 'renterd':
         return 'Sia Renterd';
-      case 'ipfs':
-        return 'IPFS';
       default:
         return 'Unknown';
     }
@@ -225,13 +220,6 @@ export default function SettingsScreen() {
               colors={colors}
               onPress={isSyncing ? undefined : handleSyncNow}
             />
-            <SettingItem
-              icon={'square.and.arrow.up' as any}
-              title="Export Data"
-              subtitle="Export all notes"
-              colors={colors}
-              onPress={handleExportData}
-            />
           </View>
         </View>
 
@@ -267,7 +255,7 @@ export default function SettingsScreen() {
               icon={'doc.text' as any}
               title="Privacy Policy"
               colors={colors}
-              onPress={() => Alert.alert('Privacy', 'Your data is stored locally and on IPFS.')}
+              onPress={() => Alert.alert('Privacy', 'Your data is stored locally or on your chosen backend.')}
             />
           </View>
         </View>
